@@ -28,6 +28,7 @@ const YogaDay: React.FC<{
     clinic_name,
   } = formData || {};
 
+  console.log()
 
   const introdurations: Record<string, Record<string, number>> = {
     English: { Male: 150, Female: 150 },

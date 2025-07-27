@@ -47,7 +47,7 @@ jobs:
       - name: Render video
         run: |
           mkdir -p output
-          bunx remotion render src/remotion/index.ts YogaDay output/out.mp4
+          bunx remotion render src/remotion/index.ts YogaDay output/out.mp4 --props='${{github.event.inputs.formData}}'
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
