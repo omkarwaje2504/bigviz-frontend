@@ -129,6 +129,7 @@ export default function RenderPage({ projectData, projectId }) {
         body: JSON.stringify({
           ref: "master",
           inputs: {
+            name: "omkar",
             formData: JSON.stringify({
               name: "Dr. Sushant Patil singh",
               speciality: "Physician",

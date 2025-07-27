@@ -23,6 +23,22 @@ jobs:
         with:
           node-version: 18
 
+      - name: Cache node_modules
+        uses: actions/cache@v3
+        with:
+          path: ~/.bun/install/cache
+          key: ${{ runner.os }}-bun-${{ hashFiles('bun.lockb') }}
+          restore-keys: |
+            ${{ runner.os }}-bun-
+
+      - name: Cache Chrome Headless Shell
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/remotion
+          key: ${{ runner.os }}-remotion-chrome-shell
+          restore-keys: |
+            ${{ runner.os }}-remotion
+
       - name: Install dependencies
         run: |
           npm i bun -g
@@ -36,5 +52,5 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: video-${{ github.event.inputs.formData }}
+          name: video-${{ github.event.inputs.name }}
           path: output/out.mp4
