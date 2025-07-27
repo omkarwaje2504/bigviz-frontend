@@ -123,7 +123,7 @@ export default function RenderPage({ projectData, projectId }) {
       {
         method: "POST",
         headers: {
-          Authorization: `Bearer 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`,
+          // Authorization: `Bearer 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`,
           // Authorization: `Bearer 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`,
           Accept: "application/vnd.github.v3+json",
         },
