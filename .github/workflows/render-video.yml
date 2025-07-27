@@ -3,6 +3,9 @@ name: Render-Video
 on:
   workflow_dispatch:
     inputs:
+      name:
+        description: "video Name"
+        required: true
       formData:
         description: "FormData for the video"
         required: true
