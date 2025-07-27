@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       formData:
-        description: "ID for the video"
+        description: "FormData for the video"
         required: true
 
 jobs:
@@ -33,5 +33,5 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: video-${{ github.event.inputs.videoId }}
+          name: video-${{ github.event.inputs.formData }}
           path: output/out.mp4
