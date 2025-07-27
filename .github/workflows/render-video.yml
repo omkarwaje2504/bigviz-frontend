@@ -3,7 +3,7 @@ name: Render-Video
 on:
   workflow_dispatch:
     inputs:
-      videoId:
+      formData:
         description: "ID for the video"
         required: true
 
@@ -28,7 +28,7 @@ jobs:
       - name: Render video
         run: |
           mkdir -p output
-          bunx remotion render src/remotion/index.ts MyVideo output/out.mp4
+          bunx remotion render src/remotion/index.ts YogaDay output/out.mp4
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4

@@ -119,16 +119,27 @@ export default function RenderPage({ projectData, projectId }) {
     setStatus("Triggering render...");
 
     const trigger = await fetch(
-      `https://api.github.com/repos/omkarwaje2504/bigviz-frontend/actions/workflows/deploy.yml/dispatches`,
+      `https://api.github.com/repos/omkarwaje2504/bigviz-frontend/actions/workflows/render-video.yml/dispatches`,
       {
         method: "POST",
         headers: {
-          // Authorization: `Bearer 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`,
+          Authorization: `Bearer ${process.env.NEXT_PUBLIC_GITHUB_TOKEN}`,
           Accept: "application/vnd.github.v3+json",
         },
         body: JSON.stringify({
           ref: "master",
-          inputs: "MyVideo",
+          inputs: {
+            formData: {
+              name: "Dr. Sushant Patil singh",
+              speciality: "Physician",
+              clinic_name: "",
+              clinic_address: "",
+              photo:
+                "https://pixpro.s3.ap-south-1.amazonaws.com/production/cropped/2025/01/folic-acid-awareness-2025/krunal-jayantibhai-patel-116214/6e653b57-5eca-4e0a-918c-789682f672e9.png",
+              gender: "Female",
+              language: "English",
+            },
+          },
         }),
       },
     );
