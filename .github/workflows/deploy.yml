@@ -1,0 +1,71 @@
+name: Deploy
+
+on:
+  push:
+    branches:
+      - main
+
+# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Allow only one concurrent deployment, skipping runs queued between the run in-progress and latest queued.
+# However, do NOT cancel in-progress runs as we want to allow these production deployments to complete.
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    needs: render
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    name: Build and Deploy
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Cache Bun node_modules
+        uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: ${{ runner.os }}-node-
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+      - name: Create .env file from GitHub Secrets
+        run: |
+          echo "NEXT_PUBLIC_HOST=${{ secrets.NEXT_PUBLIC_HOST }}" >> .env
+          echo "NEXT_PUBLIC_PROJECT_URL=${{ secrets.NEXT_PUBLIC_PROJECT_URL }}" >> .env
+          echo "NEXT_PUBLIC_PROJECT_SAVE_URL=${{ secrets.NEXT_PUBLIC_PROJECT_SAVE_URL }}" >> .env
+          echo "NEXT_PUBLIC_AWS_S3_BUCKET_NAME=${{ secrets.NEXT_PUBLIC_AWS_S3_BUCKET_NAME }}" >> .env
+          echo "NEXT_PUBLIC_AWS_S3_REGION=${{ secrets.NEXT_PUBLIC_AWS_S3_REGION }}" >> .env
+          echo "NEXT_PUBLIC_AWS_ACCESS_KEY_ID=${{ secrets.NEXT_PUBLIC_AWS_ACCESS_KEY_ID }}" >> .env
+          echo "NEXT_PUBLIC_AWS_SECRET_ACCESS_KEY=${{ secrets.NEXT_PUBLIC_AWS_SECRET_ACCESS_KEY }}" >> .env
+          echo "NEXT_PUBLIC_API_KEY=${{ secrets.NEXT_PUBLIC_API_KEY }}" >> .env
+
+      - name: Build Website
+        run: |
+          bun install \
+          && bun run build
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          # Upload entire repository
+          path: "./dist"
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

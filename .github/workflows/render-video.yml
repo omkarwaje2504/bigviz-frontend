@@ -1,0 +1,37 @@
+name: Render-Video
+
+on:
+  workflow_dispatch:
+    inputs:
+      videoId:
+        description: "ID for the video"
+        required: true
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: Install dependencies
+        run: |
+          npm i bun -g
+          bun install
+
+      - name: Render video
+        run: |
+          mkdir -p output
+          bunx remotion render src/remotion/index.ts MyVideo output/out.mp4
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: video-${{ github.event.inputs.videoId }}
+          path: output/out.mp4

@@ -1,0 +1,48 @@
+{
+  "compilerOptions": {
+    "target": "es5",
+    "lib": ["dom", "dom.iterable", "esnext"],
+    "allowJs": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "forceConsistentCasingInFileNames": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "module": "esnext",
+    "moduleResolution": "node",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "jsx": "preserve",
+    "noUnusedLocals": true,
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ],
+    "incremental": true,
+    "baseUrl": ".",
+    "paths": {
+      "@components/*": ["src/components/*"],
+      "@utils/*": ["utils/*"],
+      "@actions/*": ["actions/*"],
+      "@services/*": ["services/*"],
+      "@compositions/*": ["src/remotion/compositions/*"]
+    }
+  },
+  "include": [
+    "**/*.ts",
+    "**/*.tsx",
+    ".next/types/**/*.ts",
+    "next-env.d.ts",
+    "remotion/webpack-override.mjs",
+    "src/components/*/*.jsx",
+    "src/app/preview/index.jsx",
+    "src/app/preview/index.jsx",
+    "dist/types/**/*.ts",
+    "src/components/*/*.tsx",
+    "src/components/*/*.jsx",
+    "src/remotion/index.ts",
+    "src/remotion/compositions/*.jsx"
+  ],
+  "exclude": ["node_modules", "remotion.config.ts"]
+}
