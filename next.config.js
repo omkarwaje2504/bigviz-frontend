@@ -32,8 +32,8 @@ const nextConfig = {
     return config;
   },
   reactStrictMode: false,
-  // output: "export",
-  // distDir: "dist",
+  output: "export",
+  distDir: "dist",
   // assetPrefix: "/pixpro-remotion-integration/",
   // basePath: "/pixpro-remotion-integration",
   // experimental: {
