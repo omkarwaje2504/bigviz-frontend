@@ -1,5 +1,6 @@
-import RegisterNewCalendar from "@components/pages/RegisterNewCalendar";
 import { getAllProjectsCached } from "../../../../utils/projectCache";
+import RegisterNewCandidate from "@components/pages/RegisterNewCandidate";
+import config from "../../../../utils/Config";
 
 export async function generateStaticParams() {
   const projects = await getAllProjectsCached();
@@ -48,10 +49,12 @@ export default async function Home({ params }) {
       project.name?.toString() === pathname ||
       project.web_link?.split("/").pop() === pathname,
   );
+  const ui = await config(projectInfo);
   return (
-    <RegisterNewCalendar
+    <RegisterNewCandidate
       projectData={projectInfo}
       projectId={projectInfo?.id}
+      ui={ui}
     />
   );
 }

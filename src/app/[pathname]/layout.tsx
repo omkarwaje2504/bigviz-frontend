@@ -1,11 +1,11 @@
-import "../../styles/global.css";
+import "../../../styles/global.css";
 import { Metadata, Viewport } from "next";
-
+import { Toaster } from "react-hot-toast";
 
 export const metadata: Metadata = {
   title: "Remotion and Next.js",
   description: "Remotion and Next.js",
-   metadataBase: new URL("https://www.pixpro.app"),
+  metadataBase: new URL("https://www.pixpro.app"),
 };
 
 export const viewport: Viewport = {
@@ -21,7 +21,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className="dark">
-      <body>{children}</body>
+      <body>
+        <Toaster />
+        {children}
+      </body>
     </html>
   );
 }

@@ -23,6 +23,7 @@ import { useRouter } from "next/navigation";
 import config from "@utils/Config";
 import UploadFile from "@services/uploadFile";
 import { getMimeType } from "advanced-cropper/extensions/mimes";
+import { toast } from "react-hot-toast";
 
 const months = [
   { name: "January", short: "Jan", number: 1 },
@@ -177,7 +178,6 @@ export default function CalendarPage({
 
   const ui = config(projectData);
   const router = useRouter();
-  const isDarkMode = localStorage.getItem("ThemeMode");
   const { w: cropWidth, h: cropHeight } = useMemo(
     () => getPhotoDims(projectData),
     [projectData],
@@ -446,22 +446,51 @@ export default function CalendarPage({
   );
 
   const shuffleCalendarImages = () => {
-    const uploadedEntries = Object.values(calendarData).filter(
-      (item) => item?.croppedImage,
+    const uploaded = Object.entries(calendarData).filter(
+      ([_, item]) => item?.croppedImage,
     );
 
-    if (uploadedEntries.length === 0) {
+    if (uploaded.length === 0) {
       toast.error("Upload at least 1 image to shuffle.");
       return;
     }
 
-    const shuffled = [...uploadedEntries, ...uploadedEntries];
-    const assigned = {};
+    // Deduplicate unique URLs
+    const unique = Array.from(
+      new Map(uploaded.map(([mn, data]) => [data.croppedImage, mn])).entries(),
+    );
+    // Map URL to a color index
+    const urlColorMap = {};
+    unique.forEach(([url], idx) => {
+      urlColorMap[url] = idx % monthColors.length;
+    });
 
-    for (let i = 0; i < 12; i++) {
-      const monthName = months[i].name;
-      assigned[monthName] = shuffled[i % shuffled.length];
-    }
+    // shuffle array of URLs to fill
+    const urls = unique.map(([url]) => url);
+    const shuffledUrls = Array(12)
+      .fill()
+      .map((_, i) => urls[i % urls.length]);
+
+    const assigned = {};
+    months.forEach((m, i) => {
+      const existing = calendarData[m.name]?.croppedImage;
+      if (existing) {
+        assigned[m.name] = {
+          ...calendarData[m.name],
+          colorIndex: urlColorMap[existing],
+          isDuplicate: false,
+        };
+      } else {
+        const url = shuffledUrls[i];
+        assigned[m.name] = {
+          croppedImage: url,
+          originalImage: null,
+          uploadedAt: null,
+          colorIndex: urlColorMap[url],
+          isDuplicate: true,
+        };
+      }
+    });
 
     setCalendarData(assigned);
     toast.success("Calendar shuffled!");
@@ -505,9 +534,7 @@ export default function CalendarPage({
       {error && <ErrorDisplay message={error} onClose={() => setError(null)} />}
 
       {/* Calendar Grid View */}
-      <div
-        className={`${isDarkMode ? "bg-gray-900" : "bg-white"} rounded-lg shadow-lg mb-8`}
-      >
+      <div className={`dark:bg-gray-900 bg-white rounded-lg shadow-lg mb-8`}>
         <div className="p-1">
           <h2 className="text-xl font-semibold">Calendar Photo Upload</h2>
           <p className="text-sm text-gray-400 mb-4">
@@ -516,7 +543,7 @@ export default function CalendarPage({
 
           {/* Progress Bar */}
           <div
-            className={`w-full ${isDarkMode ? "bg-gray-700" : "bg-gray-200"} rounded-full h-2 mb-4`}
+            className={`w-full bg-gray-700 bg-gray-200 rounded-full h-2 mb-4`}
           >
             <div
               className={`h-2 rounded-full transition-all duration-300 ${ui?.theme?.selectedBg || "bg-blue-600"}`}
@@ -525,42 +552,71 @@ export default function CalendarPage({
           </div>
 
           <div className="grid grid-cols-3 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {months.map((month, index) => (
-              <div
-                key={month.name}
-                onClick={() => handleMonthClick(index)}
-                className={`relative p-1 rounded-lg border-2 cursor-pointer transition-all duration-200 hover:shadow-md ${isMonthCompleted(index) ? monthColors[index % monthColors.length] : "bg-gray-50 border-gray-200 hover:bg-gray-100 dark:bg-gray-700 dark:border-gray-600 dark:hover:bg-gray-600"} ${isSaving || isLoading ? "opacity-50 cursor-not-allowed" : ""}`}
-              >
-                <div className="text-center">
-                  <div className="text-lg font-semibold">{month.short}</div>
-                  <FaImage
-                    className={`mx-auto mt-2 text-gray-400 ${ui?.theme?.selectedText || "text-blue-500"}`}
-                  />
-                </div>
+            {months.map((month, index) => {
+              const data = calendarData[month.name];
+              const isCompleted = Boolean(data?.croppedImage);
+              const isDuplicate = data?.isDuplicate;
+              const colorIndex = data?.colorIndex ?? 0;
 
-                {isMonthCompleted(index) && (
-                  <div
-                    className={`absolute -top-2 -right-2 ${ui?.theme?.selectedBg || "bg-green-500"} text-white rounded-full p-1`}
-                  >
-                    <FaCheck className="text-xs" />
+              const baseColor =
+                data?.colorIndex !== undefined
+                  ? monthColors[(data?.colorIndex ?? 0) % monthColors.length]
+                  : "#ccc";
+              const lighterShade = baseColor
+                .replace("bg-", "bg-opacity-50 ")
+                .replace("border-", "border-opacity-50 ")
+                .replace("text-", "text-opacity-50 ");
+
+              return (
+                <div
+                  key={month.name}
+                  onClick={() => handleMonthClick(index)}
+                  className={`relative p-1 rounded-lg border-2 cursor-pointer transition-all duration-200 hover:shadow-md ${
+                    isCompleted
+                      ? isDuplicate
+                        ? lighterShade // faded duplicate
+                        : baseColor // full original
+                      : "#ccc"
+                  } ${isSaving || isLoading ? "opacity-50 cursor-not-allowed" : ""}`}
+                >
+                  <div className="text-center">
+                    <div className="text-lg font-semibold">{month.short}</div>
+                    <FaImage
+                      className={`mx-auto mt-2 text-gray-400 ${ui?.theme?.selectedText || "text-blue-500"}`}
+                    />
                   </div>
-                )}
 
-                {currentMonth === index && (
-                  <div
-                    className={`absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-2 h-2 ${ui?.theme?.selectedBg || "bg-blue-500"} rounded-full`}
-                  />
-                )}
-              </div>
-            ))}
+                  {isCompleted && (
+                    <div
+                      className={`absolute -top-2 -right-2 ${
+                        ui?.theme?.selectedBg || "bg-green-500"
+                      } text-white rounded-full p-1`}
+                    >
+                      <FaCheck className="text-xs" />
+                    </div>
+                  )}
+
+                  {currentMonth === index && (
+                    <div
+                      className={`absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-2 h-2 ${
+                        ui?.theme?.selectedBg || "bg-blue-500"
+                      } rounded-full`}
+                    />
+                  )}
+                  {isDuplicate && (
+                    <div className="absolute bottom-1 right-1 bg-white bg-opacity-80 text-xs px-1 rounded text-gray-500">
+                      Copy
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>
 
       {/* Action Buttons */}
-      <div
-        className={`${isDarkMode ? "bg-gray-800" : "bg-white"} rounded-lg shadow-lg p-6`}
-      >
+      <div className={`dark:bg-gray-800 bg-white rounded-lg shadow-lg p-6`}>
         <div className="flex gap-3">
           <Button
             onClick={shuffleCalendarImages}
@@ -584,18 +640,14 @@ export default function CalendarPage({
         </div>
 
         {/* Helper Text */}
-        <div
-          className={`mt-6 p-4 ${isDarkMode ? "bg-gray-700" : "bg-blue-50"} rounded-lg`}
-        >
+        <div className={`mt-6 p-4 dark:bg-gray-700 bg-blue-50 rounded-lg`}>
           <div className="flex items-start gap-3">
             <FaUpload
               className={`mt-1 ${ui?.theme?.selectedText || "text-blue-600"}`}
             />
             <div className="text-sm">
               <p className="font-medium mb-1">Requirements & Tips:</p>
-              <ul
-                className={`${isDarkMode ? "text-gray-300" : "text-gray-600"} space-y-1`}
-              >
+              <ul className={`dark:text-gray-300 text-gray-600 space-y-1`}>
                 <li>• File size: Max {MAX_FILE_SIZE / (1024 * 1024)}MB</li>
                 <li>• Formats: JPG, PNG, WebP</li>
                 <li>
@@ -616,7 +668,7 @@ export default function CalendarPage({
       {showCropper && (
         <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
           <div
-            className={`${isDarkMode ? "bg-gray-800" : "bg-white"} rounded-lg shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden`}
+            className={`bg-white dark:bg-gray-900 rounded-lg shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden`}
           >
             {/* Modal Header */}
             <div className="flex items-center justify-between p-4 border-b border-gray-200">

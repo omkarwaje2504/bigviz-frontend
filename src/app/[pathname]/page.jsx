@@ -1,5 +1,6 @@
 import LoginPage from "@components/pages/LoginPage";
 import { getAllProjectsCached } from "../../../utils/projectCache";
+import config from "../../../utils/Config";
 
 export async function generateStaticParams() {
   const projects = await getAllProjectsCached();
@@ -52,7 +53,8 @@ export default async function Home({ params }) {
         project.web_link?.split("/").pop() === pathname,
     );
 
-    return <LoginPage projectData={projectInfo} projectId={pathname} />;
+    const ui = await config(projectInfo);
+    return <LoginPage projectData={projectInfo} projectId={pathname} ui={ui} />;
   } catch (error) {
     console.error("Error in Home component:", error);
     return <div>Error loading project data. Please try again later.</div>;

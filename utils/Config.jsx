@@ -1,5 +1,4 @@
-"use client";
-const config = (projectData) => {
+const config =async (projectData) => {
   
   return {
     theme: {

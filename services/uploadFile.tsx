@@ -73,7 +73,6 @@ async function GenerateFilePath(fileName: string, projectInfo: any) {
 
   return `production/photos/${year}/${monthData[month]}/${slug}/${employeeInfo.hash}/${fileName}`;
 }
-console.log("s4 cinta", s3);
 
 const UploadFile = async (
   projectData: any,

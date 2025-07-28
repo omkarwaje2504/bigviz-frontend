@@ -1,7 +1,7 @@
 "use client";
+import { DecryptData } from "@utils/cryptoUtils";
 import React, { ReactNode } from "react";
 import { FaSpinner } from "react-icons/fa";
-import config from "@utils/Config";
 
 type ButtonProps = {
   children: ReactNode;
@@ -13,7 +13,15 @@ type ButtonProps = {
   leftIcon?: ReactNode;
 };
 
+type UiTheme = {
+  theme: {
+    selectedBg?: string;
+    selectedText?: string;
+  };
+};
+
 const Button: React.FC<ButtonProps> = ({
+
   children,
   onClick,
   isLoading = false,
@@ -22,12 +30,10 @@ const Button: React.FC<ButtonProps> = ({
   fullWidth = true,
   leftIcon,
 }) => {
+  const uiData:UiTheme= DecryptData('ui');
   const baseClasses =
     "group relative flex justify-center items-center gap-2 py-3 px-4 border border-transparent text-sm font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 transition";
-
-  const theme = config().theme;
-
-  const enabledClass = `${theme.selectedBg} ${theme.selectedText} hover:opacity-90 dark:hover:brightness-110`;
+  const enabledClass = `${uiData?.theme?.selectedBg} ${uiData?.theme?.selectedText} hover:opacity-90 dark:hover:brightness-110`;
   const disabledClass =
     "bg-gray-400 dark:bg-gray-600 text-white cursor-not-allowed";
 

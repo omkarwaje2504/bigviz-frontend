@@ -1,5 +1,6 @@
 import HomePage from "@components/pages/HomePage";
 import { getAllProjectsCached } from "../../../../utils/projectCache";
+import config from "../../../../utils/Config";
 
 export async function generateStaticParams() {
   const projects = await getAllProjectsCached();
@@ -48,5 +49,8 @@ export default async function Home({ params }) {
       project.name?.toString() === pathname ||
       project.web_link?.split("/").pop() === pathname,
   );
-  return <HomePage projectData={projectInfo} projectId={pathname} />;
+
+  const ui = await config(projectInfo);
+
+  return <HomePage projectData={projectInfo} projectId={pathname} ui={ui} />;
 }

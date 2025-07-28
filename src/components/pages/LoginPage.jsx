@@ -4,21 +4,20 @@ import { useState, useEffect } from "react";
 import Banner from "@components/ui/Banner";
 import LoadingPage from "@components/ui/LoadingPage";
 import LoginForm from "./LoginForm";
-import config from "@utils/Config";
 import MyError from "@services/MyError";
 import { DecryptData, EncryptData } from "@utils/cryptoUtils";
 import PrepareVideo from "@services/PrepareVideo";
 import { useRouter } from "next/navigation";
 
-export default function LoginPage({ projectData, projectId }) {
+export default function LoginPage({ projectData, projectId, ui }) {
   const [loading, setLoading] = useState(true);
   const [loginType, setLoginType] = useState("code");
-  const ui = config(projectData);
   const router = useRouter();
 
   useEffect(() => {
     const getUserData = DecryptData("empData");
     localStorage.clear();
+    EncryptData("ui", ui);
     if (getUserData) {
       EncryptData("empData", getUserData);
       router.push(`${projectId}/homepage`);
