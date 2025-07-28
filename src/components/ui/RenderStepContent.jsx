@@ -3,6 +3,7 @@ import InputField from "./InputField";
 import PhotoUploadEditor from "./PhotoUpload";
 import AudioUploadEditor from "./AudioUploadEditor";
 import { FaStar } from "react-icons/fa";
+import CalendarPage from "@components/pages/CalendarPage";
 
 const RenderStepContent = ({
   formData,
@@ -105,12 +106,20 @@ const RenderStepContent = ({
     case 2:
       return (
         <div className="space-y-6">
-          <PhotoUploadEditor
-            projectData={projectData}
-            setPhotoUploadStatus={setPhotoUploadStatus}
-            formData={formData}
-            setFormData={setFormData}
-          />
+          {projectData?.features.includes("calendar") ? (
+            <CalendarPage
+              projectData={projectData}
+              formData={formData}
+              setFormData={setFormData}
+            />
+          ) : (
+            <PhotoUploadEditor
+              projectData={projectData}
+              setPhotoUploadStatus={setPhotoUploadStatus}
+              formData={formData}
+              setFormData={setFormData}
+            />
+          )}
         </div>
       );
     case 3:

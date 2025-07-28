@@ -11,6 +11,8 @@ const config = (projectData) => {
       selectedDot: "bg-red-600",
       unselectedBorder: "border-red-100",
       dotBorder: "border-white",
+      selectedBorder: "border-white",
+      highlightBg:"bg-gradient-to-br from-green-600 to-green-900"
     },
     basic: {
       primaryText: "#ffffff",

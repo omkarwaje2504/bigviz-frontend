@@ -2,17 +2,40 @@ import {
   S3Client,
   PutObjectCommand,
   DeleteObjectCommand,
+  ListBucketsCommand,
 } from "@aws-sdk/client-s3";
 import { DecryptData } from "@utils/cryptoUtils";
 import MyError from "@services/MyError";
 
-const bucketName = process.env.NEXT_PUBLIC_AWS_S3_BUCKET_NAME;
-const awsRegion = process.env.NEXT_PUBLIC_AWS_S3_REGION;
-const accessKeyId = process.env.NEXT_PUBLIC_AWS_ACCESS_KEY_ID;
-const secretAccessKey = process.env.NEXT_PUBLIC_AWS_SECRET_ACCESS_KEY;
+let bucketName: string,
+  awsRegion: string,
+  accessKeyId: string,
+  secretAccessKey: string;
+
+if (process.env.NEXT_PUBLIC_STORAGE_PROVIDER === "S3") {
+  bucketName = process.env.NEXT_PUBLIC_AWS_S3_BUCKET_NAME || "";
+  awsRegion = process.env.NEXT_PUBLIC_AWS_S3_REGION || "";
+  accessKeyId = process.env.NEXT_PUBLIC_AWS_ACCESS_KEY_ID || "";
+  secretAccessKey = process.env.NEXT_PUBLIC_AWS_SECRET_ACCESS_KEY || "";
+} else {
+  bucketName = process.env.NEXT_PUBLIC_R2_BUCKET_NAME || "";
+  awsRegion = process.env.NEXT_PUBLIC_R2_REGION || "";
+  accessKeyId = process.env.NEXT_PUBLIC_R2_ACCESS_KEY_ID || "";
+  secretAccessKey = process.env.NEXT_PUBLIC_R2_SECRET_ACCESS_KEY || "";
+}
+
+const R2AccountId = process.env.NEXT_PUBLIC_R2_ACCOUNT_ID;
 
 const s3 = new S3Client({
-  region: awsRegion,
+  ...(process.env.NEXT_PUBLIC_STORAGE_PROVIDER === "R2"
+    ? { endpoint: `https://${R2AccountId}.r2.cloudflarestorage.com` }
+    : null),
+  ...(process.env.NEXT_PUBLIC_STORAGE_PROVIDER === "R2"
+    ? { forcePathStyle: true }
+    : null),
+
+  region:
+    process.env.NEXT_PUBLIC_STORAGE_PROVIDER === "S3" ? awsRegion : "auto",
   ...(accessKeyId && secretAccessKey
     ? {
         credentials: {
@@ -50,6 +73,7 @@ async function GenerateFilePath(fileName: string, projectInfo: any) {
 
   return `production/photos/${year}/${monthData[month]}/${slug}/${employeeInfo.hash}/${fileName}`;
 }
+console.log("s4 cinta", s3);
 
 const UploadFile = async (
   projectData: any,
@@ -113,10 +137,14 @@ const UploadFile = async (
 };
 
 export const createS3Url = ({ name }: { name: string }) => {
-  return `https://${process.env.NEXT_PUBLIC_AWS_S3_BUCKET_NAME}.s3.amazonaws.com/${name}`;
+  const provider = process.env.NEXT_PUBLIC_STORAGE_PROVIDER;
+  if (provider === "S3") {
+    return `https://${process.env.NEXT_PUBLIC_AWS_S3_BUCKET_NAME}.s3.amazonaws.com/${name}`;
+  } else if (provider === "R2") {
+    return `https://${R2AccountId}.r2.cloudflarestorage.com/${bucketName}/${name}`;
+  }
+  throw new Error("Unsupported storage provider");
 };
-
-export default UploadFile;
 
 export const DeleteFile = async (name: any, projectData: any) => {
   const filePath = await GenerateFilePath(name, projectData);
@@ -158,3 +186,5 @@ export async function extractDomainAndSlug(webLink: string) {
     }
   }
 }
+
+export default UploadFile;

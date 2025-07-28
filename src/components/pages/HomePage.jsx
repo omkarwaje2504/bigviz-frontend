@@ -88,7 +88,13 @@ const HomePage = ({ projectData, projectId }) => {
           </div>
 
           <div className="flex flex-col sm:flex-row sm:space-y-0 sm:space-x-3 w-full md:w-auto">
-            <Link href={`register-new-ads`}>
+            <Link
+              href={
+                projectData?.features?.includes("Calendar")
+                  ? "register-new-ads"
+                  : "new-calendar-entry"
+              }
+            >
               <Button type="button" fullWidth={false} leftIcon={<FaUserPlus />}>
                 {ui.Dashboard.HomePageButtonLabel}
               </Button>

@@ -144,7 +144,6 @@ export default function RenderPage({ projectData, projectId }) {
         }),
       },
     );
-    
 
     if (trigger.ok) {
       setStatus("Triggered! Check GitHub Actions for progress.");
