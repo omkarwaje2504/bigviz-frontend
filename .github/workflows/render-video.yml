@@ -46,6 +46,7 @@ jobs:
           mkdir -p output
           echo "Using secret key: $MY_SECRET_KEY"
           echo "Rendering video with ID: ${{ github.event.inputs.renderId }}"
+          echo "Rendering formData with ID: ${{ github.event.inputs.formData }}"
           bunx remotion render src/remotion/index.ts YogaDay output/${{ github.event.inputs.renderId }}.mp4 --props='${{ github.event.inputs.formData }}'
 
 
