@@ -5,7 +5,7 @@ import YogaDay from "./YogaDay";
 export const RemotionRoot: React.FC = () => {
   return (
     <>
-      <Composition
+      {/* <Composition
         id="MyVideo"
         component={MyVideo}
         durationInFrames={400}
@@ -17,7 +17,7 @@ export const RemotionRoot: React.FC = () => {
           formData: { name: "omkar" },
           download: false,
         }}
-      />
+      /> */}
 
       <Composition
         id="YogaDay"
