@@ -1,35 +1,31 @@
 import { interpolate, staticFile, Video, AbsoluteFill, Audio, Sequence } from "remotion";
 import { getInputProps } from "remotion";
 
-type FormData = {
+interface YogaDayProps {
   name: string;
   photo: string;
   gender: string;
   speciality: string;
   clinic_name: string;
   clinic_address: string;
+  doctorAudio: {
+    downloadUrl: string;
+    duration: number;
+    text: string;
+  };
   language: string;
-};
+}
 
-const YogaDay: React.FC<{
-  frame: number;
-  formData?: FormData;
-  download: boolean;
-}> = ({ frame, formData, download }) => {
-  const input = getInputProps();
-  const parsedFormData = formData || JSON.parse(input.formData || "{}");
-
-  const {
-    language = "English",
-    gender = "Male",
-    name = "",
-    photo,
-    speciality = "",
-    clinic_address,
-    clinic_name,
-  } = parsedFormData;
-
-  console.log("YogaDay component rendered with formData:", parsedFormData);
+export const YogaDay: React.FC<YogaDayProps> = ({
+  name,
+  photo,
+  gender,
+  speciality,
+  clinic_name,
+  clinic_address,
+  doctorAudio,
+  language,
+}) => {
 
 
   return (
@@ -38,8 +34,8 @@ const YogaDay: React.FC<{
         <Video src={staticFile(`IPCA/YogaDay/${language}/Intro.mp4`)} />
       </Sequence>
       <Sequence from={192} durationInFrames={1000}>
-        <AbsoluteFill>
-          <div>
+        <AbsoluteFill style={{ backgroundColor: "black" }}>
+          <div className="text-white">
             {name},{speciality},{clinic_address},{clinic_name}
           </div>
         </AbsoluteFill>
