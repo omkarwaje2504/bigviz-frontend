@@ -35,7 +35,7 @@ const YogaDay: React.FC<{
   return (
     <div>
       <Sequence from={0} durationInFrames={192}>
-        <Video src={staticFile(`IPCA/YogaDay/${language}/Intro.mp4`)} />
+        <Video src={staticFile(`/IPCA/YogaDay/${language}/Intro.mp4`)} />
       </Sequence>
       <Sequence from={192} durationInFrames={1000}>
         <AbsoluteFill>
