@@ -1,5 +1,4 @@
-import { interpolate, staticFile, Video, AbsoluteFill, Audio, Sequence } from "remotion";
-import { getInputProps } from "remotion";
+import { staticFile, Video, AbsoluteFill, Sequence } from "remotion";
 
 interface YogaDayProps {
   name: string;
@@ -26,8 +25,6 @@ export const YogaDay: React.FC<YogaDayProps> = ({
   doctorAudio,
   language,
 }) => {
-
-
   return (
     <div>
       <Sequence from={0} durationInFrames={192}>
