@@ -41,7 +41,6 @@ export default function RenderPage({ projectData, projectId }) {
   const [type, setType] = useState("video");
   const [selected, setSelected] = useState("");
   const [formData, setFormData] = useState();
-  const [compositionMetadata, setCompositionMetadata] = useState();
   const [renderVideoStatus, setRenderVideoStatus] = useState(null);
   const [status, setStatus] = useState("");
 
@@ -50,28 +49,7 @@ export default function RenderPage({ projectData, projectId }) {
     if (getFormData) {
       setFormData(getFormData);
     }
-    getCompositionsData();
   }, []);
-
-  const getCompositionsData = async () => {
-    try {
-      await loadScript("/bundle.js");
-      const compositions = await window.getCompositions?.();
-      console.log(compositions);
-      if (!compositions) throw new Error("getCompositions() missing.");
-
-      // const comp = compositions.find(
-      //   (c) => c.id === projectData?.artwork?.id || "YogaDay",
-      // );
-      const comp = compositions.find((c) => c.id === "YogaDay");
-
-      if (!comp)
-        throw new Error(`Composition "${projectData?.artwork?.id}" not found.`);
-      setCompositionMetadata(comp);
-    } catch (error) {
-      console.error("Error fetching compositions:", error);
-    }
-  };
 
   useEffect(() => {
     const random =
@@ -81,39 +59,9 @@ export default function RenderPage({ projectData, projectId }) {
     const timer = setTimeout(() => {
       setLoading(false);
       setUrl("data");
-    }, 6000);
+    }, 60);
     return () => clearTimeout(timer);
   }, []);
-  const handleDownload = async () => {
-    try {
-      const videoBlob = await PrepareVideo({
-        compositionName: "MyVideo",
-        props: {
-          download: true,
-          formData: {
-            name: "Dr. Sushant Patil singh",
-            speciality: "Physician",
-            clinic_name: "",
-            clinic_address: "",
-            photo:
-              "https://pixpro.s3.ap-south-1.amazonaws.com/production/cropped/2025/01/folic-acid-awareness-2025/krunal-jayantibhai-patel-116214/6e653b57-5eca-4e0a-918c-789682f672e9.png",
-            gender: "Female",
-            language: "English",
-          },
-        }, // or any dynamic props
-        onProgress: (msg, frame, total) =>
-          setRenderVideoStatus(Math.round((frame / total) * 100, 0)),
-      });
-
-      const url = URL.createObjectURL(videoBlob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "rendered-video.mp4";
-      a.click();
-    } catch (err) {
-      console.error("Render failed:", err);
-    }
-  };
 
   const triggerWorkflow = async () => {
     setStatus("Triggering render...");
@@ -146,6 +94,7 @@ export default function RenderPage({ projectData, projectId }) {
     );
 
     if (trigger.ok) {
+      console.log("Triggered Data",trigger)
       setStatus("Triggered! Check GitHub Actions for progress.");
     } else {
       setStatus("Failed to trigger workflow.");
@@ -201,54 +150,12 @@ export default function RenderPage({ projectData, projectId }) {
     <div className="min-h-screen bg-gray-950 text-white flex flex-col items-center justify-center p-3s">
       <div className="w-full max-w-4xl bg-gray-900 rounded-lg p-1 shadow-lg">
         <button onClick={triggerWorkflow}>Render MyVideo</button>
-        {type === "video" ? (
-          <Player
-            component={MyVideo}
-            inputProps={{
-              download: false,
-              formData: {
-                name: "Dr. Sushant Patil singh",
-                speciality: "Physician",
-                clinic_name: "",
-                clinic_address: "",
-                photo:
-                  "https://pixpro.s3.ap-south-1.amazonaws.com/production/cropped/2025/01/folic-acid-awareness-2025/krunal-jayantibhai-patel-116214/6e653b57-5eca-4e0a-918c-789682f672e9.png",
-                gender: "Female",
-                language: "English",
-              },
-            }}
-            compositionWidth={compositionMetadata?.width || 1280}
-            compositionHeight={compositionMetadata?.height || 720}
-            fps={compositionMetadata?.fps || 30}
-            durationInFrames={compositionMetadata?.durationInFrames || 300}
-            controls
-            style={{
-              width: "100%",
-              borderRadius: "8px",
-              border: "1px solid #444",
-            }}
-          />
-        ) : (
-          <img
-            src={url}
-            alt="Rendered Preview"
-            className="w-full rounded-md border border-gray-700"
-          />
-        )}
-
         <div className="mt-1 flex justify-between p-4">
           <button
             onClick={() => router.back()}
             className="bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded text-white flex items-center"
           >
             <FaArrowLeft className="mr-2" /> Back
-          </button>
-          <button
-            onClick={handleDownload}
-            className="bg-red-600 hover:bg-red-700 px-4 py-2 rounded text-white flex items-center"
-          >
-            <FaDownload className="mr-2" />
-            {renderVideoStatus}% - Download {type}
           </button>
         </div>
       </div>
