@@ -48,9 +48,13 @@ jobs:
           bun install
 
       - name: Render video
+        env:
+          MY_SECRET_KEY: ${{ secrets.NEXT_PUBLIC_GITHUB_TOKEN }}
         run: |
           mkdir -p output
+          echo "Using secret key: $MY_SECRET_KEY"
           bunx remotion render src/remotion/index.ts YogaDay output/${{ github.event.inputs.renderId }}.mp4 --props='${{ github.event.inputs.formData }}'
+
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
