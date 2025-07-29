@@ -27,12 +27,13 @@ export const YogaDay: React.FC<YogaDayProps> = ({
 }) => {
   return (
     <div>
-      <Sequence from={0} durationInFrames={192}>
+      {/* <Sequence from={0} durationInFrames={192}>
         <Video src={staticFile(`IPCA/YogaDay/${language}/Intro.mp4`)} />
-      </Sequence>
-      <Sequence from={192} durationInFrames={1000}>
+      </Sequence> */}
+      <Sequence from={0} durationInFrames={200}>
         <AbsoluteFill style={{ backgroundColor: "black" }}>
           <div className="text-white">
+            <p>Hello {name}</p>
             {name},{speciality},{clinic_address},{clinic_name}
           </div>
         </AbsoluteFill>
