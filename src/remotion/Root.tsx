@@ -1,6 +1,6 @@
 import { Composition } from "remotion";
 import MyVideo from "./Video";
-import YogaDay from "./IPCA/YogaDay";
+import YogaDay from "./YogaDay"";
 
 export const RemotionRoot: React.FC = () => {
   return (
