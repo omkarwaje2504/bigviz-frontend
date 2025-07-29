@@ -1,4 +1,5 @@
 import { interpolate, staticFile, Video, AbsoluteFill, Audio } from "remotion";
+import { getInputProps } from "remotion";
 
 type FormData = {
   name: string;
@@ -14,9 +15,9 @@ const YogaDay: React.FC<{
   frame: number;
   formData?: FormData;
   download: boolean;
-}> = ({ frame, formData = undefined, download }) => {
-  console.log("component", download, frame, formData);
-  const frameData = frame;
+}> = ({ frame, formData, download }) => {
+  const input = getInputProps();
+  const parsedFormData = formData || JSON.parse(input.formData || "{}");
 
   const {
     language = "English",
@@ -26,9 +27,9 @@ const YogaDay: React.FC<{
     speciality = "",
     clinic_address,
     clinic_name,
-  } = formData || {};
+  } = parsedFormData;
 
-  console.log()
+  console.log(name,speciality, clinic_name, clinic_address)
 
   const introdurations: Record<string, Record<string, number>> = {
     English: { Male: 150, Female: 150 },
