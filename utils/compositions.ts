@@ -1,20 +1,20 @@
-import YogaDay from "../src/remotion/IPCA/YogaDay";
-import MyVideo from "../src/remotion/Video";
+import YogaDay from "../src/remotion/YogaDay";
+// import MyVideo from "../src/remotion/Video";
 
 export const compositions = [
-  {
-    id: "MyVideo",
-    component: MyVideo,
-    width: 1280,
-    height: 720,
-    durationInFrames: 200,
-    fps: 30,
-    defaultProps: {
-      frame: 0,
-      download: false,
-      name: "omkar",
-    },
-  },
+  // {
+  //   id: "MyVideo",
+  //   component: MyVideo,
+  //   width: 1280,
+  //   height: 720,
+  //   durationInFrames: 200,
+  //   fps: 30,
+  //   defaultProps: {
+  //     frame: 0,
+  //     download: false,
+  //     name: "omkar",
+  //   },
+  // },
   {
     id: "YogaDay",
     component: YogaDay,
