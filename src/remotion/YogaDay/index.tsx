@@ -1,4 +1,4 @@
-import { staticFile, Video, AbsoluteFill, Sequence } from "remotion";
+import { AbsoluteFill, Sequence } from "remotion";
 
 interface YogaDayProps {
   name: string;
@@ -26,19 +26,16 @@ export const YogaDay: React.FC<YogaDayProps> = ({
   language,
 }) => {
   return (
-    <div>
-      {/* <Sequence from={0} durationInFrames={192}>
-        <Video src={staticFile(`IPCA/YogaDay/${language}/Intro.mp4`)} />
-      </Sequence> */}
-      <Sequence from={0} durationInFrames={200}>
-        <AbsoluteFill style={{ backgroundColor: "black" }}>
-          <div className="text-white">
-            <p>Hello {name}</p>
-            {name},{speciality},{clinic_address},{clinic_name}
-          </div>
-        </AbsoluteFill>
-      </Sequence>
-    </div>
+    <Sequence from={0} durationInFrames={200}>
+      <AbsoluteFill style={{ backgroundColor: "black", display: "flex", justifyContent: "center", alignItems: "center" }}>
+        <div style={{ color: "white", textAlign: "center", fontSize: "40px", lineHeight: 1.5 }}>
+          <p>Hello {name}</p>
+          <p>{speciality}</p>
+          <p>{clinic_name}</p>
+          <p>{clinic_address}</p>
+        </div>
+      </AbsoluteFill>
+    </Sequence>
   );
 };
 
