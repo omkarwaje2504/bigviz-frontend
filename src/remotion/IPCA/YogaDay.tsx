@@ -28,6 +28,7 @@ const YogaDay: React.FC<{
     clinic_address,
     clinic_name,
   } = parsedFormData;
+  const frameData = frame;
 
   console.log(name,speciality, clinic_name, clinic_address)
 
