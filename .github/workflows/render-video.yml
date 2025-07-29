@@ -9,6 +9,9 @@ on:
       formData:
         description: "FormData for the video"
         required: true
+      renderId:
+        required: true
+        description: 'Unique ID for the video render'
 
 jobs:
   render:
@@ -47,10 +50,10 @@ jobs:
       - name: Render video
         run: |
           mkdir -p output
-          bunx remotion render src/remotion/index.ts YogaDay output/out.mp4 --props='${{github.event.inputs.formData}}'
+          bunx remotion render src/remotion/index.ts YogaDay output/${{ github.event.inputs.renderId }}.mp4 --props='${{ github.event.inputs.formData }}'
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: video-${{ github.event.inputs.name }}
-          path: output/${{ github.event.inputs.name }}.mp4
+          name: video-${{ github.event.inputs.renderId }}
+          path: output/${{ github.event.inputs.renderId }}.mp4

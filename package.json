@@ -46,6 +46,7 @@
     "styled-components": "^6.1.19",
     "tailwind-merge": "3.0.1",
     "ua-parser-js": "^2.0.4",
+    "uuid": "^11.1.0",
     "video.js": "^8.23.3",
     "wavesurfer.js": "^7.9.9",
     "zod": "3.22.3"
