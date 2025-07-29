@@ -30,7 +30,7 @@ export const YogaDay: React.FC<YogaDayProps> = ({
       <AbsoluteFill style={{ backgroundColor: "black", display: "flex", justifyContent: "center", alignItems: "center" }}>
         <div style={{ color: "white", textAlign: "center", fontSize: "40px", lineHeight: 1.5 }}>
           <p>Hello {name}</p>
-          <p>{speciality}</p>
+          <p className="text-red-500">{speciality}</p>
           <p>{clinic_name}</p>
           <p>{clinic_address}</p>
         </div>

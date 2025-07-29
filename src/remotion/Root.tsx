@@ -1,5 +1,6 @@
 import { Composition } from "remotion";
 import YogaDay from "./YogaDay";
+import "../../styles/global.css";
 
 export const RemotionRoot: React.FC = () => {
   return (
