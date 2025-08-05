@@ -5,7 +5,6 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { FaArrowLeft, FaDownload } from "react-icons/fa";
 import { Player } from "@remotion/player";
 import { DecryptData } from "@utils/cryptoUtils";
-import MyVideo from "src/remotion/Video";
 import YogaDay from "../../remotion/IPCA/YogaDay";
 
 const quizQuestions = [
