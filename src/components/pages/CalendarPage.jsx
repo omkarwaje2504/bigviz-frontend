@@ -11,6 +11,8 @@ import {
   FaImage,
   FaSyncAlt,
   FaExclamationTriangle,
+  FaArrowRight,
+  FaSkippingRope,
 } from "react-icons/fa";
 import { Cropper, RectangleStencil } from "react-advanced-cropper";
 import "react-advanced-cropper/dist/style.css";
@@ -23,7 +25,6 @@ import { useRouter } from "next/navigation";
 import config from "@utils/Config";
 import UploadFile from "@services/uploadFile";
 import { getMimeType } from "advanced-cropper/extensions/mimes";
-import { toast } from "react-hot-toast";
 
 const months = [
   { name: "January", short: "Jan", number: 1 },
@@ -154,7 +155,7 @@ export default function CalendarPage({
   projectId,
 }) {
   const [currentMonth, setCurrentMonth] = useState(0);
-  const [calendarData, setCalendarData] = useState({});
+  const [calendarData, setCalendarData] = useState(new Array(12).fill(null));
   const [userInfo, setUserInfo] = useState({
     name: "",
     role: 1,
@@ -164,7 +165,6 @@ export default function CalendarPage({
 
   // Cropper states
   const [showCropper, setShowCropper] = useState(false);
-  const [selectedMonth, setSelectedMonth] = useState(null);
   const [image, setImage] = useState(null);
   const [originalFile, setOriginalFile] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -178,6 +178,7 @@ export default function CalendarPage({
 
   const ui = config(projectData);
   const router = useRouter();
+  const isDarkMode = "dark";
   const { w: cropWidth, h: cropHeight } = useMemo(
     () => getPhotoDims(projectData),
     [projectData],
@@ -185,23 +186,24 @@ export default function CalendarPage({
 
   // Memoized calculations
   const completedMonths = useMemo(
-    () =>
-      months.filter(
-        (_, index) => calendarData[months[index].name]?.croppedImage,
-      ).length,
+    () => calendarData.filter((item) => item?.croppedImage).length,
     [calendarData],
   );
 
   const progress = useMemo(
-    () => (completedMonths / 12) * 100,
-    [completedMonths],
+    () => ((currentMonth + 1) / 12) * 100,
+    [currentMonth],
   );
 
-  // Initialize data
   useEffect(() => {
     try {
       const getUserInfo = DecryptData("empData");
-      const getCalendarData = formData?.calendarData || {};
+      const getCalendarData = formData?.calendarData || [];
+      if (Array.isArray(getCalendarData)) {
+        setCalendarData(getCalendarData);
+      } else {
+        setCalendarData(new Array(12).fill(null));
+      }
 
       if (getUserInfo) {
         setUserInfo({
@@ -210,23 +212,14 @@ export default function CalendarPage({
           designation: getUserInfo?.role_name || "Medical Representative",
         });
       }
-
-      if (getCalendarData && typeof getCalendarData === "object") {
-        setCalendarData(getCalendarData);
-        const incompleteMonth = months.findIndex(
-          (_, index) => !getCalendarData[months[index].name]?.croppedImage,
-        );
-        setCurrentMonth(incompleteMonth === -1 ? 0 : incompleteMonth);
-      }
     } catch (error) {
       console.error("Error initializing calendar data:", error);
       setError("Failed to load calendar data");
     }
   }, [formData]);
 
-  // Update form data when calendar data changes
   useEffect(() => {
-    if (Object.keys(calendarData).length > 0) {
+    if (calendarData.some((item) => item !== null)) {
       try {
         setFormData((prev) => ({
           ...prev,
@@ -238,7 +231,6 @@ export default function CalendarPage({
     }
   }, [calendarData, setFormData]);
 
-  // Cleanup on unmount
   useEffect(() => {
     return () => {
       if (cleanupTimeoutRef.current) {
@@ -251,23 +243,16 @@ export default function CalendarPage({
     };
   }, [image]);
 
-  const handleMonthClick = useCallback(
-    (monthIndex) => {
-      if (isSaving || isLoading) return;
-
-      setError(null);
-      setSelectedMonth(monthIndex);
-      setCurrentMonth(monthIndex);
-      setShowCropper(true);
-      setCropperReady(false);
-
-      // Trigger file input with delay
-      cleanupTimeoutRef.current = setTimeout(() => {
-        inputRef.current?.click();
-      }, 100);
-    },
-    [isSaving, isLoading],
-  );
+  const handleUploadClick = useCallback(() => {
+    if (isSaving || isLoading) return;
+    setError(null);
+    setShowCropper(true);
+    setCropperReady(false);
+    // Trigger file input with delay
+    cleanupTimeoutRef.current = setTimeout(() => {
+      inputRef.current?.click();
+    }, 100);
+  }, [isSaving, isLoading]);
 
   const onLoadImage = useCallback((event) => {
     event.preventDefault();
@@ -352,12 +337,7 @@ export default function CalendarPage({
   }, []);
 
   const saveCroppedImage = useCallback(async () => {
-    if (
-      !cropperRef.current ||
-      !originalFile ||
-      selectedMonth === null ||
-      !cropperReady
-    ) {
+    if (!cropperRef.current || !originalFile || !cropperReady) {
       setError("Cropper not ready. Please try again.");
       return;
     }
@@ -366,7 +346,6 @@ export default function CalendarPage({
     setError(null);
 
     try {
-      // Add delay to ensure cropper is fully ready
       await new Promise((resolve) => setTimeout(resolve, 150));
 
       const canvas = cropperRef.current.getCanvas({
@@ -378,7 +357,7 @@ export default function CalendarPage({
         throw new Error("Failed to generate cropped image");
       }
 
-      const dataUrl = canvas.toDataURL("image/png", 0.95); // Add quality parameter
+      const dataUrl = canvas.toDataURL("image/png", 0.95);
       const imageBlob = dataURLToBlob(dataUrl);
 
       const blobName = generateUniqueFileName("calendar");
@@ -396,15 +375,16 @@ export default function CalendarPage({
         throw new Error("Failed to upload images");
       }
 
-      const monthName = months[selectedMonth].name;
-      setCalendarData((prev) => ({
-        ...prev,
-        [monthName]: {
+      const monthName = months[currentMonth].name;
+      setCalendarData((prev) => {
+        const newData = [...prev];
+        newData[currentMonth] = {
           croppedImage: uploadedCroppedFileUrl,
           originalImage: uploadedOriginalFileUrl,
           uploadedAt: new Date().toISOString(),
-        },
-      }));
+        };
+        return newData;
+      });
 
       // Close cropper and reset states
       closeCropper();
@@ -417,11 +397,11 @@ export default function CalendarPage({
   }, [
     cropperRef,
     originalFile,
-    selectedMonth,
     cropperReady,
     cropWidth,
     cropHeight,
     projectData,
+    currentMonth,
   ]);
 
   const closeCropper = useCallback(() => {
@@ -429,7 +409,6 @@ export default function CalendarPage({
     setImage(null);
     setOriginalFile(null);
     setCropperReady(false);
-    setSelectedMonth(null);
     setError(null);
     setIsLoading(false);
 
@@ -438,62 +417,44 @@ export default function CalendarPage({
     }
   }, [image]);
 
-  const isMonthCompleted = useCallback(
-    (monthIndex) => {
-      return Boolean(calendarData[months[monthIndex].name]?.croppedImage);
-    },
-    [calendarData],
-  );
+  const isCurrentMonthCompleted = useCallback(() => {
+    return Boolean(calendarData[currentMonth]?.croppedImage);
+  }, [calendarData, currentMonth]);
+
+  const handlePrevious = useCallback(() => {
+    if (currentMonth > 0) {
+      setCurrentMonth(currentMonth - 1);
+    }
+  }, [currentMonth]);
+
+  const handleNext = useCallback(() => {
+    if (currentMonth < 11) {
+      setCurrentMonth(currentMonth + 1);
+    }
+  }, [currentMonth]);
+
+  const handleSkip = useCallback(() => {
+    if (currentMonth < 11) {
+      setCurrentMonth(currentMonth + 1);
+    }
+  }, [currentMonth]);
 
   const shuffleCalendarImages = () => {
-    const uploaded = Object.entries(calendarData).filter(
-      ([_, item]) => item?.croppedImage,
-    );
+    const uploadedEntries = calendarData.filter((item) => item?.croppedImage);
 
-    if (uploaded.length === 0) {
+    if (uploadedEntries.length === 0) {
       toast.error("Upload at least 1 image to shuffle.");
       return;
     }
 
-    // Deduplicate unique URLs
-    const unique = Array.from(
-      new Map(uploaded.map(([mn, data]) => [data.croppedImage, mn])).entries(),
-    );
-    // Map URL to a color index
-    const urlColorMap = {};
-    unique.forEach(([url], idx) => {
-      urlColorMap[url] = idx % monthColors.length;
-    });
+    const shuffled = [...uploadedEntries, ...uploadedEntries];
+    const newCalendarData = new Array(12);
 
-    // shuffle array of URLs to fill
-    const urls = unique.map(([url]) => url);
-    const shuffledUrls = Array(12)
-      .fill()
-      .map((_, i) => urls[i % urls.length]);
+    for (let i = 0; i < 12; i++) {
+      newCalendarData[i] = shuffled[i % shuffled.length];
+    }
 
-    const assigned = {};
-    months.forEach((m, i) => {
-      const existing = calendarData[m.name]?.croppedImage;
-      if (existing) {
-        assigned[m.name] = {
-          ...calendarData[m.name],
-          colorIndex: urlColorMap[existing],
-          isDuplicate: false,
-        };
-      } else {
-        const url = shuffledUrls[i];
-        assigned[m.name] = {
-          croppedImage: url,
-          originalImage: null,
-          uploadedAt: null,
-          colorIndex: urlColorMap[url],
-          isDuplicate: true,
-        };
-      }
-    });
-
-    setCalendarData(assigned);
-    toast.success("Calendar shuffled!");
+    setCalendarData(newCalendarData);
   };
 
   const handleSubmit = useCallback(() => {
@@ -502,7 +463,6 @@ export default function CalendarPage({
     }
   }, [completedMonths, projectId, router]);
 
-  // Error display component
   const ErrorDisplay = ({ message, onClose }) => (
     <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg flex items-center justify-between">
       <div className="flex items-center gap-2">
@@ -517,7 +477,8 @@ export default function CalendarPage({
     </div>
   );
 
-  console.log(formData);
+  const currentMonthData = months[currentMonth];
+  const currentMonthUpload = calendarData[currentMonth];
 
   return (
     <main className="relative">
@@ -530,133 +491,153 @@ export default function CalendarPage({
         disabled={isSaving || isLoading}
       />
 
-      {/* Error Display */}
       {error && <ErrorDisplay message={error} onClose={() => setError(null)} />}
 
-      {/* Calendar Grid View */}
-      <div className={`dark:bg-gray-900 bg-white rounded-lg shadow-lg mb-8`}>
-        <div className="p-1">
-          <h2 className="text-xl font-semibold">Calendar Photo Upload</h2>
-          <p className="text-sm text-gray-400 mb-4">
-            Click on months to upload photo ({completedMonths}/12 completed)
-          </p>
-
-          {/* Progress Bar */}
-          <div
-            className={`w-full bg-gray-700 bg-gray-200 rounded-full h-2 mb-4`}
-          >
+      <div
+        className={`${isDarkMode ? "bg-gray-900" : "bg-white"} rounded-lg shadow-lg mb-8`}
+      >
+        <div className="">
+          <div className="text-center mb-1">
             <div
-              className={`h-2 rounded-full transition-all duration-300 ${ui?.theme?.selectedBg || "bg-blue-600"}`}
-              style={{ width: `${progress}%` }}
-            />
+              className={`w-full ${isDarkMode ? "bg-gray-700" : "bg-gray-200"} rounded-full h-5 mb-3`}
+            >
+              <div
+                className={`h-5 rounded-full transition-all duration-300 ${ui?.theme?.selectedBg || "bg-blue-600 text-center"}`}
+                style={{ width: `${progress}%` }}
+              />
+            </div>
           </div>
 
-          <div className="grid grid-cols-3 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {months.map((month, index) => {
-              const data = calendarData[month.name];
-              const isCompleted = Boolean(data?.croppedImage);
-              const isDuplicate = data?.isDuplicate;
-              const colorIndex = data?.colorIndex ?? 0;
+          {/* Current Month Display */}
+          <div className="text-center mb-3">
+            <div
+              className={`inline-block p-2 px-6 w-full rounded-xl border-2 ${monthColors[currentMonth % monthColors.length]} mb-2`}
+            >
+              <h2 className="text-3xl font-bold">{currentMonthData.name}</h2>
+              <p className="text-md opacity-75">
+                Month {currentMonth + 1} of 12
+              </p>
+            </div>
 
-              const baseColor =
-                data?.colorIndex !== undefined
-                  ? monthColors[(data?.colorIndex ?? 0) % monthColors.length]
-                  : "#ccc";
-              const lighterShade = baseColor
-                .replace("bg-", "bg-opacity-50 ")
-                .replace("border-", "border-opacity-50 ")
-                .replace("text-", "text-opacity-50 ");
-
-              return (
-                <div
-                  key={month.name}
-                  onClick={() => handleMonthClick(index)}
-                  className={`relative p-1 rounded-lg border-2 cursor-pointer transition-all duration-200 hover:shadow-md ${
-                    isCompleted
-                      ? isDuplicate
-                        ? lighterShade // faded duplicate
-                        : baseColor // full original
-                      : "#ccc"
-                  } ${isSaving || isLoading ? "opacity-50 cursor-not-allowed" : ""}`}
-                >
-                  <div className="text-center">
-                    <div className="text-lg font-semibold">{month.short}</div>
-                    <FaImage
-                      className={`mx-auto mt-2 text-gray-400 ${ui?.theme?.selectedText || "text-blue-500"}`}
-                    />
-                  </div>
-
-                  {isCompleted && (
-                    <div
-                      className={`absolute -top-2 -right-2 ${
-                        ui?.theme?.selectedBg || "bg-green-500"
-                      } text-white rounded-full p-1`}
-                    >
-                      <FaCheck className="text-xs" />
-                    </div>
-                  )}
-
-                  {currentMonth === index && (
-                    <div
-                      className={`absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-2 h-2 ${
-                        ui?.theme?.selectedBg || "bg-blue-500"
-                      } rounded-full`}
-                    />
-                  )}
-                  {isDuplicate && (
-                    <div className="absolute bottom-1 right-1 bg-white bg-opacity-80 text-xs px-1 rounded text-gray-500">
-                      Copy
-                    </div>
-                  )}
+            {/* Upload Status */}
+            {currentMonthUpload?.croppedImage ? (
+              <div className="mb-3">
+                <div className="flex items-center justify-center gap-2 text-green-600 mb-2">
+                  <FaCheck className="text-lg" />
+                  <span className="text-md font-semibold">Image Uploaded</span>
                 </div>
-              );
-            })}
+                <div className="max-w-md mx-auto mb-4">
+                  <img
+                    src={currentMonthUpload.croppedImage}
+                    alt={`${currentMonthData.name} preview`}
+                    className="w-full h-48 object-cover rounded-lg border-2 border-green-400"
+                  />
+                </div>
+                <Button
+                  onClick={handleUploadClick}
+                  leftIcon={<FaUpload />}
+                  disabled={isSaving || isLoading}
+                >
+                  {isLoading ? "Processing..." : "Reupload Photo"}
+                </Button>
+              </div>
+            ) : (
+              <div className="mb-6">
+                <div className="flex items-center justify-center gap-2 text-gray-500 mb-4">
+                  <FaImage className="text-xl" />
+                  <span className="text-lg">No image uploaded</span>
+                </div>
+                <Button
+                  onClick={handleUploadClick}
+                  leftIcon={<FaUpload />}
+                  disabled={isSaving || isLoading}
+                  className="mx-auto"
+                >
+                  {isLoading ? "Processing..." : "Upload Photo"}
+                </Button>
+              </div>
+            )}
+          </div>
+
+          {/* Navigation Controls */}
+          <div className="flex justify-between items-center">
+            {/* Previous Button */}
+            <Button
+              onClick={handlePrevious}
+              disabled={currentMonth === 0}
+              variant="secondary"
+              leftIcon={<FaChevronLeft />}
+              fullWidth={false}
+            >
+              Previous
+            </Button>
+
+            {currentMonth === 11 ? (
+              <Button
+                onClick={shuffleCalendarImages}
+                disabled={completedMonths === 0}
+                leftIcon={<FaCalendarAlt />}
+                fullWidth={false}
+              >
+                Shuffle Images
+              </Button>
+            ) : (
+              <div className="flex gap-2">
+                {!isCurrentMonthCompleted() && (
+                  <Button
+                    onClick={handleSkip}
+                    variant="outline"
+                    leftIcon={<FaArrowRight />}
+                    fullWidth={false}
+                  >
+                    Skip
+                  </Button>
+                )}
+                {isCurrentMonthCompleted() && (
+                  <Button
+                    onClick={handleNext}
+                    disabled={!isCurrentMonthCompleted()}
+                    leftIcon={<FaChevronRight />}
+                    fullWidth={false}
+                  >
+                    Next
+                  </Button>
+                )}
+              </div>
+            )}
+          </div>
+          <div className="flex items-center gap-1  justify-center mt-4 w-full">
+            {months.map((_, index) => (
+              <div
+                key={index}
+                className={`w-2 h-2 rounded-full ${
+                  index === currentMonth
+                    ? ui?.theme?.selectedBg || "bg-blue-600"
+                    : calendarData[index]?.croppedImage
+                      ? "bg-green-500"
+                      : "bg-gray-300"
+                }`}
+              />
+            ))}
           </div>
         </div>
       </div>
 
-      {/* Action Buttons */}
-      <div className={`dark:bg-gray-800 bg-white rounded-lg shadow-lg p-6`}>
-        <div className="flex gap-3">
-          <Button
-            onClick={shuffleCalendarImages}
-            leftIcon={<FaSyncAlt />}
-            fullWidth={false}
-            className="mt-4"
-          >
-            Shuffle & Fill Calendar
-          </Button>
-
-          <div className="flex justify-center">
-            <Button
-              onClick={handleSubmit}
-              disabled={completedMonths !== 12 || !projectId}
-              leftIcon={<FaCalendarAlt />}
-              fullWidth={false}
-            >
-              Create Calendar ({completedMonths}/12)
-            </Button>
-          </div>
-        </div>
-
-        {/* Helper Text */}
-        <div className={`mt-6 p-4 dark:bg-gray-700 bg-blue-50 rounded-lg`}>
+      <div>
+        <div
+          className={`p-4 ${isDarkMode ? "bg-gray-700" : "bg-blue-50"} rounded-lg`}
+        >
           <div className="flex items-start gap-3">
             <FaUpload
               className={`mt-1 ${ui?.theme?.selectedText || "text-blue-600"}`}
             />
             <div className="text-sm">
               <p className="font-medium mb-1">Requirements & Tips:</p>
-              <ul className={`dark:text-gray-300 text-gray-600 space-y-1`}>
+              <ul
+                className={`${isDarkMode ? "text-gray-300" : "text-gray-600"} space-y-1`}
+              >
                 <li>• File size: Max {MAX_FILE_SIZE / (1024 * 1024)}MB</li>
                 <li>• Formats: JPG, PNG, WebP</li>
-                <li>
-                  • Minimum size: {MIN_IMAGE_DIMENSION}x{MIN_IMAGE_DIMENSION}px
-                </li>
-                <li>
-                  • Recommended: {RECOMMENDED_DIMENSION}x{RECOMMENDED_DIMENSION}
-                  px or higher
-                </li>
                 <li>• Choose images that represent each month or season</li>
               </ul>
             </div>
@@ -664,17 +645,15 @@ export default function CalendarPage({
         </div>
       </div>
 
-      {/* Image Cropper Modal */}
       {showCropper && (
         <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
           <div
-            className={`bg-white dark:bg-gray-900 rounded-lg shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden`}
+            className={`${isDarkMode ? "bg-gray-800" : "bg-white"} rounded-lg shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden`}
           >
             {/* Modal Header */}
             <div className="flex items-center justify-between p-4 border-b border-gray-200">
               <h3 className="text-lg font-semibold">
-                Crop Image for{" "}
-                {selectedMonth !== null ? months[selectedMonth].name : ""}
+                Crop Image for {currentMonthData.name}
               </h3>
               <button
                 onClick={closeCropper}

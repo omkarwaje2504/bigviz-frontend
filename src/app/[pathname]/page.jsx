@@ -1,15 +1,13 @@
 import LoginPage from "@components/pages/LoginPage";
 import { getAllProjectsCached } from "../../../utils/projectCache";
-import config from "../../../utils/Config";
+import Config from "../../../utils/Config";
 
 export async function generateStaticParams() {
   const projects = await getAllProjectsCached();
   console.log("generateStaticParams", projects.length);
   return projects.map((project) => ({
     pathname:
-      project.id?.toString() ||
-      project.name?.toString() ||
-      project.web_link?.split("/").pop(),
+      project.project_hash?.toString()
   }));
 }
 
@@ -19,9 +17,7 @@ export async function generateMetadata({ params }) {
 
   const projectInfo = projects.find(
     (project) =>
-      project.id?.toString() === pathname ||
-      project.name?.toString() === pathname ||
-      project.web_link?.split("/").pop() === pathname,
+      project.project_hash?.toString() === pathname
   );
 
   return {
@@ -45,15 +41,11 @@ export default async function Home({ params }) {
   try {
     const { pathname } = await params;
     const projects = await getAllProjectsCached();
-
     const projectInfo = projects.find(
-      (project) =>
-        project.id?.toString() === pathname ||
-        project.name?.toString() === pathname ||
-        project.web_link?.split("/").pop() === pathname,
+      (project) => project.project_hash?.toString() === pathname,
     );
-
-    const ui = await config(projectInfo);
+   
+    const ui = await Config(projectInfo);
     return <LoginPage projectData={projectInfo} projectId={pathname} ui={ui} />;
   } catch (error) {
     console.error("Error in Home component:", error);

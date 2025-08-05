@@ -1,7 +1,6 @@
 import "../../styles/global.css";
 import { Metadata, Viewport } from "next";
 
-
 export const metadata: Metadata = {
   title: "Remotion and Next.js",
   description: "Remotion and Next.js",

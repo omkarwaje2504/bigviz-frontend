@@ -1,8 +1,7 @@
 import {
   S3Client,
   PutObjectCommand,
-  DeleteObjectCommand,
-  ListBucketsCommand,
+  DeleteObjectCommand
 } from "@aws-sdk/client-s3";
 import { DecryptData } from "@utils/cryptoUtils";
 import MyError from "@services/MyError";
@@ -140,7 +139,7 @@ export const createS3Url = ({ name }: { name: string }) => {
   if (provider === "S3") {
     return `https://${process.env.NEXT_PUBLIC_AWS_S3_BUCKET_NAME}.s3.amazonaws.com/${name}`;
   } else if (provider === "R2") {
-    return `https://${R2AccountId}.r2.cloudflarestorage.com/${bucketName}/${name}`;
+    return `https://pub-55257b9217554e4cad3b45d7ee44674b.r2.dev/${name}`;
   }
   throw new Error("Unsupported storage provider");
 };

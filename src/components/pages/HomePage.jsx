@@ -9,11 +9,12 @@ import Header from "@components/ui/Header";
 import LoadingPage from "@components/ui/LoadingPage";
 import Dashboard from "@components/ui/Dashboard";
 import Link from "next/link";
+import Config from "@utils/Config";
 import { DecryptData, RemoveData } from "@utils/cryptoUtils";
 import { FetchDoctors } from "@actions/user";
+import config from "@utils/Config";
 
-
-const HomePage = ({ projectData, projectId,ui }) => {
+const HomePage = ({ projectData, projectId }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [members, setMembers] = useState([]);
   const [loadMembers, setLoadMembers] = useState(true);
@@ -24,6 +25,7 @@ const HomePage = ({ projectData, projectId,ui }) => {
     avatar: "/images/avatar.jpg",
   });
   const [statistics, setStats] = useState();
+  const ui = Config(projectData);
 
   // Loading effect to simulate data fetching
   useEffect(() => {
@@ -86,13 +88,7 @@ const HomePage = ({ projectData, projectId,ui }) => {
           </div>
 
           <div className="flex flex-col sm:flex-row sm:space-y-0 sm:space-x-3 w-full md:w-auto">
-            <Link
-              href={
-                projectData?.features?.includes("Calendar")
-                  ? "register-new-ads"
-                  : "new-calendar-entry"
-              }
-            >
+            <Link href="register-new-candidate">
               <Button type="button" fullWidth={false} leftIcon={<FaUserPlus />}>
                 {ui.Dashboard.HomePageButtonLabel}
               </Button>

@@ -1,6 +1,5 @@
 import { Composition } from "remotion";
-import YogaDay from "./YogaDay";
-import "../../styles/global.css";
+import YogaDay from "./IPCA/YogaDay";
 
 export const RemotionRoot: React.FC = () => {
   return (
@@ -13,15 +12,18 @@ export const RemotionRoot: React.FC = () => {
         width={1280}
         height={720}
         defaultProps={{
+          frame: 0,
+          formData: {
             name: "Dr. Sushant Patil singh",
             speciality: "Physician",
-            clinic_name: "vedanta clinic",
-            clinic_address: "Thane, Maharashtra",
+            clinic_name: "",
+            clinic_address: "",
             photo:
               "https://pixpro.s3.ap-south-1.amazonaws.com/production/cropped/2025/01/folic-acid-awareness-2025/krunal-jayantibhai-patel-116214/6e653b57-5eca-4e0a-918c-789682f672e9.png",
             gender: "Female",
             language: "English",
-          
+          },
+          download: false,
         }}
       />
     </>

@@ -1,7 +1,7 @@
 import MyError from "@services/MyError";
 
 export const LoginSubmission = async (formData: any, projectInfo: any) => {
-  if (!formData.code || !projectInfo?.id) {
+  if (!formData.code || !projectInfo?.project_hash) {
     return { success: false, message: "Invalid input data" };
   }
   try {
@@ -14,14 +14,14 @@ export const LoginSubmission = async (formData: any, projectInfo: any) => {
           Accept: "application/json",
         },
         body: JSON.stringify({
-          project_hash: projectInfo?.id,
-          code: formData.code,
+          project_hash: projectInfo?.project_hash,
+          employee_code: formData.code,
         }),
       },
     );
 
     const response = await loginResponse.json();
-    if (response.error) {
+    if (!response.ok) {
       throw new Error(response.error);
     }
     return { success: true, data: response.data };

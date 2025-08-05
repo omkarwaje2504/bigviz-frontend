@@ -9,6 +9,7 @@ import { FaUser } from "react-icons/fa";
 import Config from "@utils/Config";
 import Button from "@components/ui/Button";
 import ApprovalCard from "@components/ui/ApprovalCard";
+import { DecryptData, RemoveData } from "@utils/cryptoUtils";
 
 const renderDashboardStats = (ui) => [
   { label: "Approved", value: 5, change: "+2%" },
@@ -16,14 +17,48 @@ const renderDashboardStats = (ui) => [
   { label: "Pending", value: 3, change: "+5%" },
 ];
 
-const userInfo = { name: "John Doe", role: "NSM" };
-
-const ApprovalPage = ({ projectData }) => {
-  const ui = Config(projectData);
+const ApprovalPage = ({ projectData, projectId }) => {
   const [loading, setLoading] = useState(true);
   const [selectedRSM, setSelectedRSM] = useState(null);
   const [selectedASM, setSelectedASM] = useState(null);
   const [selectedMR, setSelectedMR] = useState(null);
+  const [loadMembers, setLoadMembers] = useState(true);
+  const [members, setMembers] = useState([]);
+  const [userInfo, setUserInfo] = useState({
+    name: "",
+    role: 1,
+    designation: "Medical Representative",
+    avatar: "/images/avatar.jpg",
+  });
+  const [statistics, setStats] = useState();
+  const ui = Config(projectData);
+
+  useEffect(() => {
+    const getUserInfo = DecryptData("empData");
+    if (getUserInfo) {
+      setUserInfo({
+        name: getUserInfo?.name,
+        role: getUserInfo?.role,
+        designation: getUserInfo?.role_name,
+      });
+    }
+    getMembers(getUserInfo);
+    const getStats = stats(members, ui, projectData);
+    setStats(getStats);
+
+    RemoveData("formData");
+  }, []);
+
+  const getMembers = async (getUserInfo) => {
+    const membersData = await FetchDoctors(getUserInfo?.hash);
+    if (membersData) {
+      setMembers(membersData.data);
+      setLoadMembers(false);
+    } else {
+      setLoadMembers(false);
+      setMembers([]);
+    }
+  };
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -110,6 +145,33 @@ const ApprovalPage = ({ projectData }) => {
       <Footer />
     </div>
   );
+};
+
+const stats = (members, ui, projectData) => {
+  const total = members.length || 1; // to avoid division by zero
+
+  const activeMembers = !projectData?.features?.includes("approval_system")
+    ? members.filter((member) => member.download !== null)
+    : members.filter((member) => member.approved_status == 1);
+
+  const pendingMembers = !projectData?.features?.includes("approval_system")
+    ? members.filter((member) => member.download == null)
+    : members.filter((member) => member.approved_status == 0);
+
+  const getPercentage = (count) => `${((count / total) * 100).toFixed(1)}%`;
+
+  return [
+    {
+      label: ui.Dashboard.ActiveLabel,
+      value: activeMembers.length,
+      percentage: getPercentage(activeMembers.length),
+    },
+    {
+      label: ui.Dashboard.PendingLabel,
+      value: pendingMembers.length,
+      percentage: getPercentage(pendingMembers.length),
+    },
+  ];
 };
 
 export default ApprovalPage;

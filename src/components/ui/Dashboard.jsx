@@ -15,7 +15,7 @@
               <p className="text-gray-700 dark:text-gray-300">{stat.label}</p>
               <span
                 className={`text-xs w-fit font-medium px-2 py-1 rounded ${
-                  stat.percentage.startsWith("+")
+                  stat?.percentage?.startsWith("+")
                     ? "text-green-500 bg-green-100 dark:bg-green-900/30"
                     : "text-red-500 bg-red-100 dark:bg-red-900/30"
                 }`}

@@ -1,13 +1,9 @@
 "use client";
 
-import React, { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo } from "react";
 import {
   FaBug,
   FaChevronRight,
-  FaChevronLeft,
-  FaSearch,
-  FaFilter,
-  FaCircle,
   FaSync,
   FaExternalLinkAlt,
   FaMapMarkerAlt,
@@ -15,23 +11,14 @@ import {
   FaCheck,
   FaTimes,
   FaUser,
-  FaUsers,
   FaClock,
-  FaExclamationTriangle,
   FaChartLine,
-  FaCalendarAlt,
   FaCode,
   FaGlobe,
   FaDesktop,
-  FaMobile,
-  FaTablet,
   FaFireAlt,
   FaArrowUp,
   FaArrowDown,
-  FaEye,
-  FaLayerGroup,
-  FaTags,
-  FaHashtag,
 } from "react-icons/fa";
 
 const API = "https://error-tracking-api.vercel.app/api/error";
@@ -643,7 +630,6 @@ export default function ErrorTrackingDashboard() {
                 <div className="bg-gray-950 rounded-lg p-3 text-xs font-mono">
                   {selectedError.mappedStack?.length ? (
                     <div className="space-y-1">
-  
                       <div className="space-y-8">
                         {selectedError.mappedStack.map((frame, i) =>
                           frame.separator ? (

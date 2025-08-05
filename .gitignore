@@ -40,3 +40,4 @@ build
 certificates
 dist
 build
+.env.example

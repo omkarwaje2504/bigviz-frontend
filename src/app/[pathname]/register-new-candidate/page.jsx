@@ -1,9 +1,8 @@
-import ApprovalPage from "@components/pages/ApprovalPage";
+import RegisterNewCandidate from "@components/pages/RegisterNewCandidate";
 import { getAllProjectsCached } from "../../../../utils/projectCache";
 
 export async function generateStaticParams() {
   const projects = await getAllProjectsCached();
-
   return projects.map((project) => ({
     pathname:
       project.id?.toString() ||
@@ -39,7 +38,6 @@ export async function generateMetadata({ params }) {
     },
   };
 }
-
 export default async function Home({ params }) {
   const { pathname } = await params;
   const projects = await getAllProjectsCached();
@@ -51,7 +49,7 @@ export default async function Home({ params }) {
       project.web_link?.split("/").pop() === pathname,
   );
   return (
-    <ApprovalPage
+    <RegisterNewCandidate
       projectData={projectInfo}
       projectId={projectInfo?.id}
     />

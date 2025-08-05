@@ -10,11 +10,17 @@ const FormNavigationButtons = ({
   projectData,
 }) => {
   const projectType = projectData?.product_name;
-
   const isPage1Valid =
     currentStep !== 1 ||
     (validationStatus && Object.values(validationStatus).every(Boolean));
-  const isPage2Valid = currentStep !== 2 || !!formData?.photo?.croppedImage;
+
+  const isPage2Valid =
+    currentStep !== 2 ||
+    (projectType !== "Desk Calendar" && !!formData?.photo?.croppedImage) ||
+    (projectType === "Desk Calendar" &&
+      Array.isArray(formData?.calendarData) &&
+      formData.calendarData.length === 12 &&
+      formData.calendarData.every((item) => !!item?.croppedImage));
 
   const isLastStepForProject =
     (projectType === "E-Video" && currentStep === 2 && isPage2Valid) ||

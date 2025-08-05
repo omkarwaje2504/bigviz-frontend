@@ -22,6 +22,12 @@ type Option = {
   value: string;
 };
 
+type DateValue = {
+  day: string;
+  month: string;
+  year: string;
+};
+
 type InputFieldProps = {
   id: string;
   label: string;
@@ -32,7 +38,8 @@ type InputFieldProps = {
     | "radio"
     | "textarea"
     | "tel"
-    | "dropdown";
+    | "dropdown"
+    | "date";
   value: string;
   onChange: (
     e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>,
@@ -48,6 +55,17 @@ type InputFieldProps = {
   options?: Option[];
   name?: string;
   onValidationChange?: (isValid: boolean) => void;
+};
+
+const parseDateString = (dateStr: string): DateValue => {
+  const [day = "", month = "", year = ""] = dateStr?.split("/") || [];
+  return { day, month, year };
+};
+
+const formatDateObject = (date: DateValue): string => {
+  if (!date.day && !date.month && !date.year) return "";
+
+  return `${date.day}/${date.month}/${date.year}`;
 };
 
 const InputField: React.FC<InputFieldProps> = ({
@@ -72,6 +90,7 @@ const InputField: React.FC<InputFieldProps> = ({
   const [error, setError] = useState<string>("");
   const [isOpen, setIsOpen] = useState(false);
   const onValidationChangeRef = useRef(onValidationChange);
+  const [detectChange, setDetectChange] = useState<number>();
 
   const normalizedOptions = options.map((o) =>
     typeof o === "string" ? { label: o, value: o } : o,
@@ -83,37 +102,48 @@ const InputField: React.FC<InputFieldProps> = ({
   }, [onValidationChange]);
 
   useEffect(() => {
-    const safeValue = typeof value === "string" ? value : String(value ?? "");
-
-    let errorMessage = "";
+    let safeValue: string;
     let isValid = true;
+    let errorMessage = "";
+    if (type === "date") {
+      const dateValue = getDateValue();
+      safeValue = `${dateValue.day}-${dateValue.month}-${dateValue.year}`;
 
-    if (required && !safeValue.trim()) {
-      errorMessage = "This field is required";
-      isValid = false;
-    } else if (
-      validation.regex &&
-      safeValue &&
-      !validation.regex.test(safeValue)
-    ) {
-      errorMessage = validation.message || "Invalid input format.";
-      isValid = false;
+      if (required && (!dateValue.day || !dateValue.month || !dateValue.year)) {
+        errorMessage = "This field is required";
+        isValid = false;
+      }
+    } else {
+      safeValue = typeof value === "string" ? value : String(value ?? "");
+
+      if (required && !safeValue.trim()) {
+        errorMessage = "This field is required";
+        isValid = false;
+      } else if (
+        validation.regex &&
+        safeValue &&
+        !validation.regex.test(safeValue)
+      ) {
+        errorMessage = validation.message || "Invalid input format.";
+        isValid = false;
+      }
     }
 
     setError((prev) => {
       if (prev !== errorMessage) return errorMessage;
-      return prev; // no change
+      return prev;
     });
+
     if (onValidationChangeRef.current) {
       onValidationChangeRef.current(isValid);
     }
-  }, [value]);
+  }, [value, detectChange]);
 
   const handleChange = (
     e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>,
   ) => {
     let val = e.target.value;
-
+    setDetectChange(1);
     if (validation.trim && type !== "radio") {
       val = val.trimStart();
     }
@@ -133,6 +163,36 @@ const InputField: React.FC<InputFieldProps> = ({
     onChange(syntheticEvent);
   };
 
+  const handleDateChange = (field: keyof DateValue, newValue: string) => {
+    setDetectChange(1);
+    const currentDate = getDateValue();
+    const newDateValue = {
+      ...currentDate,
+      [field]: newValue,
+    };
+    const formattedDate = formatDateObject(newDateValue);
+
+    const synthetic = {
+      target: { value: formattedDate },
+    } as unknown as ChangeEvent<
+      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+    >;
+    onChange(synthetic);
+  };
+
+  const getDateValue = (): DateValue => {
+    if (type === "date") {
+      if (typeof value === "object" && value !== null) {
+        return value as DateValue;
+      }
+      if (typeof value === "string") {
+        return parseDateString(value);
+      }
+    }
+    return { day: "", month: "", year: "" };
+  };
+
+  const dateValue = getDateValue();
   const errorMessage = customError || error;
 
   return (
@@ -165,6 +225,90 @@ const InputField: React.FC<InputFieldProps> = ({
             </option>
           ))}
         </select>
+      ) : type === "date" ? (
+        <div className="grid grid-cols-3 gap-2">
+          {/* Day Dropdown */}
+          <select
+            name={`${name || id}_day`}
+            value={dateValue.day}
+            onChange={(e) => handleDateChange("day", e.target.value)}
+            disabled={disabled}
+            required={required}
+            className={`${inputStyles.selectBase} ${
+              errorMessage
+                ? inputStyles.selectErrorRing
+                : inputStyles.selectDefaultRing
+            }`}
+          >
+            <option value="" disabled hidden>
+              Day
+            </option>
+            {Array.from({ length: 31 }, (_, i) => i + 1).map((day) => (
+              <option key={day} value={day.toString().padStart(2, "0")}>
+                {day}
+              </option>
+            ))}
+          </select>
+
+          {/* Month Dropdown */}
+          <select
+            name={`${name || id}_month`}
+            value={dateValue.month}
+            onChange={(e) => handleDateChange("month", e.target.value)}
+            disabled={disabled}
+            required={required}
+            className={`${inputStyles.selectBase} ${
+              errorMessage
+                ? inputStyles.selectErrorRing
+                : inputStyles.selectDefaultRing
+            }`}
+          >
+            <option value="" disabled hidden>
+              Month
+            </option>
+            {[
+              { value: "01", label: "January" },
+              { value: "02", label: "February" },
+              { value: "03", label: "March" },
+              { value: "04", label: "April" },
+              { value: "05", label: "May" },
+              { value: "06", label: "June" },
+              { value: "07", label: "July" },
+              { value: "08", label: "August" },
+              { value: "09", label: "September" },
+              { value: "10", label: "October" },
+              { value: "11", label: "November" },
+              { value: "12", label: "December" },
+            ].map((month) => (
+              <option key={month.value} value={month.value}>
+                {month.label}
+              </option>
+            ))}
+          </select>
+
+          {/* Year Dropdown */}
+          <select
+            name={`${name || id}_year`}
+            value={dateValue.year}
+            onChange={(e) => handleDateChange("year", e.target.value)}
+            disabled={disabled}
+            required={required}
+            className={`${inputStyles.selectBase} ${
+              errorMessage
+                ? inputStyles.selectErrorRing
+                : inputStyles.selectDefaultRing
+            }`}
+          >
+            <option value="" disabled hidden>
+              Year
+            </option>
+            {Array.from({ length: 26 }, (_, i) => 2025 - i).map((year) => (
+              <option key={year} value={year.toString()}>
+                {year}
+              </option>
+            ))}
+          </select>
+        </div>
       ) : type === "dropdown" ? (
         <div className="relative">
           {/* clickable “button” */}
@@ -321,12 +465,13 @@ const InputField: React.FC<InputFieldProps> = ({
         </div>
       )}
 
-      {showCharCount && maxLength !== undefined && (
-        <p className={inputStyles.charCount}>
-          {value.length}/{maxLength}
-        </p>
-      )}
-
+      {showCharCount &&
+        maxLength !== undefined &&
+        typeof value === "string" && (
+          <p className={inputStyles.charCount}>
+            {value.length}/{maxLength}
+          </p>
+        )}
       {errorMessage && <p className={inputStyles.errorText}>{errorMessage}</p>}
     </div>
   );

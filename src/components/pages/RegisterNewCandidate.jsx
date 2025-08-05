@@ -17,7 +17,7 @@ import {
 import { set } from "zod";
 import { useRouter } from "next/navigation";
 
-export default function RegisterNewCandidate({ projectData, projectId, ui }) {
+export default function RegisterNewCandidate({ projectData, projectId }) {
   const [currentStep, setCurrentStep] = useState(1);
   const [photoUploadStatus, setPhotoUploadStatus] = useState(false);
   const [audioUploadStatus, setAudioUploadStatus] = useState(false);

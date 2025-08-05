@@ -4,7 +4,7 @@ export async function getDataSingleton() {
   // if (dataCache) return dataCache;
 
   const response = await fetch(
-    `https://pixpro.app/api/projects/80223bb1e415d563d5ff065ce97871c7`,
+    `https://sai-dev.laravel.cloud/api/all-projects`,
     {
       method: "POST",
       headers: {
@@ -14,7 +14,6 @@ export async function getDataSingleton() {
       // cache: "no-cache",
     },
   );
-
   const dataCache = await response.json();
   return dataCache;
 }

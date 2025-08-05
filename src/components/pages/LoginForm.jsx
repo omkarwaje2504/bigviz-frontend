@@ -69,8 +69,8 @@ const LoginForm = ({ ui, loginType, projectData }) => {
     e.preventDefault();
     setIsSubmitting(true);
     setErrors({});
-    const loginResponse = await LoginSubmission(formData, projectData);
 
+    const loginResponse = await LoginSubmission(formData, projectData);
     if (loginResponse.success) {
       const empData = loginResponse.data.employee;
       EncryptData("empData", empData);
@@ -82,8 +82,6 @@ const LoginForm = ({ ui, loginType, projectData }) => {
     }
     setIsSubmitting(false);
   };
-
-  console.log(ui)
 
   return (
     <div className="mt-8 space-y-6 text-gray-800 dark:text-gray-100">
@@ -155,6 +153,7 @@ const LoginForm = ({ ui, loginType, projectData }) => {
 
         <div>
           <Button
+            ui={ui}
             type="submit"
             isLoading={isSubmitting}
             disabled={!isFormValid() || isSubmitting}

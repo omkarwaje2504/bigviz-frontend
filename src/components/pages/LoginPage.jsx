@@ -4,9 +4,9 @@ import { useState, useEffect } from "react";
 import Banner from "@components/ui/Banner";
 import LoadingPage from "@components/ui/LoadingPage";
 import LoginForm from "./LoginForm";
+import config from "@utils/Config";
 import MyError from "@services/MyError";
 import { DecryptData, EncryptData } from "@utils/cryptoUtils";
-import PrepareVideo from "@services/PrepareVideo";
 import { useRouter } from "next/navigation";
 
 export default function LoginPage({ projectData, projectId, ui }) {
@@ -17,7 +17,7 @@ export default function LoginPage({ projectData, projectId, ui }) {
   useEffect(() => {
     const getUserData = DecryptData("empData");
     localStorage.clear();
-    EncryptData("ui", ui);
+    localStorage.setItem("projectHash", projectData.project_hash);
     if (getUserData) {
       EncryptData("empData", getUserData);
       router.push(`${projectId}/homepage`);
@@ -35,10 +35,10 @@ export default function LoginPage({ projectData, projectId, ui }) {
       <LoadingPage ui={ui} loadingtext="Play your ads in PVR cinemas..." />
     );
   }
-
+console.log(projectData)
   return (
     <div className="flex flex-col lg:flex-row min-h-screen bg-gray-50 text-gray-800 dark:bg-gray-900 dark:text-white transition-colors duration-300">
-      <Banner bannerImage={projectData?.top_banner} />
+      <Banner bannerImage={projectData?.media?.top_banner} />
 
       <div className="flex-grow flex flex-col items-center justify-center px-4">
         <div className="max-w-md w-full space-y-8 p-8 rounded-lg shadow-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 transition-all">
