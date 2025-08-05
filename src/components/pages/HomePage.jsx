@@ -13,8 +13,9 @@ import Config from "@utils/Config";
 import { DecryptData, RemoveData } from "@utils/cryptoUtils";
 import { FetchDoctors } from "@actions/user";
 import config from "@utils/Config";
+import { useRouter } from "next/navigation";
 
-const HomePage = ({ projectData, projectId }) => {
+const HomePage = ({ projectData, projectId, ui }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [members, setMembers] = useState([]);
   const [loadMembers, setLoadMembers] = useState(true);
@@ -25,8 +26,7 @@ const HomePage = ({ projectData, projectId }) => {
     avatar: "/images/avatar.jpg",
   });
   const [statistics, setStats] = useState();
-  const ui = Config(projectData);
-
+  const router = useRouter();
   // Loading effect to simulate data fetching
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -40,11 +40,21 @@ const HomePage = ({ projectData, projectId }) => {
   useEffect(() => {
     const getUserInfo = DecryptData("empData");
     if (getUserInfo) {
+      if (getUserInfo?.role !== 1) {
+        localStorage.clear();
+        console.log(getUserInfo.role);
+
+        router.push(`/${projectId}`);
+      }
+
       setUserInfo({
         name: getUserInfo?.name,
         role: getUserInfo?.role,
         designation: getUserInfo?.role_name,
       });
+    }
+    if (!getUserInfo) {
+      router.push(`/${projectId}`);
     }
     getMembers(getUserInfo);
     const getStats = stats(members, ui, projectData);
@@ -54,7 +64,7 @@ const HomePage = ({ projectData, projectId }) => {
   }, []);
 
   const getMembers = async (getUserInfo) => {
-    const membersData = await FetchDoctors(getUserInfo?.hash);
+    const membersData = await FetchDoctors(projectData, getUserInfo?.hash);
     if (membersData) {
       setMembers(membersData.data);
       setLoadMembers(false);
@@ -89,7 +99,12 @@ const HomePage = ({ projectData, projectId }) => {
 
           <div className="flex flex-col sm:flex-row sm:space-y-0 sm:space-x-3 w-full md:w-auto">
             <Link href="register-new-candidate">
-              <Button type="button" fullWidth={false} leftIcon={<FaUserPlus />}>
+              <Button
+                type="button"
+                fullWidth={false}
+                leftIcon={<FaUserPlus />}
+                ui={ui}
+              >
                 {ui.Dashboard.HomePageButtonLabel}
               </Button>
             </Link>
@@ -97,6 +112,7 @@ const HomePage = ({ projectData, projectId }) => {
         </div>
         {!loadMembers ? (
           <MemberTable
+            ui={ui}
             projectData={projectData}
             members={members}
             onEdit={(id) => console.log("Edit", id)}

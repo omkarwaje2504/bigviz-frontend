@@ -28,21 +28,21 @@ interface Member {
   hash: string;
   mobile: string;
   name: string;
-  photo?: {
-    extension: string;
-    name: string;
-    path: string;
-    size: string;
-    url: string;
-    updated_at: string;
-  };
+  image?: string;
   values: Record<string, string>;
   updated_at: string;
 }
 
 type MemberTableProps = {
+  ui: any;
   projectData: {
-    features: string[];
+    features: any;
+    config: {
+      doctor: {};
+      employee: {
+        approval_required: boolean;
+      };
+    };
     product_name: string;
   };
   members: Member[];
@@ -55,6 +55,7 @@ type MemberTableProps = {
 const ITEMS_PER_PAGE = 4;
 
 const MemberTable: React.FC<MemberTableProps> = ({
+  ui,
   projectData,
   members,
   onEdit,
@@ -62,6 +63,7 @@ const MemberTable: React.FC<MemberTableProps> = ({
   onApprove,
   onDisapprove,
 }) => {
+  console.log(members);
   const [searchTerm, setSearchTerm] = useState("");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [currentPage, setCurrentPage] = useState(1);
@@ -175,6 +177,7 @@ const MemberTable: React.FC<MemberTableProps> = ({
       <div className="flex w-full items-center gap-2 mb-4">
         <div className="w-full">
           <InputField
+            ui={ui}
             id="search"
             label=""
             type="text"
@@ -222,14 +225,14 @@ const MemberTable: React.FC<MemberTableProps> = ({
               <div className="p-2">
                 <div className="flex items-center gap-3">
                   <div className="w-24 h-24 relative overflow-hidden rounded-lg bg-gray-200 flex items-center justify-center dark:bg-gray-700">
-                    {member?.photo?.url ? (
+                    {member?.image ? (
                       <div className="relative w-full h-[200px] rounded overflow-hidden">
                         <Image
-                          src={member.photo?.url}
+                          src={member.image}
                           alt={member.name}
                           fill
                           quality={10}
-                          blurDataURL={member.photo?.url}
+                          blurDataURL={member.image}
                           sizes="(max-width: 640px) 100px, (min-width: 641px) 150px, (min-width: 1024px) 200px"
                           className="object-cover object-top opacity-50"
                         />
@@ -239,7 +242,7 @@ const MemberTable: React.FC<MemberTableProps> = ({
                     )}
                   </div>
                   <div>
-                    {projectData?.features.includes("aproval_system") ? (
+                    {projectData?.config?.employee?.approval_required ? (
                       <span
                         className={`text-xs font-medium px-1 py-0.5 rounded ${
                           member.approved_status === 1
@@ -406,7 +409,7 @@ const MemberTable: React.FC<MemberTableProps> = ({
                     ).toLocaleDateString()}
                   </td>
                   <td className="px-6 py-4 hidden md:table-cell">
-                    {projectData?.features.includes("aproval_system") ? (
+                    {projectData?.config?.employee?.approval_required ? (
                       <span
                         className={`text-xs font-medium px-1 py-0.5 rounded ${
                           member.approved_status === 1

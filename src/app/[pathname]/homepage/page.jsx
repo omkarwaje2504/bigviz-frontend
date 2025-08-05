@@ -1,5 +1,6 @@
 import HomePage from "@components/pages/HomePage";
 import { getAllProjectsCached } from "../../../../utils/projectCache";
+import Config from "../../../../utils/Config";
 
 export async function generateStaticParams() {
   const projects = await getAllProjectsCached();
@@ -22,13 +23,13 @@ export async function generateMetadata({ params }) {
     openGraph: {
       title: projectInfo?.seo_title || "Default Title",
       description: projectInfo?.seo_description || "Default description",
-      images: [projectInfo?.logo || "/default-image.jpg"],
+      images: [projectInfo?.media?.seo_image || "/default-image.jpg"],
     },
     twitter: {
       card: "summary_large_image",
       title: projectInfo?.seo_title || "Default Title",
       description: projectInfo?.seo_description || "Default description",
-      image: projectInfo?.logo || "/default-image.jpg",
+      image: projectInfo?.media?.seo_image || "/default-image.jpg",
     },
   };
 }
@@ -40,5 +41,6 @@ export default async function Home({ params }) {
     (project) => project.project_hash?.toString() === pathname,
   );
 
-  return <HomePage projectData={projectInfo} projectId={pathname} />;
+  const ui=await Config(projectInfo);
+  return <HomePage projectData={projectInfo} projectId={pathname} ui={ui}/>;
 }

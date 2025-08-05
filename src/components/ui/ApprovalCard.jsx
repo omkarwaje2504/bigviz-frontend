@@ -1,68 +1,83 @@
 "use client";
+
+import { useEffect, useState } from "react";
 import { FaUser } from "react-icons/fa";
-import MemberTable from "@components/ui/MemberTable";
+import MemberTable from "./MemberTable";
+import { FetchDoctors } from "@actions/user";
 
 const ApprovalCard = ({
+  ui,
   projectData,
-  selectedASM,
-  selectedRSM,
-  selectedMR,
-  setSelectedASM,
-  setSelectedMR,
-  setSelectedRSM,
+  userInfo,
+  hierarchyData,
+  selectionStack,
+  setSelectionStack,
   handleApproval,
   handleEdit,
 }) => {
-  if (!selectedRSM) {
-    return hierarchy.RSMs.map((rsm) => (
-      <Card
-        key={rsm.id}
-        name={rsm.name}
-        role="RSM"
-        icon={
-          <FaUser className="text-4xl text-yellow-500 bg-gray-600 p-2 border border-gray-400 rounded-md" />
-        }
-        onClick={() => setSelectedRSM(rsm)}
-      />
-    ));
-  }
-  if (!selectedASM) {
-    return selectedRSM.ASMs.map((asm) => (
-      <Card
-        key={asm.id}
-        name={asm.name}
-        role="ASM"
-        icon={
-          <FaUser className="text-4xl text-yellow-500 bg-gray-600 p-2 border border-gray-400 rounded-md" />
-        }
-        onClick={() => setSelectedASM(asm)}
-      />
-    ));
-  }
-  if (!selectedMR) {
-    return selectedASM.MRs.map((mr) => (
-      <Card
-        key={mr.id}
-        name={mr.name}
-        role="MR"
-        icon={
-          <FaUser className="text-4xl text-yellow-500 bg-gray-600 p-2 border border-gray-400 rounded-md" />
-        }
-        onClick={() => setSelectedMR(mr)}
-      />
-    ));
-  }
+  const [doctors, setDoctors] = useState([]);
+  const [loadingDoctors, setLoadingDoctors] = useState(false);
 
-  return (
-    <div className="w-full">
+  const currentTeam =
+    selectionStack.length === 0
+      ? hierarchyData
+      : selectionStack[selectionStack.length - 1]?.team || [];
+
+  const currentLevelMember = selectionStack.at(-1);
+  const isMR = currentLevelMember?.role_name?.toLowerCase().includes("medical");
+
+  useEffect(() => {
+    const fetchMRDoctors = async () => {
+      if (isMR) {
+        setLoadingDoctors(true);
+        const result = await FetchDoctors(projectData, currentLevelMember.hash);
+        setDoctors(result?.data || []);
+        setLoadingDoctors(false);
+      } else {
+        setDoctors([]); // Clear if not MR
+      }
+    };
+
+    fetchMRDoctors();
+  }, [currentLevelMember]);
+
+  const handleSelect = (person) => {
+    setSelectionStack([...selectionStack, person]);
+  };
+
+  if (isMR) {
+    if (loadingDoctors) {
+      return (
+        <div className="text-center py-10">
+          <p className="text-gray-600 dark:text-gray-300">Loading doctors...</p>
+        </div>
+      );
+    }
+
+    return (
       <MemberTable
+        ui={ui}
         projectData={projectData}
-        members={selectedMR?.doctors || []}
+        members={doctors}
         onEdit={(id) => alert(`Edit Doctor ID: ${id}`)}
         approvalState={true}
         onApprove={handleApproval}
         onDisapprove={handleEdit}
       />
+    );
+  }
+
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+      {currentTeam.map((member) => (
+        <Card
+          key={member.hash}
+          name={member.name}
+          role={member.role_name}
+          icon={<UserIcon />}
+          onClick={() => handleSelect(member)}
+        />
+      ))}
     </div>
   );
 };
@@ -82,94 +97,8 @@ const Card = ({ name, onClick, role, icon }) => (
   </div>
 );
 
-export default ApprovalCard;
+const UserIcon = () => (
+  <FaUser className="text-4xl text-yellow-500 bg-gray-600 p-2 border border-gray-400 rounded-md" />
+);
 
-const hierarchy = {
-  RSMs: [
-    {
-      id: 1,
-      name: "Omkar Waje",
-      ASMs: [
-        {
-          id: 10,
-          name: "Rohit Sharmas",
-          MRs: [
-            {
-              id: 100,
-              name: "MR A1a",
-              doctors: [
-                {
-                  id: 1001,
-                  name: "Dr. Omkar Waje",
-                  status: "Pending",
-                  speciality: "Cardiologist",
-                  dateAdded: "2025-05-12",
-                },
-                {
-                  id: 1,
-                  name: "Omkar Waje",
-                  speciality: "Cardiologist",
-                  dateAdded: "2025-05-12",
-                  status: "Active",
-                  preview: "/previews/ad1.mp4",
-                  imageUrl:
-                    "https://img.freepik.com/free-photo/beautiful-young-female-doctor-looking-camera-office_1301-7807.jpg?semt=ais_hybrid&w=740",
-                  approvalStatus: "disapproved",
-                },
-                {
-                  id: 2,
-                  name: "Rohini Patil",
-                  speciality: "Dermatologist",
-                  dateAdded: "2025-05-10",
-                  status: "Pending",
-                  preview: "/previews/ad2.mp4",
-                  imageUrl:
-                    "https://img.freepik.com/free-photo/beautiful-young-female-doctor-looking-camera-office_1301-7807.jpg?semt=ais_hybrid&w=740",
-                  approvalStatus: "approved",
-                },
-                {
-                  id: 3,
-                  name: "Sweta Patil",
-                  speciality: "Otolaryngologist",
-                  dateAdded: "2025-05-08",
-                  status: "Active",
-                  preview: "/previews/ad3.mp4",
-                  imageUrl:
-                    "https://img.freepik.com/free-photo/beautiful-young-female-doctor-looking-camera-office_1301-7807.jpg?semt=ais_hybrid&w=740",
-                  approvalStatus: "pending",
-                },
-                {
-                  id: 4,
-                  name: "Vedant Thakur",
-                  speciality: "Orthopedic Surgeon",
-                  dateAdded: "2025-05-07",
-                  status: "Active",
-                  preview: "/previews/ad4.mp4",
-                  imageUrl: "",
-                },
-                {
-                  id: 5,
-                  name: "EduSmart Academy",
-                  speciality: "New Course Enrollment",
-                  dateAdded: "2025-05-05",
-                  status: "Inactive",
-                  preview: "/previews/ad5.mp4",
-                  imageUrl: "",
-                },
-                {
-                  id: 6,
-                  name: "FitLife Gym",
-                  speciality: "Membership Promotion",
-                  dateAdded: "2025-05-03",
-                  status: "Active",
-                  preview: "/previews/ad6.mp4",
-                  imageUrl: "/",
-                },
-              ],
-            },
-          ],
-        },
-      ],
-    },
-  ],
-};
+export default ApprovalCard;

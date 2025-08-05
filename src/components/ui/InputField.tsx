@@ -29,6 +29,7 @@ type DateValue = {
 };
 
 type InputFieldProps = {
+  ui: any;
   id: string;
   label: string;
   icon?: ReactNode;
@@ -69,6 +70,7 @@ const formatDateObject = (date: DateValue): string => {
 };
 
 const InputField: React.FC<InputFieldProps> = ({
+  ui,
   id,
   label,
   icon,
@@ -402,7 +404,7 @@ const InputField: React.FC<InputFieldProps> = ({
         <div className={inputStyles.radioGroup}>
           {options.map((option) => {
             const isSelected = value === option.value;
-            const theme = config().theme;
+            const theme = ui.theme;
 
             return (
               <label

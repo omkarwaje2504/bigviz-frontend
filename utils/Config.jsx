@@ -1,9 +1,5 @@
-<<<<<<< HEAD
-const config =async (projectData) => {
-=======
 
 const Config = async(projectData) => {
->>>>>>> 4f3836edd0a4003361484e40128c55946ce00ff1
   
   return {
     theme: {
@@ -26,13 +22,8 @@ const Config = async(projectData) => {
     },
     loginPage: {
       heading: "Welcome Back",
-<<<<<<< HEAD
-      subHeading: "Sign in to manage your cinema ads",
-      loginLabel: "Cinema Access Code",
-=======
       subHeading: "Sign in",
       loginLabel: "Enter your Employee Code",
->>>>>>> 4f3836edd0a4003361484e40128c55946ce00ff1
       loginButtomLabel: "Sign In",
       passwordLabel: "Password",
       mobileLabel: "Mobile Number",
@@ -42,22 +33,14 @@ const Config = async(projectData) => {
       HomePageSubTitle: "Manage all your doctor from here",
       HomePageButtonLabel: "Add New Doctor",
       title: "Dashboard Overview",
-<<<<<<< HEAD
-      ActiveLabel: projectData?.features.includes("approval_system")
-=======
       ActiveLabel: projectData?.features?.includes("approval_system")
->>>>>>> 4f3836edd0a4003361484e40128c55946ce00ff1
         ? "Active Clients"
         : projectData?.product_name === "E-Video"
           ? "Videos Generated"
           : projectData?.product_name === "E-Greeting"
             ? "Greetings Generated"
             : "Active Members",
-<<<<<<< HEAD
-      PendingLabel: projectData?.features.includes("approval_system")
-=======
       PendingLabel: projectData?.features?.includes("approval_system")
->>>>>>> 4f3836edd0a4003361484e40128c55946ce00ff1
         ? "Pending Approvals"
         : projectData?.product_name === "E-Video"
           ? "Videos Not Generated"
@@ -71,8 +54,4 @@ const Config = async(projectData) => {
   };
 };
 
-<<<<<<< HEAD
-export default config;
-=======
 export default Config;
->>>>>>> 4f3836edd0a4003361484e40128c55946ce00ff1

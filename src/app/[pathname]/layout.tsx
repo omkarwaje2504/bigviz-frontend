@@ -1,6 +1,5 @@
 import "../../../styles/global.css";
 import { Metadata, Viewport } from "next";
-import { Toaster } from "react-hot-toast";
 
 export const metadata: Metadata = {
   title: "Remotion and Next.js",
@@ -22,7 +21,7 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark">
       <body>
-        <Toaster />
+    
         {children}
       </body>
     </html>

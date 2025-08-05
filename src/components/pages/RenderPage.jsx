@@ -6,8 +6,6 @@ import { FaArrowLeft, FaDownload } from "react-icons/fa";
 import { Player } from "@remotion/player";
 import { DecryptData } from "@utils/cryptoUtils";
 import MyVideo from "src/remotion/Video";
-import { PrepareVideo } from "@services/PrepareVideo";
-import loadScript from "@utils/LoadScript";
 import YogaDay from "../../remotion/IPCA/YogaDay";
 
 const quizQuestions = [
@@ -65,36 +63,6 @@ export default function RenderPage({ projectData, projectId }) {
     }, 6000);
     return () => clearTimeout(timer);
   }, []);
-  const handleDownload = async () => {
-    try {
-      const videoBlob = await PrepareVideo({
-        compositionName: "MyVideo",
-        props: {
-          download: true,
-          formData: {
-            name: "Dr. Sushant Patil singh",
-            speciality: "Physician",
-            clinic_name: "",
-            clinic_address: "",
-            photo:
-              "https://pixpro.s3.ap-south-1.amazonaws.com/production/cropped/2025/01/folic-acid-awareness-2025/krunal-jayantibhai-patel-116214/6e653b57-5eca-4e0a-918c-789682f672e9.png",
-            gender: "Female",
-            language: "English",
-          },
-        }, // or any dynamic props
-        onProgress: (msg, frame, total) =>
-          setRenderVideoStatus(Math.round((frame / total) * 100, 0)),
-      });
-
-      const url = URL.createObjectURL(videoBlob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "rendered-video.mp4";
-      a.click();
-    } catch (err) {
-      console.error("Render failed:", err);
-    }
-  };
   
   if (loading || !url) {
     return (

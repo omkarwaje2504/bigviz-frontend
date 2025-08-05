@@ -72,9 +72,14 @@ const LoginForm = ({ ui, loginType, projectData }) => {
 
     const loginResponse = await LoginSubmission(formData, projectData);
     if (loginResponse.success) {
-      const empData = loginResponse.data.employee;
+      const empData = loginResponse.data;
       EncryptData("empData", empData);
-      router.push(`/${projectData?.id}/homepage`);
+      console.log(empData.role);
+      if (empData.role == 1) {
+        router.push(`/${projectData?.project_hash}/homepage`);
+      } else {
+        router.push(`/${projectData?.project_hash}/approval-dashboard`);
+      }
     } else {
       setErrors({
         form: loginResponse.message || "Login failed. Please try again.",

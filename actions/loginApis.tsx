@@ -21,8 +21,8 @@ export const LoginSubmission = async (formData: any, projectInfo: any) => {
     );
 
     const response = await loginResponse.json();
-    if (!response.ok) {
-      throw new Error(response.error);
+    if (!response.data) {
+      throw new Error("Login fail. Please try again.");
     }
     return { success: true, data: response.data };
   } catch (error: any) {

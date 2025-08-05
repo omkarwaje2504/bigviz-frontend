@@ -1,13 +1,11 @@
 import RegisterNewCandidate from "@components/pages/RegisterNewCandidate";
 import { getAllProjectsCached } from "../../../../utils/projectCache";
+import Config from "../../../../utils/Config";
 
 export async function generateStaticParams() {
   const projects = await getAllProjectsCached();
   return projects.map((project) => ({
-    pathname:
-      project.id?.toString() ||
-      project.name?.toString() ||
-      project.web_link?.split("/").pop(),
+    pathname: project.project_hash?.toString(),
   }));
 }
 
@@ -16,25 +14,22 @@ export async function generateMetadata({ params }) {
   const projects = await getAllProjectsCached();
 
   const projectInfo = projects.find(
-    (project) =>
-      project.id?.toString() === pathname ||
-      project.name?.toString() === pathname ||
-      project.web_link?.split("/").pop() === pathname,
+    (project) => project.project_hash?.toString() === pathname,
   );
 
-  return {
+   return {
     title: projectInfo?.seo_title || "Default Title",
     description: projectInfo?.seo_description || "Default description",
     openGraph: {
       title: projectInfo?.seo_title || "Default Title",
       description: projectInfo?.seo_description || "Default description",
-      images: [projectInfo?.logo || "/default-image.jpg"],
+      images: [projectInfo?.media?.seo_image || "/default-image.jpg"],
     },
     twitter: {
       card: "summary_large_image",
       title: projectInfo?.seo_title || "Default Title",
       description: projectInfo?.seo_description || "Default description",
-      image: projectInfo?.logo || "/default-image.jpg",
+      image: projectInfo?.media?.seo_image || "/default-image.jpg",
     },
   };
 }
@@ -43,15 +38,14 @@ export default async function Home({ params }) {
   const projects = await getAllProjectsCached();
 
   const projectInfo = projects.find(
-    (project) =>
-      project.id?.toString() === pathname ||
-      project.name?.toString() === pathname ||
-      project.web_link?.split("/").pop() === pathname,
+    (project) => project.project_hash?.toString() === pathname,
   );
+  const ui=await Config(projectInfo)
   return (
     <RegisterNewCandidate
       projectData={projectInfo}
-      projectId={projectInfo?.id}
+      projectId={pathname}
+      ui={ui}
     />
   );
 }
