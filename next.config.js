@@ -40,6 +40,7 @@ const nextConfig = {
   //   appDir: true,
   // },
 
+  
   images: {
     unoptimized: true, // Disable Next.js image optimization
     remotePatterns: [
