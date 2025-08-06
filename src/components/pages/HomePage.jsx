@@ -42,8 +42,6 @@ const HomePage = ({ projectData, projectId, ui }) => {
     if (getUserInfo) {
       if (getUserInfo?.role !== 1) {
         localStorage.clear();
-        console.log(getUserInfo.role);
-
         router.push(`/${projectId}`);
       }
 
@@ -73,9 +71,14 @@ const HomePage = ({ projectData, projectId, ui }) => {
       setMembers([]);
     }
   };
-
   if (isLoading) {
-    return <LoadingPage ui={ui} loadingtext={"Loading the Dashboard..."} />;
+    return (
+      <LoadingPage
+        ui={ui}
+        loadingtext={"Loading the Dashboard..."}
+        loadingTitle={projectData.seo_title}
+      />
+    );
   }
   return (
     <div className="min-h-screen bg-white text-gray-800 dark:bg-gray-900 dark:text-white transition-colors duration-300">
@@ -114,6 +117,7 @@ const HomePage = ({ projectData, projectId, ui }) => {
           <MemberTable
             ui={ui}
             projectData={projectData}
+            userInfo={userInfo}
             members={members}
             onEdit={(id) => console.log("Edit", id)}
           />

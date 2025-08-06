@@ -37,25 +37,6 @@ const Header = ({ userInfo, projectData, projectHash }) => {
 
           {/* Right User Info */}
           <div className="flex items-center space-x-6">
-            {userInfo.role !== 1 && pathnamesArray.includes("homepage") ? (
-              <div>
-                <Link href={`/${projectHash}/approval-dashboard`}>
-                  <p className="text-sm text-gray-600 dark:text-gray-300 hover:text-red-600 dark:hover:text-red-500 transition-colors duration-200 flex gap-2 border p-2 rounded-md">
-                    <FaLocationArrow className="mt-1" /> Approval Dashboard
-                  </p>
-                </Link>
-              </div>
-            ) : userInfo.role !== 1 &&
-              pathnamesArray.includes("approval-dashboard") ? (
-              <div>
-                <Link href={`/${projectHash}/homepage`}>
-                  <p className="text-sm text-gray-600 dark:text-gray-300 hover:text-red-600 dark:hover:text-red-500 transition-colors duration-200 flex gap-2 border p-2 rounded-md">
-                    <FaLocationArrow className="mt-1" /> Go to Home
-                  </p>
-                </Link>
-              </div>
-            ) : null}
-
             <div className="flex items-center space-x-3">
               <div className="hidden md:block text-right">
                 <p className="font-medium text-gray-800 dark:text-white">

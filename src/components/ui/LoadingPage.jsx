@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { FaFilm, FaRegPlayCircle } from "react-icons/fa";
 
-const LoadingPage = ({ ui, loadingtext }) => {
+const LoadingPage = ({ ui,loadingTitle, loadingtext }) => {
   const [progress, setProgress] = useState(0);
 
   useEffect(() => {
@@ -40,7 +40,7 @@ const LoadingPage = ({ ui, loadingtext }) => {
 
       {/* Branding Text */}
       <h1 className="text-4xl font-bold text-red-600 dark:text-red-500 mb-2">
-        Bigviz
+        {loadingTitle}
       </h1>
       <p className="mb-8 text-gray-600 dark:text-gray-300">{loadingtext}</p>
 

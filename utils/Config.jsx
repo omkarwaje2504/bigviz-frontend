@@ -49,7 +49,7 @@ const Config = async(projectData) => {
             : "Active Members",
     },
     ApprovalPageTitle: {
-      HomePageTitle: "Cinema Ad Approvals",
+      HomePageTitle: `${projectData.seo_title} Approvals`,
     },
   };
 };

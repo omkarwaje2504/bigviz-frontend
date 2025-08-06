@@ -58,6 +58,7 @@ const ApprovalCard = ({
       <MemberTable
         ui={ui}
         projectData={projectData}
+        userInfo={userInfo}
         members={doctors}
         onEdit={(id) => alert(`Edit Doctor ID: ${id}`)}
         approvalState={true}
@@ -68,7 +69,7 @@ const ApprovalCard = ({
   }
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+    <div className="flex flex-col md:flex-row flex-wrap gap-4">
       {currentTeam.map((member) => (
         <Card
           key={member.hash}
@@ -84,7 +85,7 @@ const ApprovalCard = ({
 
 const Card = ({ name, onClick, role, icon }) => (
   <div
-    className="cursor-pointer p-4 bg-white dark:bg-gray-800 border rounded-lg shadow hover:border-red-500 w-fit"
+    className="cursor-pointer p-4 bg-white dark:bg-gray-800 border rounded-lg shadow hover:border-red-500 w-full md:w-fit"
     onClick={onClick}
   >
     <div className="flex items-center space-x-2 mb-2">

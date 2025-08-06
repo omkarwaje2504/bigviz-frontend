@@ -8,6 +8,7 @@ import Dashboard from "@components/ui/Dashboard";
 import Button from "@components/ui/Button";
 import ApprovalCard from "@components/ui/ApprovalCard";
 import { DecryptData, RemoveData } from "@utils/cryptoUtils";
+import { ApprovalAction } from "@actions/approvalApis";
 
 const ApprovalPage = ({ projectData, projectId, ui }) => {
   const [loading, setLoading] = useState(true);
@@ -41,7 +42,6 @@ const ApprovalPage = ({ projectData, projectId, ui }) => {
         code: getUserInfo?.code,
       });
     }
-    console.log(getUserInfo);
     setHierarchy(getUserInfo?.team);
     const getStats = stats(hierarchy, ui, projectData);
     setStatistics(getStats);
@@ -53,8 +53,16 @@ const ApprovalPage = ({ projectData, projectId, ui }) => {
     setSelectionStack((prev) => prev.slice(0, -1));
   };
 
-  const handleApproval = (doctorId) => {
-    alert("Approved doctor with ID: " + doctorId);
+  const handleApproval = async (member) => {
+    const approvalCheck = await ApprovalAction(
+      projectData,
+      userInfo.hash,
+      member,
+      1,
+      null,
+    );
+
+    console.log(approvalCheck);
   };
 
   const handleEdit = (doctorId) => {
@@ -62,14 +70,48 @@ const ApprovalPage = ({ projectData, projectId, ui }) => {
   };
 
   const getBreadcrumb = () => {
-    const rootLabel = ui?.Dashboard?.RootLabel || "NSM";
-    return [rootLabel, ...selectionStack.map((person) => person.name)];
+    const rootLabel = () => {
+      switch (userInfo.role) {
+        case 1:
+          return "MR";
+        case 2:
+          return "ABM";
+        case 3:
+          return "RSM";
+        case 4:
+          return "ZSM";
+        case 5:
+          return "NSM";
+
+        default:
+          break;
+      }
+    };
+    return [
+      rootLabel(),
+      ...selectionStack.map((person) => {
+        switch (person.role) {
+          case 1:
+            return "MR";
+          case 2:
+            return "ABM";
+          case 3:
+            return "RSM";
+          case 4:
+            return "ZSM";
+          case 5:
+            return "NSM";
+
+          default:
+            break;
+        }
+      }),
+    ];
   };
 
   if (loading) {
-    return <LoadingPage ui={ui} loadingtext="Loading approval system..." />;
+    return <LoadingPage ui={ui} loadingtext="Loading approval system..." loadingTitle={projectData.seo_title} />;
   }
-
   return (
     <div className="min-h-screen bg-white dark:bg-gray-900 text-gray-900 dark:text-white">
       <Header
@@ -86,6 +128,7 @@ const ApprovalPage = ({ projectData, projectId, ui }) => {
             <h2 className="text-xl font-semibold">
               {ui.ApprovalPageTitle?.HomePageTitle || "Approval Page"}
             </h2>
+
             <nav className="text-sm text-gray-600 dark:text-gray-300 mb-4">
               {getBreadcrumb().map((crumb, i, arr) => (
                 <span key={i} className="hover:text-yellow-500 cursor-pointer">
