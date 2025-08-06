@@ -29,7 +29,7 @@ export const ApprovalAction = async (
           employee_hash: employee_hash,
           doctor_hash: doctor.doctor_hash,
           approval_status,
-          comments: comments,
+          comment: comments,
         }),
       },
     );

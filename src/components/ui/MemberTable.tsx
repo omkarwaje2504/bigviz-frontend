@@ -380,6 +380,7 @@ const MemberTable: React.FC<MemberTableProps> = ({
 
     if (!approvalState) return null;
 
+    console.log(currentUserCanApprove,userHasActed,approvalHistory)
     if ((currentUserCanApprove || userHasActed) && !anyDisapproved) {
       const userAction = approvalHistory.find(
         (entry) => entry.role === currentUser.role,
@@ -497,11 +498,32 @@ const MemberTable: React.FC<MemberTableProps> = ({
               ✅ {isListView ? "Approved" : "Fully Approved"}
             </span>
           ) : anyDisapproved ? (
-            <span
-              className={`text-xs font-medium px-2 py-1 rounded ${isListView ? "bg-red-100 text-red-600" : "bg-red-100 text-red-700"}`}
-            >
-              ❌ {isListView ? "Stopped" : "Approval Process Stopped"}
-            </span>
+            <div className="gap-2 flex">
+              <button
+                className={
+                  isListView
+                    ? ""
+                    : "flex-1 flex items-center justify-center space-x-1 text-xs text-white bg-emerald-600 p-2 rounded-sm hover:bg-emerald-700"
+                }
+                onClick={() => onApprove?.(member)}
+                title="Approve"
+              >
+                {isListView ? (
+                  <FaCheck className="fill-green-500 h-4 w-4 hover:fill-green-600" />
+                ) : (
+                  <>
+                    <FaCheck className="fill-white mr-1" />
+                    <span>Approve</span>
+                  </>
+                )}
+              </button>
+
+              <span
+                className={`w-1/2 items-center pt-2 text-xs font-medium px-2 py-1 rounded ${isListView ? "bg-red-100 text-red-600" : "bg-red-100 text-red-700"}`}
+              >
+                ❌ {isListView ? "Stopped" : "You Disapproved"}
+              </span>
+            </div>
           ) : userInApprovalFlow ? (
             <span
               className={`text-xs font-medium px-2 py-1 rounded ${isListView ? "bg-orange-100 text-orange-600" : "bg-orange-100 text-orange-700"}`}
@@ -536,7 +558,6 @@ const MemberTable: React.FC<MemberTableProps> = ({
           onClick={(e) => {
             e.preventDefault();
             e.stopPropagation();
-            console.log(member);
             toggleApprovalProgress(member.doctor_hash);
           }}
         >

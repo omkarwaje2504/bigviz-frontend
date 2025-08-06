@@ -14,6 +14,7 @@ import { DecryptData, RemoveData } from "@utils/cryptoUtils";
 import { FetchDoctors } from "@actions/user";
 import config from "@utils/Config";
 import { useRouter } from "next/navigation";
+import { ApprovalAction } from "@actions/approvalApis";
 
 const HomePage = ({ projectData, projectId, ui }) => {
   const [isLoading, setIsLoading] = useState(true);
@@ -22,8 +23,18 @@ const HomePage = ({ projectData, projectId, ui }) => {
   const [userInfo, setUserInfo] = useState({
     name: "",
     role: 1,
+    role_name: "",
     designation: "Medical Representative",
     avatar: "/images/avatar.jpg",
+    hash: "",
+    code: "",
+    contacts_count: 0,
+    hq: "",
+    limit: 0,
+    region: "",
+    state: "",
+    team: [],
+    zone: "",
   });
   const [statistics, setStats] = useState();
   const router = useRouter();
@@ -44,11 +55,11 @@ const HomePage = ({ projectData, projectId, ui }) => {
         localStorage.clear();
         router.push(`/${projectId}`);
       }
-
       setUserInfo({
         name: getUserInfo?.name,
         role: getUserInfo?.role,
         designation: getUserInfo?.role_name,
+        hash: getUserInfo?.hash,
       });
     }
     if (!getUserInfo) {
@@ -71,6 +82,27 @@ const HomePage = ({ projectData, projectId, ui }) => {
       setMembers([]);
     }
   };
+
+  const handleApproval = async (member) => {
+    const approvalCheck = await ApprovalAction(
+      projectData,
+      userInfo.hash,
+      member,
+      1,
+      null,
+    );
+  };
+  const handleDisapprove = async (member) => {
+    const approvalCheck = await ApprovalAction(
+      projectData,
+      userInfo.hash,
+      member,
+      2,
+      "data",
+    );
+    console.log(approvalCheck);
+  };
+
   if (isLoading) {
     return (
       <LoadingPage
@@ -119,7 +151,10 @@ const HomePage = ({ projectData, projectId, ui }) => {
             projectData={projectData}
             userInfo={userInfo}
             members={members}
+            approvalState={true}
             onEdit={(id) => console.log("Edit", id)}
+            onApprove={handleApproval}
+            onDisapprove={handleDisapprove}
           />
         ) : (
           <div className="mt-6 text-center text-gray-400">
