@@ -1,7 +1,7 @@
 import {
   S3Client,
   PutObjectCommand,
-  DeleteObjectCommand
+  DeleteObjectCommand,
 } from "@aws-sdk/client-s3";
 import { DecryptData } from "@utils/cryptoUtils";
 import MyError from "@services/MyError";
@@ -48,29 +48,13 @@ const s3 = new S3Client({
 async function GenerateFilePath(fileName: string, projectInfo: any) {
   const employeeInfo = DecryptData("empData");
 
-  const monthData = [
-    "01",
-    "02",
-    "03",
-    "04",
-    "05",
-    "06",
-    "07",
-    "08",
-    "09",
-    "10",
-    "11",
-    "12",
-  ];
-
   const year = new Date().getFullYear();
-  const month = new Date().getMonth();
   if (!projectInfo) {
     throw new Error("project info not found");
   }
-  const { slug } = await extractDomainAndSlug(projectInfo?.web_link);
+  console.log(projectInfo);
 
-  return `production/photos/${year}/${monthData[month]}/${slug}/${employeeInfo.hash}/${fileName}`;
+  return `production/photos/${year}/${projectInfo.name}/${employeeInfo.hash}/${fileName}`;
 }
 
 const UploadFile = async (

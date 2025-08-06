@@ -1,6 +1,4 @@
-
-const Config = async(projectData) => {
-  
+const Config = async (projectData) => {
   return {
     theme: {
       selectedBg: "bg-gradient-to-br from-red-600 to-red-900",
@@ -12,13 +10,13 @@ const Config = async(projectData) => {
       unselectedBorder: "border-red-100",
       dotBorder: "border-white",
       selectedBorder: "border-white",
-      highlightBg:"bg-gradient-to-br from-green-600 to-green-900"
+      highlightBg: "bg-gradient-to-br from-green-600 to-green-900",
     },
     basic: {
-      primaryText: "#ffffff",
-      primaryColor: "#fb2c36",
-      secondaryColor: "#f5ba01",
-      secondaryText: "#ffffff",
+      primaryText: projectData?.Theme?.primaryTextColor || "#ffffff",
+      primaryColor: projectData?.Theme?.primaryColor || "#fb2c36",
+      secondaryColor: projectData?.Theme?.secondaryColor || "#f5ba01",
+      secondaryText: projectData?.Theme?.secondaryTextColor || "#ffffff",
     },
     loginPage: {
       heading: "Welcome Back",

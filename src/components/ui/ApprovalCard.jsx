@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { FaUser } from "react-icons/fa";
+import { FaUserLarge } from "react-icons/fa6";
 import MemberTable from "./MemberTable";
 import { FetchDoctors } from "@actions/user";
 
@@ -67,7 +67,6 @@ const ApprovalCard = ({
       />
     );
   }
-
   return (
     <div className="flex flex-col md:flex-row flex-wrap gap-4">
       {currentTeam.map((member) => (
@@ -75,7 +74,13 @@ const ApprovalCard = ({
           key={member.hash}
           name={member.name}
           role={member.role_name}
-          icon={<UserIcon />}
+          icon={
+            <FaUserLarge
+              style={{
+                fill: ui.basic.secondaryColor,
+              }}
+            />
+          }
           onClick={() => handleSelect(member)}
         />
       ))}

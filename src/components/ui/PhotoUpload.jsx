@@ -31,6 +31,7 @@ const getPhotoDims = (projectData) => {
 };
 
 export default function PhotoUploadEditor({
+  ui,
   projectData,
   setPhotoUploadStatus,
   formData,
@@ -254,7 +255,7 @@ export default function PhotoUploadEditor({
         })
         .replace(/[/, ]/g, "_")
         .replace(/:/g, "-")}.png`;
-      const dataUrl = canvas.toDataURL("image"); 
+      const dataUrl = canvas.toDataURL("image");
       const imageBlob = dataURLToBlob(dataUrl);
       const cropperFileName = `cropped_${blobName}`;
       const originalFileName = `original_${blobName}`;
@@ -511,6 +512,7 @@ export default function PhotoUploadEditor({
             </div>
             <div>
               <Button
+                ui={ui}
                 type="button"
                 fullWidth={false}
                 leftIcon={<FaSave size={20} className="mr-2" />}

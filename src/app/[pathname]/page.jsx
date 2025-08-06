@@ -1,6 +1,7 @@
 import LoginPage from "@components/pages/LoginPage";
 import { getAllProjectsCached } from "../../../utils/projectCache";
 import Config from "../../../utils/Config";
+import NotFoundPage from "./NotFoundPage"
 
 export async function generateStaticParams() {
   const projects = await getAllProjectsCached();
@@ -49,6 +50,6 @@ export default async function Home({ params }) {
     return <LoginPage projectData={projectInfo} projectId={pathname} ui={ui} />;
   } catch (error) {
     console.error("Error in Home component:", error);
-    return <div>Error loading project data. Please try again later.</div>;
+    return <NotFoundPage />;
   }
 }

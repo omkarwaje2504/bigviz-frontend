@@ -6,6 +6,7 @@ import { FaStar } from "react-icons/fa";
 import CalendarPage from "@components/pages/CalendarPage";
 
 const RenderStepContent = ({
+  ui,
   formData,
   setFormData,
   projectData,
@@ -106,7 +107,7 @@ const RenderStepContent = ({
     case 2:
       return (
         <div className="space-y-6">
-          {projectData?.features.includes("calendar") ? (
+          {projectData?.features?.includes("calendar") ? (
             <CalendarPage
               projectData={projectData}
               formData={formData}
@@ -114,6 +115,7 @@ const RenderStepContent = ({
             />
           ) : (
             <PhotoUploadEditor
+              ui={ui}
               projectData={projectData}
               setPhotoUploadStatus={setPhotoUploadStatus}
               formData={formData}

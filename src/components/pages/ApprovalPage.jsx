@@ -168,8 +168,8 @@ const ApprovalPage = ({ projectData, projectId, ui }) => {
 };
 
 const stats = (members, ui, projectData) => {
-  const total = members.length || 1; // to avoid division by zero
-
+  const total = members.length || 1;
+  
   const activeMembers = !projectData?.config?.employee.approval_required
     ? members.filter((member) => member.download !== null)
     : members.filter((member) => member.approved_status == 1);

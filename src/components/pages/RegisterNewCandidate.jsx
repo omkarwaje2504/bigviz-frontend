@@ -16,8 +16,9 @@ import {
 } from "react-icons/fa";
 import { set } from "zod";
 import { useRouter } from "next/navigation";
+import { IoArrowBackCircleSharp } from "react-icons/io5";
 
-export default function RegisterNewCandidate({ projectData, projectId }) {
+export default function RegisterNewCandidate({ projectData, projectId, ui }) {
   const [currentStep, setCurrentStep] = useState(1);
   const [photoUploadStatus, setPhotoUploadStatus] = useState(false);
   const [audioUploadStatus, setAudioUploadStatus] = useState(false);
@@ -72,7 +73,15 @@ export default function RegisterNewCandidate({ projectData, projectId }) {
       {/* Main Content */}
       <div className="container mx-auto px-4 py-3">
         <div className="max-w-3xl mx-auto">
-          <h1 className="text-xl font-bold">Add New Doctor Registration</h1>
+          <h1 className="text-xl font-bold flex gap-2 items-center">
+            <IoArrowBackCircleSharp onClick={()=>router.back()}
+              className="w-10 h-10"
+              style={{
+                fill: ui?.basic?.secondaryColor || "white",
+              }}
+            />{" "}
+            Add New Doctor Registration
+          </h1>
           <p className="text-gray-400 mb-4 text-sm md:text-md">
             Complete the form below to create a new E-video for medical
             professionals
@@ -87,6 +96,7 @@ export default function RegisterNewCandidate({ projectData, projectId }) {
             className="bg-gray-900 rounded-lg p-4 border border-gray-800"
           >
             <RenderStepContent
+              ui={ui}
               currentStep={currentStep}
               formData={formData}
               setFormData={setFormData}
