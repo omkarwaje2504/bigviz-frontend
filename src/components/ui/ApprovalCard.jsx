@@ -17,6 +17,7 @@ const ApprovalCard = ({
 }) => {
   const [doctors, setDoctors] = useState([]);
   const [loadingDoctors, setLoadingDoctors] = useState(false);
+  const [approvalTriggered, setApprovalTriggered] = useState(false);
 
   const currentTeam =
     selectionStack.length === 0
@@ -27,19 +28,43 @@ const ApprovalCard = ({
   const isMR = currentLevelMember?.role_name?.toLowerCase().includes("medical");
 
   useEffect(() => {
-    const fetchMRDoctors = async () => {
-      if (isMR) {
-        setLoadingDoctors(true);
-        const result = await FetchDoctors(projectData, currentLevelMember.hash);
-        setDoctors(result?.data || []);
-        setLoadingDoctors(false);
-      } else {
-        setDoctors([]); // Clear if not MR
-      }
-    };
+    if (isMR) {
+      fetchMRDoctors();
+    } else {
+      setDoctors([]); // Clear if not MR
+    }
+  }, [currentLevelMember, isMR]);
 
-    fetchMRDoctors();
-  }, [currentLevelMember]);
+  useEffect(() => {
+    let timeoutId;
+    if (isMR && approvalTriggered) {
+      timeoutId = setTimeout(() => {
+        fetchMRDoctors();
+        setApprovalTriggered(false); // Reset the trigger
+      }, 3000);
+    }
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId);
+    };
+  }, [approvalTriggered, isMR]);
+
+  const fetchMRDoctors = async () => {
+    if (isMR) {
+      setLoadingDoctors(true);
+      const result = await FetchDoctors(projectData, currentLevelMember.hash);
+      setDoctors(result?.data || []);
+      setLoadingDoctors(false);
+    } else {
+      setDoctors([]);
+    }
+  };
+
+  const handleApprovalWithRefresh = async (...args) => {
+    await handleApproval(...args);
+    if (isMR) {
+      setApprovalTriggered(true);
+    }
+  };
 
   const handleSelect = (person) => {
     setSelectionStack([...selectionStack, person]);
@@ -60,10 +85,10 @@ const ApprovalCard = ({
         projectData={projectData}
         userInfo={userInfo}
         members={doctors}
-        onEdit={(id) => alert(`Edit Doctor ID: ${id}`)}
+        onEdit={handleEdit}
         approvalState={true}
-        onApprove={handleApproval}
-        onDisapprove={handleEdit}
+        onApprove={handleApprovalWithRefresh}
+        onDisapprove={handleApprovalWithRefresh}
       />
     );
   }

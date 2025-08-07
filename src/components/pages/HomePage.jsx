@@ -83,24 +83,15 @@ const HomePage = ({ projectData, projectId, ui }) => {
     }
   };
 
-  const handleApproval = async (member) => {
+  const handleApproval = async (member, comments) => {
     const approvalCheck = await ApprovalAction(
       projectData,
       userInfo.hash,
       member,
-      1,
-      null,
+      comments ? 2 : 1,
+      comments,
     );
-  };
-  const handleDisapprove = async (member) => {
-    const approvalCheck = await ApprovalAction(
-      projectData,
-      userInfo.hash,
-      member,
-      2,
-      "data",
-    );
-    console.log(approvalCheck);
+    getMembers(userInfo);
   };
 
   if (isLoading) {
@@ -154,7 +145,7 @@ const HomePage = ({ projectData, projectId, ui }) => {
             approvalState={true}
             onEdit={(id) => console.log("Edit", id)}
             onApprove={handleApproval}
-            onDisapprove={handleDisapprove}
+            onDisapprove={handleApproval}
           />
         ) : (
           <div className="mt-6 text-center text-gray-400">

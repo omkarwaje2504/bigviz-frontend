@@ -7,7 +7,7 @@ import LoadingPage from "@components/ui/LoadingPage";
 import Dashboard from "@components/ui/Dashboard";
 import Button from "@components/ui/Button";
 import ApprovalCard from "@components/ui/ApprovalCard";
-import { DecryptData, RemoveData } from "@utils/cryptoUtils";
+import { DecryptData, EncryptData, RemoveData } from "@utils/cryptoUtils";
 import { ApprovalAction } from "@actions/approvalApis";
 
 const ApprovalPage = ({ projectData, projectId, ui }) => {
@@ -53,16 +53,14 @@ const ApprovalPage = ({ projectData, projectId, ui }) => {
     setSelectionStack((prev) => prev.slice(0, -1));
   };
 
-  const handleApproval = async (member) => {
+  const handleApproval = async (member, comments) => {
     const approvalCheck = await ApprovalAction(
       projectData,
       userInfo.hash,
       member,
-      1,
-      null,
+      comments ? 2 : 1,
+      comments,
     );
-
-    console.log(approvalCheck);
   };
 
   const handleEdit = (doctorId) => {
@@ -110,7 +108,13 @@ const ApprovalPage = ({ projectData, projectId, ui }) => {
   };
 
   if (loading) {
-    return <LoadingPage ui={ui} loadingtext="Loading approval system..." loadingTitle={projectData.seo_title} />;
+    return (
+      <LoadingPage
+        ui={ui}
+        loadingtext="Loading approval system..."
+        loadingTitle={projectData.seo_title}
+      />
+    );
   }
   return (
     <div className="min-h-screen bg-white dark:bg-gray-900 text-gray-900 dark:text-white">
@@ -169,7 +173,7 @@ const ApprovalPage = ({ projectData, projectId, ui }) => {
 
 const stats = (members, ui, projectData) => {
   const total = members.length || 1;
-  
+
   const activeMembers = !projectData?.config?.employee.approval_required
     ? members.filter((member) => member.download !== null)
     : members.filter((member) => member.approved_status == 1);

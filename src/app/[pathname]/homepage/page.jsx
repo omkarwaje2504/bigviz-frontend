@@ -23,13 +23,13 @@ export async function generateMetadata({ params }) {
     openGraph: {
       title: projectInfo?.seo_title || "Default Title",
       description: projectInfo?.seo_description || "Default description",
-      images: [projectInfo?.media?.seo_image || "/default-image.jpg"],
+      images: [projectInfo?.media.seo_image || "/default-image.jpg"],
     },
     twitter: {
       card: "summary_large_image",
       title: projectInfo?.seo_title || "Default Title",
       description: projectInfo?.seo_description || "Default description",
-      image: projectInfo?.media?.seo_image || "/default-image.jpg",
+      image: projectInfo?.media.seo_image || "/default-image.jpg",
     },
   };
 }
@@ -41,6 +41,6 @@ export default async function Home({ params }) {
     (project) => project.project_hash?.toString() === pathname,
   );
 
-  const ui=await Config(projectInfo);
-  return <HomePage projectData={projectInfo} projectId={pathname} ui={ui}/>;
+  const ui = await Config(projectInfo);
+  return <HomePage projectData={projectInfo} projectId={pathname} ui={ui} />;
 }

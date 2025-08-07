@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import {
   FaEye,
@@ -19,6 +19,7 @@ import MyError from "@services/MyError";
 // import CustomVideoPlayer from "./VideoPlayer";
 import { MdOutlineCancel } from "react-icons/md";
 import { RiArtboardFill } from "react-icons/ri";
+import CommentModal from "./CommentModal";
 
 interface History {
   approved_at: Date;
@@ -92,7 +93,7 @@ type MemberTableProps = {
   onEdit: (id: string) => void;
   approvalState?: boolean;
   onApprove?: (member: Member) => void;
-  onDisapprove?: (member: Member) => void;
+  onDisapprove?: (member: Member, comment: string) => void;
 };
 
 const ITEMS_PER_PAGE = 4;
@@ -122,6 +123,12 @@ const MemberTable: React.FC<MemberTableProps> = ({
   const [approvalProgressStates, setApprovalProgressStates] = useState<{
     [key: string]: boolean;
   }>({});
+  const [showCommentModal, setShowCommentModal] = useState<boolean>(false);
+  const [disapprovalComment, setDisapprovalComment] = useState<string>("");
+  const [memberToDisapprove, setMemberToDisapprove] = useState<Member | null>(
+    null,
+  );
+
   useEffect(() => {
     const term = searchTerm.toLowerCase();
     const result = members.filter(
@@ -145,13 +152,11 @@ const MemberTable: React.FC<MemberTableProps> = ({
   };
 
   const toggleApprovalProgress = (memberHash: string) => {
-    console.log(`Toggling approval progress for member: ${memberHash}`); // Debug line
     setApprovalProgressStates((prev) => {
       const newState = {
         ...prev,
-        [memberHash]: !Boolean(prev[memberHash]), // Explicitly convert to boolean
+        [memberHash]: !Boolean(prev[memberHash]),
       };
-      console.log("New approval states:", newState); // Debug line
       return newState;
     });
   };
@@ -189,11 +194,27 @@ const MemberTable: React.FC<MemberTableProps> = ({
 
     const approvalHistory = member.approval_history || [];
 
-    const approvedRoles: number[] = approvalHistory
+    // Get latest status for each role based on approved_at timestamp
+    const latestStatusByRole = approvalHistory.reduce(
+      (acc, entry) => {
+        const role = entry.role;
+        const approvedAt = new Date(entry.approved_at);
+
+        if (!acc[role] || new Date(acc[role].approved_at) < approvedAt) {
+          acc[role] = entry;
+        }
+
+        return acc;
+      },
+      {} as Record<number, any>,
+    );
+
+    // Get approved and disapproved roles based on latest status
+    const approvedRoles: number[] = Object.values(latestStatusByRole)
       .filter((entry) => entry.status === "Approved")
       .map((entry) => entry.role);
 
-    const disapprovedRoles: number[] = approvalHistory
+    const disapprovedRoles: number[] = Object.values(latestStatusByRole)
       .filter((entry) => entry.status === "Declined")
       .map((entry) => entry.role);
 
@@ -231,8 +252,9 @@ const MemberTable: React.FC<MemberTableProps> = ({
       }
     }
 
-    const userHasActed: boolean = approvalHistory.some(
-      (entry) => entry.role === currentUser.role,
+    // Check if user has acted based on latest status
+    const userHasActed: boolean = latestStatusByRole.hasOwnProperty(
+      currentUser.role,
     );
 
     const allApproved: boolean = approvalStackNumbers.every((roleNum: number) =>
@@ -265,8 +287,8 @@ const MemberTable: React.FC<MemberTableProps> = ({
     try {
       const response = await fetch(link, {
         method: "GET",
+        cache: "no-cache",
       });
-
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
@@ -319,7 +341,7 @@ const MemberTable: React.FC<MemberTableProps> = ({
       setDownloadingStatus((prev) =>
         prev.filter((h) => h !== member.doctor_hash),
       );
-      console.error("Error saving the file:", error);
+      MyError(error);
     }
   };
 
@@ -359,6 +381,7 @@ const MemberTable: React.FC<MemberTableProps> = ({
     } catch (e) {
       console.error("Preview error", e);
       setPreviewMode(false);
+      MyError(e);
     }
   };
 
@@ -398,7 +421,7 @@ const MemberTable: React.FC<MemberTableProps> = ({
                   ? ""
                   : "flex-1 flex items-center justify-center space-x-1 text-xs text-white bg-red-600 p-2 rounded-sm hover:bg-red-700"
               }
-              onClick={() => onDisapprove?.(member)}
+              onClick={() => handleDisapproveClick(member)}
               title="Disapprove"
             >
               {isListView ? (
@@ -469,7 +492,7 @@ const MemberTable: React.FC<MemberTableProps> = ({
                   ? ""
                   : "flex-1 flex items-center justify-center space-x-1 text-xs text-white bg-red-600 p-2 rounded-sm hover:bg-red-700"
               }
-              onClick={() => onDisapprove?.(member)}
+              onClick={() => handleDisapproveClick(member)}
               title="Disapprove"
             >
               {isListView ? (
@@ -661,6 +684,24 @@ const MemberTable: React.FC<MemberTableProps> = ({
     );
   };
 
+  const handleDisapproveClick = (member: Member) => {
+    setMemberToDisapprove(member);
+    setShowCommentModal(true);
+  };
+
+  const handleCancelDisapprove = () => {
+    setShowCommentModal(false);
+    setDisapprovalComment("");
+    setMemberToDisapprove(null);
+  };
+
+  const handleDisapproveConfirm = () => {
+    if (memberToDisapprove && disapprovalComment.trim()) {
+      onDisapprove?.(memberToDisapprove, disapprovalComment.trim());
+      handleCancelDisapprove(); // Reset the modal state
+    }
+  };
+
   return (
     <div className="mt-6 text-gray-900 dark:text-white">
       {previewMode && (
@@ -720,7 +761,13 @@ const MemberTable: React.FC<MemberTableProps> = ({
           </div>
         </div>
       )}
-
+      <CommentModal
+        showModal={showCommentModal}
+        comment={disapprovalComment}
+        onCommentChange={setDisapprovalComment}
+        onConfirm={handleDisapproveConfirm}
+        onCancel={handleCancelDisapprove}
+      />
       {/* Controls */}
       <div className="flex w-full items-center gap-2 mb-4">
         <div className="w-full">

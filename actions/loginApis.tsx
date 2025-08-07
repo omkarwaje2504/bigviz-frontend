@@ -22,7 +22,14 @@ export const LoginSubmission = async (formData: any, projectInfo: any) => {
 
     const response = await loginResponse.json();
     if (!response.data) {
-      throw new Error("Login fail. Please try again.");
+      if (
+        response.message ===
+        "Invalid employee code or employee not found in this project."
+      ) {
+        throw new Error("Employee is wrong. Please check and retry");
+      } else {
+        throw new Error("Login fail. Please try again.");
+      }
     }
     return { success: true, data: response.data };
   } catch (error: any) {
