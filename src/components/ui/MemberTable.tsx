@@ -122,7 +122,6 @@ const MemberTable: React.FC<MemberTableProps> = ({
   const [approvalProgressStates, setApprovalProgressStates] = useState<{
     [key: string]: boolean;
   }>({});
-
   useEffect(() => {
     const term = searchTerm.toLowerCase();
     const result = members.filter(
@@ -379,8 +378,6 @@ const MemberTable: React.FC<MemberTableProps> = ({
     } = approval;
 
     if (!approvalState) return null;
-
-    console.log(currentUserCanApprove,userHasActed,approvalHistory)
     if ((currentUserCanApprove || userHasActed) && !anyDisapproved) {
       const userAction = approvalHistory.find(
         (entry) => entry.role === currentUser.role,
@@ -670,7 +667,7 @@ const MemberTable: React.FC<MemberTableProps> = ({
         <div className="fixed top-0 left-0 w-full h-full flex items-center justify-center z-10 bg-slate-900/80 transition-all duration-300 ease-in-out">
           <div className="flex flex-col items-center justify-center p-3 w-full md:max-w-[50%] h-full max-h-[75%] relative">
             <MdOutlineCancel
-              className="w-10 h-10 fill-white mb-2 z-10 self-end cursor-pointer"
+              className="w-10 h-10 fill-black mb-2 z-10 self-end cursor-pointer absolute top-0 bg-white rounded-full border border-black"
               onClick={() => setPreviewMode(false)}
             />
 

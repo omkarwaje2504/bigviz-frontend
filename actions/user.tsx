@@ -1,7 +1,18 @@
 import MyError from "@services/MyError";
 
-const CACHE_KEY_PREFIX = "doctors_";
-const CACHE_DURATION_MS = 2 * 60 * 1000; // 5 minutes
+function cleanUrls(dataArray: any) {
+  return dataArray.map((item: any) => {
+    const cleanUrl = (url: string): string => {
+      return url.replace(/\/\d+\/production/, "/production");
+    };
+
+    return {
+      ...item,
+      image: cleanUrl(item.image),
+      download_url: cleanUrl(item.download_url),
+    };
+  });
+}
 
 export const FetchDoctors = async (projectData: any, employeeCode: string) => {
   if (!projectData) {
@@ -19,25 +30,6 @@ export const FetchDoctors = async (projectData: any, employeeCode: string) => {
       message: "Employee code cannot be empty or undefined. Please Login again",
     };
   }
-
-  // const cacheKey = `${CACHE_KEY_PREFIX}${employeeCode}`;
-
-  // // ✅ Check localStorage cache
-  // const cachedData = localStorage.getItem(cacheKey);
-  // if (cachedData) {
-  //   const parsed = JSON.parse(cachedData);
-  //   const isExpired = Date.now() > parsed.expiry;
-
-  //   if (!isExpired) {
-  //     return {
-  //       success: true,
-  //       data: parsed.data,
-  //       cached: true,
-  //     };
-  //   } else {
-  //     localStorage.removeItem(cacheKey); // remove expired
-  //   }
-  // }
 
   try {
     const response = await fetch(
@@ -64,23 +56,22 @@ export const FetchDoctors = async (projectData: any, employeeCode: string) => {
     }
 
     const result = await response.json();
-
-    // // ✅ Save to localStorage with expiry
-    // localStorage.setItem(
-    //   cacheKey,
-    //   JSON.stringify({
-    //     data: result.data,
-    //     expiry: Date.now() + CACHE_DURATION_MS,
-    //   }),
-    // );
-
-    return {
-      success: true,
-      data: result.data,
-      cached: false,
-    };
+    if (projectData?.name === "Lloyd") {
+      const data = result.data;
+      const updatedArray = cleanUrls(data);
+      return {
+        success: true,
+        data: updatedArray,
+        cached: false,
+      };
+    } else {
+      return {
+        success: true,
+        data: result.data,
+        cached: false,
+      };
+    }
   } catch (error) {
-    console.log("FetchDoctors exception:", error);
     MyError(error);
     return {
       success: false,
