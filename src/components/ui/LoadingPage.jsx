@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { FaFilm, FaRegPlayCircle } from "react-icons/fa";
 
-const LoadingPage = ({ ui,loadingTitle, loadingtext }) => {
+const LoadingPage = ({ ui, loadingTitle, loadingtext }) => {
   const [progress, setProgress] = useState(0);
 
   useEffect(() => {
@@ -24,12 +24,7 @@ const LoadingPage = ({ ui,loadingTitle, loadingtext }) => {
     <div className="fixed inset-0 flex flex-col items-center justify-center bg-white text-gray-800 dark:bg-black dark:text-white transition-colors duration-300">
       {/* Main Icon */}
       <div className="relative mb-12">
-        <FaFilm
-          className="text-8xl animate-pulse"
-          style={{
-            fill: ui.basic.secondaryColor,
-          }}
-        />
+        {ui.icons.loadingScreen}
         <FaRegPlayCircle
           className="text-4xl absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2"
           style={{

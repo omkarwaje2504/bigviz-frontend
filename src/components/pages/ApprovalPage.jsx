@@ -112,7 +112,7 @@ const ApprovalPage = ({ projectData, projectId, ui }) => {
       <LoadingPage
         ui={ui}
         loadingtext="Loading approval system..."
-        loadingTitle={projectData.seo_title}
+        loadingTitle={projectData.name}
       />
     );
   }

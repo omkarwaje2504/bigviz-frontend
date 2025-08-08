@@ -99,7 +99,7 @@ const HomePage = ({ projectData, projectId, ui }) => {
       <LoadingPage
         ui={ui}
         loadingtext={"Loading the Dashboard..."}
-        loadingTitle={projectData.seo_title}
+        loadingTitle={projectData.name}
       />
     );
   }
@@ -124,16 +124,18 @@ const HomePage = ({ projectData, projectId, ui }) => {
           </div>
 
           <div className="flex flex-col sm:flex-row sm:space-y-0 sm:space-x-3 w-full md:w-auto">
-            <Link href="register-new-candidate">
-              <Button
-                type="button"
-                fullWidth={false}
-                leftIcon={<FaUserPlus />}
-                ui={ui}
-              >
-                {ui.Dashboard.HomePageButtonLabel}
-              </Button>
-            </Link>
+            {projectData.project_hash !== "vlp6k2ze" && (
+              <Link href="register-new-candidate">
+                <Button
+                  type="button"
+                  fullWidth={false}
+                  leftIcon={<FaUserPlus />}
+                  ui={ui}
+                >
+                  {ui.Dashboard.HomePageButtonLabel}
+                </Button>
+              </Link>
+            )}
           </div>
         </div>
         {!loadMembers ? (

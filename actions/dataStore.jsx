@@ -4,7 +4,7 @@ export async function getDataSingleton() {
   // if (dataCache) return dataCache;
 
   const response = await fetch(
-    `https://sai-dev.laravel.cloud/api/all-projects`,
+    `${process.env.NEXT_PUBLIC_PROJECT_URL}/all-projects`,
     {
       method: "POST",
       headers: {

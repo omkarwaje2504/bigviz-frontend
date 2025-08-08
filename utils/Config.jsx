@@ -1,5 +1,26 @@
+import { FaFilm } from "react-icons/fa";
+import { GiWoodFrame } from "react-icons/gi";
+
 const Config = async (projectData) => {
   return {
+    icons: {
+      loadingScreen:
+        projectData.product_type === "PhotoFrame" ? (
+          <GiWoodFrame
+            className="text-8xl animate-pulse"
+            style={{
+              fill: projectData?.Theme?.secondaryColor || "#f5ba01",
+            }}
+          />
+        ) : (
+          <FaFilm
+            className="text-8xl animate-pulse"
+            style={{
+              fill: projectData?.Theme?.secondaryColor || "#f5ba01",
+            }}
+          />
+        ),
+    },
     theme: {
       selectedBg: "bg-gradient-to-br from-red-600 to-red-900",
       unselectedBg: "bg-transparent",
