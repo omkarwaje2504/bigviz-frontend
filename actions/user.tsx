@@ -56,7 +56,7 @@ export const FetchDoctors = async (projectData: any, employeeCode: string) => {
     }
 
     const result = await response.json();
-    if (projectData?.name === "Lloyd") {
+    if (projectData?.project_hash === "vlp6k2ze") {
       const data = result.data;
       const updatedArray = cleanUrls(data);
       return {
