@@ -52,23 +52,23 @@ const Config = async (projectData) => {
       HomePageSubTitle: "Manage all your doctor from here",
       HomePageButtonLabel: "Add New Doctor",
       title: "Dashboard Overview",
-      ActiveLabel: projectData?.features?.includes("approval_system")
+      ActiveLabel: projectData?.config?.employee?.approval_required
         ? "Active Clients"
         : projectData?.product_name === "E-Video"
           ? "Videos Generated"
           : projectData?.product_name === "E-Greeting"
             ? "Greetings Generated"
             : "Active Members",
-      PendingLabel: projectData?.features?.includes("approval_system")
+      PendingLabel: projectData?.config?.employee?.approval_required
         ? "Pending Approvals"
         : projectData?.product_name === "E-Video"
           ? "Videos Not Generated"
           : projectData?.product_name === "E-Greeting"
             ? "Greetings Not Generated"
-            : "Active Members",
+            : "Pending Members",
     },
     ApprovalPageTitle: {
-      HomePageTitle: `${projectData.seo_title} Approvals`,
+      HomePageTitle: `${projectData.name} Approvals`,
     },
   };
 };

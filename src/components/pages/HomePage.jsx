@@ -66,8 +66,6 @@ const HomePage = ({ projectData, projectId, ui }) => {
       router.push(`/${projectId}`);
     }
     getMembers(getUserInfo);
-    const getStats = stats(members, ui, projectData);
-    setStats(getStats);
 
     RemoveData("formData");
   }, []);
@@ -77,6 +75,9 @@ const HomePage = ({ projectData, projectId, ui }) => {
     if (membersData) {
       setMembers(membersData.data);
       setLoadMembers(false);
+      // Recalculate stats after members are fetched
+      const updatedStats = stats(membersData.data, ui, projectData);
+      setStats(updatedStats);
     } else {
       setLoadMembers(false);
       setMembers([]);
@@ -166,14 +167,13 @@ export default HomePage;
 
 const stats = (members, ui, projectData) => {
   const total = members.length || 1; // to avoid division by zero
+  const activeMembers = projectData?.config?.employee?.approval_required
+    ? members.filter((member) => member.download_url !== null)
+    : members.filter((member) => member.approval_history.length >= 1);
 
-  const activeMembers = !projectData?.features?.includes("approval_system")
-    ? members.filter((member) => member.download !== null)
-    : members.filter((member) => member.approved_status == 1);
-
-  const pendingMembers = !projectData?.features?.includes("approval_system")
-    ? members.filter((member) => member.download == null)
-    : members.filter((member) => member.approved_status == 0);
+  const pendingMembers = projectData?.config?.employee?.approval_required
+    ? members.filter((member) => member.approval_history.length == 0)
+    : members.filter((member) => member.approval_history.length == 0);
 
   const getPercentage = (count) => `${((count / total) * 100).toFixed(1)}%`;
 

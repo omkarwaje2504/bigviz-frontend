@@ -80,7 +80,20 @@ type MemberTableProps = {
     product_type: string;
     features: any;
     config: {
-      doctor: {};
+      doctor: {
+        approval_type: string;
+        disable_doctor_prefix: boolean;
+        disable_mobile_number: boolean;
+        disable_photo_cropper: boolean;
+        disable_photo_upload: boolean;
+        enable_add_new_doctor: boolean;
+        enable_contact_email: boolean;
+        enable_edit_button: boolean;
+        identifier_type: string;
+        label: string;
+        optional_first_photo: boolean;
+        optional_mobile_number: boolean;
+      };
       employee: {
         approval_roles: string[];
         approval_required: boolean;
@@ -876,13 +889,15 @@ const MemberTable: React.FC<MemberTableProps> = ({
                       <FaEye />
                       <span>Preview</span>
                     </button>
-                    <button
-                      className="w-full justify-center flex items-center space-x-1 text-xs text-white bg-purple-600 p-2 rounded-sm"
-                      onClick={() => onEdit(member.doctor_hash)}
-                    >
-                      <FaEdit />
-                      <span>Edit</span>
-                    </button>
+                    {projectData?.config?.doctor?.enable_edit_button && (
+                      <button
+                        className="w-full justify-center flex items-center space-x-1 text-xs text-white bg-purple-600 p-2 rounded-sm"
+                        onClick={() => onEdit(member.doctor_hash)}
+                      >
+                        <FaEdit />
+                        <span>Edit</span>
+                      </button>
+                    )}
                     <button
                       className="w-full justify-center flex items-center space-x-1 text-xs text-white bg-green-600 p-2 rounded-sm"
                       onClick={() => onDownload(member)}
@@ -1018,12 +1033,14 @@ const MemberTable: React.FC<MemberTableProps> = ({
                             <FaEye className="w-5 h-5 fill-yellow-500 hover:fill-yellow-600" />
                           </button>
                         )}
-                        <button
-                          onClick={() => onEdit(member.doctor_hash)}
-                          title="Edit"
-                        >
-                          <FaEdit className="w-5 h-5 fill-purple-500 hover:fill-purple-600" />
-                        </button>
+                        {projectData?.config?.doctor?.enable_edit_button && (
+                          <button
+                            onClick={() => onEdit(member.doctor_hash)}
+                            title="Edit"
+                          >
+                            <FaEdit className="w-5 h-5 fill-purple-500 hover:fill-purple-600" />
+                          </button>
+                        )}
                         <button
                           onClick={() => onDownload(member)}
                           title="Download"

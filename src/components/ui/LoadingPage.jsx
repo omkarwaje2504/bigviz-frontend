@@ -34,7 +34,7 @@ const LoadingPage = ({ ui, loadingTitle, loadingtext }) => {
       </div>
 
       {/* Branding Text */}
-      <h1 className="text-4xl font-bold text-red-600 dark:text-red-500 mb-2">
+      <h1 className="text-4xl text-center font-bold text-red-600 dark:text-red-500 mb-2">
         {loadingTitle}
       </h1>
       <p className="mb-8 text-gray-600 dark:text-gray-300">{loadingtext}</p>
