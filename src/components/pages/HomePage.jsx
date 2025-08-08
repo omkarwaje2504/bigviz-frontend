@@ -125,7 +125,7 @@ const HomePage = ({ projectData, projectId, ui }) => {
           </div>
 
           <div className="flex flex-col sm:flex-row sm:space-y-0 sm:space-x-3 w-full md:w-auto">
-            {projectData.project_hash !== "vlp6k2ze" && (
+            {!projectData?.config?.doctor?.enable_add_new_doctor && (
               <Link href="register-new-candidate">
                 <Button
                   type="button"
