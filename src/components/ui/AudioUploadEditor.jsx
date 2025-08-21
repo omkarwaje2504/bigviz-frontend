@@ -438,7 +438,6 @@ const AudioUploadEditor = ({
     setUnsavedChanges(false);
   };
 
-  console.log(formData);
   return (
     <div className="bg-gray-900 rounded-lg p-6 max-w-3xl mx-auto font-sans">
       <h2 className="text-2xl font-bold text-white mb-6">

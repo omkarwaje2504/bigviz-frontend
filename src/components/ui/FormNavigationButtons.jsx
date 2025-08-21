@@ -9,27 +9,29 @@ const FormNavigationButtons = ({
   validationStatus,
   projectData,
 }) => {
-  const projectType = projectData?.product_name;
+  const projectType = projectData?.product_type;
   const isPage1Valid =
     currentStep !== 1 ||
     (validationStatus && Object.values(validationStatus).every(Boolean));
 
   const isPage2Valid =
     currentStep !== 2 ||
-    (projectType !== "Desk Calendar" && !!formData?.photo?.croppedImage) ||
-    (projectType === "Desk Calendar" &&
+    (projectType !== "DeskCalendar" && !!formData?.photo?.croppedImage) ||
+    (projectType === "DeskCalendar" &&
       Array.isArray(formData?.calendarData) &&
       formData.calendarData.length === 12 &&
-      formData.calendarData.every((item) => !!item?.croppedImage));
+      formData.calendarData.every((item) => !!item.images[0]?.croppedImage));
 
   const isLastStepForProject =
-    (projectType === "E-Video" && currentStep === 2 && isPage2Valid) ||
+    projectType === "E-Video" ||
+    (projectType === "DeskCalendar" && currentStep === 2 && isPage2Valid) ||
     (projectType !== "E-Video" && currentStep === 4);
 
   const canProceed =
     (currentStep === 1 && isPage1Valid) ||
     (currentStep === 2 && isPage2Valid) ||
     (currentStep === 3 && projectType !== "E-Video");
+
   const handleNext = () => {
     setCurrentStep(currentStep + 1);
   };

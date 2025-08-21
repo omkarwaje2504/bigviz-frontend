@@ -52,9 +52,11 @@ async function GenerateFilePath(fileName: string, projectInfo: any) {
   if (!projectInfo) {
     throw new Error("project info not found");
   }
-  console.log(projectInfo);
+  const projectName = decodeURIComponent(projectInfo.name)
+    .replace(/\s+/g, "-")
+    .toLocaleLowerCase();
 
-  return `production/photos/${year}/${projectInfo.name}/${employeeInfo.hash}/${fileName}`;
+  return `production/photos/${year}/${projectName}/${employeeInfo.hash}/${fileName}`;
 }
 
 const UploadFile = async (
@@ -73,7 +75,6 @@ const UploadFile = async (
           : type === "pdf"
             ? "application/pdf"
             : null;
-
   if (contentType == null) {
     throw new Error("Unsupported file type");
   }
@@ -96,9 +97,8 @@ const UploadFile = async (
       imageData.byteLength,
     );
   } else {
-    throw new Error("Unsupported image data type");
+    throw new Error("Unsupported image data type", imageData);
   }
-
   const command = new PutObjectCommand({
     Bucket: bucketName,
     Key: filePath,
@@ -123,7 +123,7 @@ export const createS3Url = ({ name }: { name: string }) => {
   if (provider === "S3") {
     return `https://${process.env.NEXT_PUBLIC_AWS_S3_BUCKET_NAME}.s3.amazonaws.com/${name}`;
   } else if (provider === "R2") {
-    return `https://pub-55257b9217554e4cad3b45d7ee44674b.r2.dev/${name}`;
+    return `${process.env.NEXT_PUBLIC_R2_PUBLIC_URL}/${name}`;
   }
   throw new Error("Unsupported storage provider");
 };

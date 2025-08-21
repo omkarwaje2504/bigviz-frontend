@@ -1,6 +1,7 @@
 import ApprovalPage from "@components/pages/ApprovalPage";
 import { getAllProjectsCached } from "../../../../utils/projectCache";
 import Config from "../../../../utils/Config";
+import NotFoundPage from "../NotFoundPage";
 
 export async function generateStaticParams() {
   const projects = await getAllProjectsCached();
@@ -43,7 +44,11 @@ export default async function Home({ params }) {
     (project) => project.project_hash?.toString() === pathname,
   );
   const ui = await Config(projectInfo);
-  return (
-    <ApprovalPage projectData={projectInfo} projectId={pathname} ui={ui} />
-  );
+  if (projectInfo) {
+    return (
+      <ApprovalPage projectData={projectInfo} projectId={pathname} ui={ui} />
+    );
+  } else {
+    return <NotFoundPage />;
+  }
 }

@@ -26,7 +26,7 @@ export const LoginSubmission = async (formData: any, projectInfo: any) => {
         response.message ===
         "Invalid employee code or employee not found in this project."
       ) {
-        throw new Error("Employee is wrong. Please check and retry");
+        throw new Error("Employee code is wrong. Please check and retry");
       } else {
         throw new Error("Login fail. Please try again.");
       }

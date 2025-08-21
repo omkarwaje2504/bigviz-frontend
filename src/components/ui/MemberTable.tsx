@@ -552,9 +552,9 @@ const MemberTable: React.FC<MemberTableProps> = ({
               </button>
 
               <span
-                className={`w-1/2 items-center pt-2 text-xs font-medium px-2 py-1 rounded ${isListView ? "bg-red-100 text-red-600" : "bg-red-100 text-red-700"}`}
+                className={` items-center text-xs font-medium px-2 py-1 rounded ${isListView ? "bg-red-100 text-red-600" : "bg-red-100 text-red-700"}`}
               >
-                ❌ {isListView ? "Stopped" : "You Disapproved"}
+                ❌ {isListView ? "Disapproved" : "You Disapproved"}
               </span>
             </div>
           ) : userInApprovalFlow ? (
@@ -962,9 +962,23 @@ const MemberTable: React.FC<MemberTableProps> = ({
                     key={member.doctor_hash}
                     className="hover:bg-gray-100 dark:hover:bg-gray-800"
                   >
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-3 py-4 whitespace-nowrap">
                       <div className="font-medium">
-                        <p>{member.name}</p>
+                        <p className="flex items-center gap-2 text-sm">
+                          {" "}
+                          <div
+                            className="md:w-10 w-8 h-8 md:h-10 rounded-full overflow-hidden"
+                            onClick={() => onPreview(member, "DOCTOR_IMAGE")}
+                          >
+                            <img
+                              src={member.image}
+                              alt="Doctor-Image"
+                              className="w-full"
+                            />
+                          </div>
+                          {member.name}
+                        </p>
+
                         <p className="text-xs text-gray-600 dark:text-gray-400 block md:hidden">
                           {member.mobile}
                         </p>

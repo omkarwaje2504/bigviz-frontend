@@ -65,6 +65,7 @@ const HomePage = ({ projectData, projectId, ui }) => {
     if (!getUserInfo) {
       router.push(`/${projectId}`);
     }
+
     getMembers(getUserInfo);
 
     RemoveData("formData");
@@ -100,7 +101,7 @@ const HomePage = ({ projectData, projectId, ui }) => {
       <LoadingPage
         ui={ui}
         loadingtext={"Loading the Dashboard..."}
-        loadingTitle={projectData.name}
+        loadingTitle={projectData?.name}
       />
     );
   }
@@ -113,6 +114,7 @@ const HomePage = ({ projectData, projectId, ui }) => {
       />
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2">
         <Dashboard stats={statistics} ui={ui} projectData={projectData} />
+      
 
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 space-y-4 md:space-y-0">
           <div className="w-full md:w-auto">
@@ -125,7 +127,7 @@ const HomePage = ({ projectData, projectId, ui }) => {
           </div>
 
           <div className="flex flex-col sm:flex-row sm:space-y-0 sm:space-x-3 w-full md:w-auto">
-            {!projectData?.config?.doctor?.enable_add_new_doctor && (
+            {projectData?.config?.doctor?.enable_add_new_doctor && (
               <Link href="register-new-candidate">
                 <Button
                   type="button"
@@ -166,7 +168,7 @@ const HomePage = ({ projectData, projectId, ui }) => {
 export default HomePage;
 
 const stats = (members, ui, projectData) => {
-  const total = members.length || 1; // to avoid division by zero
+  const total = (members && members.length) || 1;
   const activeMembers = projectData?.config?.employee?.approval_required
     ? members.filter((member) => member.download_url !== null)
     : members.filter((member) => member.approval_history.length >= 1);

@@ -1,6 +1,7 @@
 import { getAllProjectsCached } from "../../../../utils/projectCache";
 import Config from "../../../../utils/Config";
 import RenderPage from "../../../components/pages/RenderPage";
+import NotFoundPage from "../NotFoundPage";
 
 export async function generateStaticParams() {
   const projects = await getAllProjectsCached();
@@ -43,5 +44,11 @@ export default async function Home({ params }) {
     (project) => project.project_hash?.toString() === pathname,
   );
   const ui = await Config(projectInfo);
-  return <RenderPage projectData={projectInfo} projectId={pathname} ui={ui} />;
+  if (projectInfo) {
+    return (
+      <RenderPage projectData={projectInfo} projectId={pathname} ui={ui} />
+    );
+  } else {
+    <NotFoundPage />;
+  }
 }

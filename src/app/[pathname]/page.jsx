@@ -44,7 +44,13 @@ export default async function Home({ params }) {
     );
 
     const ui = await Config(projectInfo);
-    return <LoginPage projectData={projectInfo} projectId={pathname} ui={ui} />;
+    if (projectInfo) {
+      return (
+        <LoginPage projectData={projectInfo} projectId={pathname} ui={ui} />
+      );
+    } else {
+      return <NotFoundPage />;
+    }
   } catch (error) {
     console.error("Error in Home component:", error);
     return <NotFoundPage />;

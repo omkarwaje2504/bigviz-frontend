@@ -1,81 +1,81 @@
 import MyError from "@services/MyError";
-
-function cleanUrls(dataArray: any) {
-  return dataArray.map((item: any) => {
-    const cleanUrl = (url: string): string => {
-      return url.replace(/\/\d+\/production/, "/production");
-    };
-
-    return {
-      ...item,
-      image: cleanUrl(item.image),
-      download_url: cleanUrl(item.download_url),
-    };
-  });
-}
+import cleanUrls from "@utils/CleanUrl";
 
 export const FetchDoctors = async (projectData: any, employeeCode: string) => {
-  if (!projectData) {
-    console.log("FetchDoctors error: ProjectData is empty or undefined");
+  if (!projectData?.project_hash) {
     return {
       success: false,
-      message: "ProjectData is missing. Please Login again",
+      message: "Something left behind. Please refresh and try again.",
     };
   }
 
   if (!employeeCode) {
-    console.log("FetchDoctors error: Employee hash is empty or undefined");
     return {
       success: false,
-      message: "Employee code cannot be empty or undefined. Please Login again",
+      message: "Employee code is required. Please login again.",
     };
   }
 
+  const apiUrl = process.env.NEXT_PUBLIC_PROJECT_URL;
+
+  if (!apiUrl) {
+    throw new Error("API url is missing. Pleach check");
+  }
+
   try {
-    const response = await fetch(
-      `${process.env.NEXT_PUBLIC_PROJECT_URL}/doctor/fetch`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-        },
-        body: JSON.stringify({
-          project_hash: projectData?.project_hash,
-          employee_hash: employeeCode,
-        }),
+    const response = await fetch(`${apiUrl}/doctor/fetch`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
       },
-    );
+      body: JSON.stringify({
+        project_hash: projectData.project_hash,
+        employee_hash: employeeCode,
+      }),
+    });
 
     if (!response.ok) {
-      console.log(
-        "FetchDoctors error: Failed to fetch doctors. Status:",
-        response.status,
+      console.error(
+        `FetchDoctors error: Server responded with status ${response.status}`,
       );
-      throw new Error("No Response");
+      throw new Error(`Server responded with status ${response.status}`);
     }
 
-    const result = await response.json();
-    if (projectData?.project_hash === "vlp6k2ze") {
-      const data = result.data;
-      const updatedArray = cleanUrls(data);
+    let result;
+    try {
+      result = await response.json();
+    } catch (jsonErr) {
+      console.error("FetchDoctors error: Failed to parse JSON", jsonErr);
+      throw new Error("Invalid server response format.");
+    }
+
+    const isVlpProject = projectData.project_hash === "vlp6k2ze";
+    const data = result?.data;
+
+    if (isVlpProject && Array.isArray(data)) {
+      const cleanedData = cleanUrls(data);
+      
       return {
         success: true,
-        data: updatedArray,
-        cached: false,
-      };
-    } else {
-      return {
-        success: true,
-        data: result.data,
+        data: cleanedData,
         cached: false,
       };
     }
-  } catch (error) {
+
+    return {
+      success: true,
+      data: Array.isArray(data) || typeof data === "object" ? data : [],
+      cached: false,
+    };
+  } catch (error: any) {
     MyError(error);
+    console.error("FetchDoctors catch block error:", error?.message || error);
     return {
       success: false,
-      message: "Failed to fetch doctors.",
+      message:
+        error?.message ||
+        "An unexpected error occurred while fetching doctors.",
     };
   }
 };

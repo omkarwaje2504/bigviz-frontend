@@ -58,6 +58,7 @@ jobs:
           echo "NEXT_PUBLIC_R2_BUCKET_NAME=${{ secrets.NEXT_PUBLIC_R2_BUCKET_NAME }}" >> .env
           echo "NEXT_PUBLIC_R2_REGION=${{ secrets.NEXT_PUBLIC_R2_REGION }}" >> .env
           echo "NEXT_PUBLIC_R2_ACCOUNT_ID=${{ secrets.NEXT_PUBLIC_R2_ACCOUNT_ID }}" >> .env
+          echo "NEXT_PUBLIC_R2_PUBLIC_URL=${{ secrets.NEXT_PUBLIC_R2_PUBLIC_URL }}" >> .env
 
       - name: Build Website
         run: |

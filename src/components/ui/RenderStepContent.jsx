@@ -3,7 +3,7 @@ import InputField from "./InputField";
 import PhotoUploadEditor from "./PhotoUpload";
 import AudioUploadEditor from "./AudioUploadEditor";
 import { FaStar } from "react-icons/fa";
-import CalendarPage from "@components/pages/CalendarPage";
+import CalendarPage from "@components/ui/Calendar";
 
 const RenderStepContent = ({
   ui,
@@ -107,11 +107,12 @@ const RenderStepContent = ({
     case 2:
       return (
         <div className="space-y-6">
-          {projectData?.features?.includes("calendar") ? (
+          {projectData?.product_type==="DeskCalendar" ? (
             <CalendarPage
               projectData={projectData}
               formData={formData}
               setFormData={setFormData}
+              ui={ui}
             />
           ) : (
             <PhotoUploadEditor

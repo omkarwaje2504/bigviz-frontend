@@ -1,1 +1,20 @@
 @import "tailwindcss";
+
+/* Add this to your CSS file or styled-jsx */
+@media (max-width: 1024px) {
+  .preview-mockup {
+    --preview-scale: 0.8;
+  }
+}
+
+@media (max-width: 768px) {
+  .preview-mockup {
+    --preview-scale: 0.6;
+  }
+}
+
+@media (max-width: 480px) {
+  .preview-mockup {
+    --preview-scale: 0.4;
+  }
+}

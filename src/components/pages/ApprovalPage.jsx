@@ -42,7 +42,6 @@ const ApprovalPage = ({ projectData, projectId, ui }) => {
         code: getUserInfo?.code,
       });
     }
-    console.log(getUserInfo);
     setHierarchy(getUserInfo?.team);
     const getStats = stats(hierarchy, ui, projectData);
     setStatistics(getStats);

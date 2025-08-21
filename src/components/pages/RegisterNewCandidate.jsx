@@ -17,6 +17,7 @@ import {
 import { set } from "zod";
 import { useRouter } from "next/navigation";
 import { IoArrowBackCircleSharp } from "react-icons/io5";
+import Link from "next/link";
 
 export default function RegisterNewCandidate({ projectData, projectId, ui }) {
   const [currentStep, setCurrentStep] = useState(1);
@@ -73,15 +74,15 @@ export default function RegisterNewCandidate({ projectData, projectId, ui }) {
       {/* Main Content */}
       <div className="container mx-auto px-4 py-3">
         <div className="max-w-3xl mx-auto">
-          <h1 className="text-xl font-bold flex gap-2 items-center">
-            <IoArrowBackCircleSharp onClick={()=>router.back()}
+          <Link className="text-xl font-bold flex gap-2 items-center" href={`/${projectId}/homepage`}>
+            <IoArrowBackCircleSharp
               className="w-10 h-10"
               style={{
                 fill: ui?.basic?.secondaryColor || "white",
               }}
             />{" "}
             Add New Doctor Registration
-          </h1>
+          </Link>
           <p className="text-gray-400 mb-4 text-sm md:text-md">
             Complete the form below to create a new E-video for medical
             professionals

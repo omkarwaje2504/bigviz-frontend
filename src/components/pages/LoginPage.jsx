@@ -8,6 +8,7 @@ import config from "@utils/Config";
 import MyError from "@services/MyError";
 import { DecryptData, EncryptData } from "@utils/cryptoUtils";
 import { useRouter } from "next/navigation";
+import { GenerateCardImage } from "@services/GenerateCardImage";
 
 export default function LoginPage({ projectData, projectId, ui }) {
   const [loading, setLoading] = useState(true);
@@ -15,9 +16,14 @@ export default function LoginPage({ projectData, projectId, ui }) {
   const router = useRouter();
 
   useEffect(() => {
-    const getUserData = DecryptData("empData");
+    let getUserData = DecryptData("empData");
+    const getProjectHash = localStorage.getItem("projectHash");
+    if (getProjectHash !== projectId) {
+      getUserData = null;
+    }
     localStorage.clear();
-    localStorage.setItem("projectHash", projectData.project_hash);
+    localStorage.setItem("projectHash", projectData?.project_hash);
+    if (projectId === undefined) router.push("/");
     if (getUserData) {
       EncryptData("empData", getUserData);
       router.push(`${projectId}/homepage`);
@@ -35,14 +41,18 @@ export default function LoginPage({ projectData, projectId, ui }) {
       <LoadingPage
         ui={ui}
         loadingtext="Your jouney is starting from here"
-        loadingTitle={projectData.name}
+        loadingTitle={projectData?.name}
       />
     );
   }
-  console.log(projectData)
   return (
     <div className="flex flex-col lg:flex-row min-h-screen bg-gray-50 text-gray-800 dark:bg-gray-900 dark:text-white transition-colors duration-300">
-      <Banner bannerImage={projectData?.media?.top_banner} />
+      <Banner
+        bannerImage={(projectData?.media?.top_banner).replace(
+          /^(https?:\/\/[^/]+)\/.*?(\/production.*)$/,
+          "$1$2",
+        )}
+      />
 
       <div className="flex-grow flex flex-col items-center justify-center px-4">
         <div className="max-w-md w-full space-y-8 p-8 rounded-lg shadow-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 transition-all">

@@ -1,0 +1,230 @@
+import React, { useState, useEffect } from "react";
+import { Stage, Layer, Image as KonvaImage, Text } from "react-konva";
+import { FaTimes } from "react-icons/fa";
+
+function CalendarPreviewKonva({
+  previewImageSrc,
+  monthName,
+  calendarPreviewConfig,
+  onClose,
+  isDarkMode,
+  ui,
+}) {
+  const [mockupImage, setMockupImage] = useState(null);
+  const [previewImage, setPreviewImage] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    let isMounted = true;
+    setLoading(true);
+    setError(null);
+
+    const loadImages = async () => {
+      try {
+        // Load base calendar mockup
+        const baseImage = new window.Image();
+        baseImage.crossOrigin = "Anonymous";
+
+        const baseImagePromise = new Promise((resolve, reject) => {
+          baseImage.onload = () => resolve(baseImage);
+          baseImage.onerror = () =>
+            reject(new Error("Failed to load calendar mockup"));
+
+          // Add a cache-busting query param
+          const cacheBuster = `cb=${Date.now()}`;
+          const url = calendarPreviewConfig.baseImageUrl;
+
+          baseImage.src = url + (url.includes("?") ? "&" : "?") + cacheBuster;
+        });
+
+        // Load preview image
+        const preview = new window.Image();
+        preview.crossOrigin = "Anonymous";
+
+        const previewImagePromise = new Promise((resolve, reject) => {
+          preview.onload = () => resolve(preview);
+          preview.onerror = () =>
+            reject(new Error("Failed to load preview image"));
+
+          const cacheBuster = `cb=${Date.now()}`;
+          const url = previewImageSrc;
+          preview.src = url + (url.includes("?") ? "&" : "?") + cacheBuster;
+        });
+
+        // Wait for both images to load
+        const [loadedMockup, loadedPreview] = await Promise.all([
+          baseImagePromise,
+          previewImagePromise,
+        ]);
+
+        if (isMounted) {
+          setMockupImage(loadedMockup);
+          setPreviewImage(loadedPreview);
+          setLoading(false);
+        }
+      } catch (err) {
+        if (isMounted) {
+          setError(err.message);
+          setLoading(false);
+        }
+      }
+    };
+
+    loadImages();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [previewImageSrc, calendarPreviewConfig.baseImageUrl]);
+
+  if (loading) {
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
+        <div
+          className={`${isDarkMode ? "bg-gray-800 text-white" : "bg-white"} p-6 rounded-lg`}
+        >
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
+            <p>Loading preview...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
+        <div
+          className={`${isDarkMode ? "bg-gray-800 text-white" : "bg-white"} p-6 rounded-lg max-w-md`}
+        >
+          <div className="text-center">
+            <p className="text-red-500 mb-4">Error: {error}</p>
+            <button
+              onClick={onClose}
+              className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!mockupImage || !previewImage) return null;
+
+  // Calculate scale for responsive display while maintaining aspect ratio
+  const maxWidth = window.innerWidth * 0.9;
+  const maxHeight = window.innerHeight * 0.8;
+  const scale = Math.min(
+    maxWidth / mockupImage.width,
+    maxHeight / mockupImage.height,
+    1, // Never scale up
+  );
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
+      <div
+        className={`${isDarkMode ? "bg-gray-800" : "bg-white"} rounded-lg shadow-2xl overflow-hidden`}
+        style={{
+          maxWidth: "95vw",
+          maxHeight: "95vh",
+          display: "flex",
+          flexDirection: "column",
+        }}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between p-4 border-b border-gray-200">
+          <h3
+            className={`text-lg font-semibold ${isDarkMode ? "text-white" : ""}`}
+          >
+            Calendar Preview - {monthName}
+          </h3>
+          <button
+            onClick={onClose}
+            className={`p-2 hover:bg-gray-100 rounded-full transition-colors ${
+              isDarkMode ? "hover:bg-gray-700 text-white" : ""
+            }`}
+          >
+            <FaTimes />
+          </button>
+        </div>
+
+        {/* Konva Canvas Container */}
+        <div className="flex-1 flex items-center justify-center p-4 overflow-hidden">
+          <div
+            style={{
+              transform: `scale(${scale})`,
+              transformOrigin: "center",
+              width: mockupImage.width,
+              height: mockupImage.height,
+            }}
+          >
+            <Stage
+              width={mockupImage.width}
+              height={mockupImage.height}
+              style={{
+                border: "2px solid #e2e8f0",
+                borderRadius: "8px",
+                background: "white",
+              }}
+            >
+              <Layer>
+                <KonvaImage
+                  image={previewImage}
+                  x={calendarPreviewConfig.x}
+                  y={calendarPreviewConfig.y}
+                  width={calendarPreviewConfig.width}
+                  height={calendarPreviewConfig.height}
+                  listening={false}
+                  draggable={false}
+                  cornerRadius={calendarPreviewConfig.borderRadius || 8}
+                  // Add perspective transforms
+                  skewX={calendarPreviewConfig.perspective?.skewX || 0}
+                  skewY={calendarPreviewConfig.perspective?.skewY || 0}
+                  scaleX={calendarPreviewConfig.perspective?.scaleX || 1}
+                  scaleY={calendarPreviewConfig.perspective?.scaleY || 1}
+                  rotation={calendarPreviewConfig.perspective?.rotation || 0}
+                  offsetX={calendarPreviewConfig.width / 2} // Set transform origin to center
+                  offsetY={calendarPreviewConfig.height / 2}
+                />
+                <KonvaImage
+                  image={mockupImage}
+                  x={0}
+                  y={0}
+                  listening={false}
+                  draggable={false}
+                />
+              </Layer>
+            </Stage>
+          </div>
+        </div>
+
+        {/* Footer Info */}
+        <div className="p-4 border-t border-gray-200 text-center">
+          <p
+            className={`text-sm mb-2 ${isDarkMode ? "text-gray-300" : "text-gray-600"}`}
+          >
+            This is exactly how your image will appear in the final calendar
+          </p>
+          <div
+            className={`flex items-center justify-center gap-4 text-xs ${isDarkMode ? "text-gray-400" : "text-gray-500"}`}
+          >
+            <span>
+              Position: {calendarPreviewConfig.x}×{calendarPreviewConfig.y}px
+            </span>
+            <span>
+              Size: {calendarPreviewConfig.width}×{calendarPreviewConfig.height}
+              px
+            </span>
+            <span>Scale: {Math.round(scale * 100)}%</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default CalendarPreviewKonva;

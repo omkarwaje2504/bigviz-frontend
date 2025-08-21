@@ -5,7 +5,7 @@ const Config = async (projectData) => {
   return {
     icons: {
       loadingScreen:
-        projectData.product_type === "PhotoFrame" ? (
+        projectData?.product_type === "PhotoFrame" ? (
           <GiWoodFrame
             className="text-8xl animate-pulse"
             style={{
@@ -68,7 +68,7 @@ const Config = async (projectData) => {
             : "Pending Members",
     },
     ApprovalPageTitle: {
-      HomePageTitle: `${projectData.name} Approvals`,
+      HomePageTitle: `${projectData?.name} Approvals`,
     },
   };
 };

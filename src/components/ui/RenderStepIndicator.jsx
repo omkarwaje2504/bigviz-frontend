@@ -3,7 +3,7 @@ import { FaCheck } from "react-icons/fa";
 const RenderStepIndicator = ({ projectData, currentStep }) => {
   const PROJECT_TYPE = projectData?.product_name;
 
-  const steps = PROJECT_TYPE === "E-Video" ? [1, 2] : [1, 2, 3, 4];
+  const steps = PROJECT_TYPE === "E-Video" || "DeskCalendar"? [1, 2] : [1, 2, 3, 4];
 
   return (
     <div className="flex justify-center mb-4">
@@ -21,7 +21,7 @@ const RenderStepIndicator = ({ projectData, currentStep }) => {
             >
               {currentStep > step ? <FaCheck size={16} /> : step}
             </div>
-            {(PROJECT_TYPE === "E-Video" ? step < 2 : step < 4) && (
+            {(PROJECT_TYPE === "E-Video" ||"DeskCalendar" ? step < 2 : step < 4) && (
               <div
                 className={`w-12 h-1 ${
                   currentStep > step ? "bg-green-500" : "bg-gray-700"

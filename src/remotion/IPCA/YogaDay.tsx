@@ -15,7 +15,6 @@ const YogaDay: React.FC<{
   formData?: FormData;
   download: boolean;
 }> = ({ frame, formData = undefined, download }) => {
-  console.log("component", download, frame, formData);
   const frameData = frame;
 
   const {
@@ -27,8 +26,6 @@ const YogaDay: React.FC<{
     clinic_address,
     clinic_name,
   } = formData || {};
-
-  console.log()
 
   const introdurations: Record<string, Record<string, number>> = {
     English: { Male: 150, Female: 150 },
@@ -88,11 +85,9 @@ const YogaDay: React.FC<{
 
   return (
     <div>
-      
       <Video src={staticFile(`IPCA/YogaDay/${language}/Intro.mp4`)} />
 
-      <AbsoluteFill
-      >
+      <AbsoluteFill>
         <div
           className="w-[25rem] h-[25rem] left-[9.5rem] overflow-hidden border-[#a5e4c6] rounded-full border-[5px] absolute bottom-[4.2rem]"
           style={{
