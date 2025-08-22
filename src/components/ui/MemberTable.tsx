@@ -22,7 +22,7 @@ import { RiArtboardFill } from "react-icons/ri";
 import CommentModal from "./CommentModal";
 
 interface History {
-  approved_at: Date;
+  approved_at: string;
   employee_email: string;
   employee_name: string;
   role: number;
@@ -212,7 +212,9 @@ const MemberTable: React.FC<MemberTableProps> = ({
     const latestStatusByRole = approvalHistory.reduce(
       (acc, entry) => {
         const role = entry.role;
-        const approvedAt = new Date(entry.approved_at);
+        const approvedAt = entry.approved_at
+          ? new Date(entry.approved_at)
+          : new Date(0);
 
         if (!acc[role] || new Date(acc[role].approved_at) < approvedAt) {
           acc[role] = entry;
@@ -415,10 +417,16 @@ const MemberTable: React.FC<MemberTableProps> = ({
     } = approval;
 
     if (!approvalState) return null;
+
     if ((currentUserCanApprove || userHasActed) && !anyDisapproved) {
-      const userAction = approvalHistory.find(
-        (entry) => entry.role === currentUser.role,
-      );
+      const userAction = approvalHistory
+        .filter((entry) => entry.role === currentUser.role)
+        .reduce((latest: any, entry) => {
+          return !latest ||
+            new Date(entry.approved_at) > new Date(latest.approved_at)
+            ? entry
+            : latest;
+        }, null);
 
       if (userAction?.status === "Approved") {
         // User has approved - show status + disapprove button
