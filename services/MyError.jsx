@@ -1,5 +1,6 @@
 "use client";
 
+import { DecryptData } from "@utils/cryptoUtils";
 import { UAParser } from "ua-parser-js";
 
 const MyError = async (err) => {
@@ -22,6 +23,7 @@ const MyError = async (err) => {
         device: ua.device.model || "Desktop / Unknown",
         screen: `${window.innerWidth}×${window.innerHeight}`,
         userAgent: navigator.userAgent,
+        employeeDetails: DecryptData("empData") || null,
       };
     } catch (e) {
       console.warn("Failed to parse UA:", e);

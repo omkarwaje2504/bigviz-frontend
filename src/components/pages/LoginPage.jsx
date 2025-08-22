@@ -48,10 +48,7 @@ export default function LoginPage({ projectData, projectId, ui }) {
   return (
     <div className="flex flex-col lg:flex-row min-h-screen bg-gray-50 text-gray-800 dark:bg-gray-900 dark:text-white transition-colors duration-300">
       <Banner
-        bannerImage={(projectData?.media?.top_banner).replace(
-          /^(https?:\/\/[^/]+)\/.*?(\/production.*)$/,
-          "$1$2",
-        )}
+        bannerImage={`${process.env.NEXT_PUBLIC_R2_PUBLIC_URL}/${projectData?.top_banner}`}
       />
 
       <div className="flex-grow flex flex-col items-center justify-center px-4">

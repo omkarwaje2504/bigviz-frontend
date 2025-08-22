@@ -24,13 +24,13 @@ export async function generateMetadata({ params }) {
     openGraph: {
       title: projectInfo?.seo_title || "Default Title",
       description: projectInfo?.seo_description || "Default description",
-      images: [projectInfo?.media.seo_image || "/default-image.jpg"],
+      images: [`${process.env.NEXT_PUBLIC_R2_PUBLIC_URL}/${projectInfo?.seo_image}` || "/default-image.jpg"],
     },
     twitter: {
       card: "summary_large_image",
       title: projectInfo?.seo_title || "Default Title",
       description: projectInfo?.seo_description || "Default description",
-      image: projectInfo?.media.seo_image || "/default-image.jpg",
+      image: `${process.env.NEXT_PUBLIC_R2_PUBLIC_URL}/${projectInfo?.seo_image}` || "/default-image.jpg",
     },
   };
 }
