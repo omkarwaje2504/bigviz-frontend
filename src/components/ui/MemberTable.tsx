@@ -206,6 +206,11 @@ const MemberTable: React.FC<MemberTableProps> = ({
       })
       .filter((num) => num > 0);
 
+    // CRITICAL: Check if current user's role is in approval flow
+    const userRoleInApprovalFlow = approvalStackNumbers.includes(
+      currentUser.role,
+    );
+
     const approvalHistory = member.approval_history || [];
 
     // Get latest status for each role based on approved_at timestamp
@@ -237,33 +242,36 @@ const MemberTable: React.FC<MemberTableProps> = ({
     let nextApproverRole: number | null = null;
     let currentUserCanApprove = false;
 
-    // If no approval history, first role can approve
-    if (approvalHistory.length === 0) {
-      nextApproverRole = approvalStackNumbers[0] || null;
-      currentUserCanApprove = currentUser.role === nextApproverRole;
-    } else {
-      // Find next role in sequence
-      for (let i = 0; i < approvalStackNumbers.length; i++) {
-        const currentRoleInStack = approvalStackNumbers[i];
-
-        if (
-          !approvedRoles.includes(currentRoleInStack) &&
-          !disapprovedRoles.includes(currentRoleInStack)
-        ) {
-          nextApproverRole = currentRoleInStack;
-
-          const allPreviousRolesApproved = approvalStackNumbers
-            .slice(0, i)
-            .every((prevRole: number) => approvedRoles.includes(prevRole));
+    // Only check approval logic if user's role is in approval flow
+    if (userRoleInApprovalFlow) {
+      // If no approval history, first role can approve
+      if (approvalHistory.length === 0) {
+        nextApproverRole = approvalStackNumbers[0] || null;
+        currentUserCanApprove = currentUser.role === nextApproverRole;
+      } else {
+        // Find next role in sequence
+        for (let i = 0; i < approvalStackNumbers.length; i++) {
+          const currentRoleInStack = approvalStackNumbers[i];
 
           if (
-            currentUser.role === currentRoleInStack &&
-            allPreviousRolesApproved &&
-            disapprovedRoles.length === 0
+            !approvedRoles.includes(currentRoleInStack) &&
+            !disapprovedRoles.includes(currentRoleInStack)
           ) {
-            currentUserCanApprove = true;
+            nextApproverRole = currentRoleInStack;
+
+            const allPreviousRolesApproved = approvalStackNumbers
+              .slice(0, i)
+              .every((prevRole: number) => approvedRoles.includes(prevRole));
+
+            if (
+              currentUser.role === currentRoleInStack &&
+              allPreviousRolesApproved &&
+              disapprovedRoles.length === 0
+            ) {
+              currentUserCanApprove = true;
+            }
+            break;
           }
-          break;
         }
       }
     }
@@ -279,9 +287,6 @@ const MemberTable: React.FC<MemberTableProps> = ({
 
     const anyDisapproved: boolean = disapprovedRoles.length > 0;
 
-    // Check if user is in the approval flow
-    const userInApprovalFlow = approvalStackNumbers.includes(currentUser.role);
-
     return {
       roleNames,
       approvalStackNumbers,
@@ -293,11 +298,10 @@ const MemberTable: React.FC<MemberTableProps> = ({
       userHasActed,
       allApproved,
       anyDisapproved,
-      userInApprovalFlow,
+      userInApprovalFlow: userRoleInApprovalFlow, // Use the calculated value
       currentUser,
     };
   };
-
   const onDownload = async (member: Member) => {
     const link = member.download_url;
     try {
@@ -411,13 +415,27 @@ const MemberTable: React.FC<MemberTableProps> = ({
       userHasActed,
       anyDisapproved,
       allApproved,
-      userInApprovalFlow,
+      userInApprovalFlow, // This now correctly checks if user is in approval roles
       approvalHistory,
       currentUser,
     } = approval;
 
     if (!approvalState) return null;
 
+    // If user is NOT in approval flow, show view only
+    if (!userInApprovalFlow) {
+      return (
+        <div className="w-full flex items-center">
+          <span
+            className={`text-xs font-medium mx-auto px-2 py-1 rounded ${isListView ? "bg-gray-100 text-gray-600" : "bg-gray-100 text-gray-700"}`}
+          >
+            👁️ View Only
+          </span>
+        </div>
+      );
+    }
+
+    // Only show approval buttons if user is in approval flow
     if ((currentUserCanApprove || userHasActed) && !anyDisapproved) {
       const userAction = approvalHistory
         .filter((entry) => entry.role === currentUser.role)
@@ -530,7 +548,7 @@ const MemberTable: React.FC<MemberTableProps> = ({
         );
       }
     } else {
-      // Show status only - NO BUTTONS until it's user's turn
+      // Show status only - NO BUTTONS until it's user's turn or if disapproved
       return (
         <div className={isListView ? "text-xs" : "text-center"}>
           {allApproved ? (
@@ -540,33 +558,12 @@ const MemberTable: React.FC<MemberTableProps> = ({
               ✅ {isListView ? "Approved" : "Fully Approved"}
             </span>
           ) : anyDisapproved ? (
-            <div className="gap-2 flex">
-              <button
-                className={
-                  isListView
-                    ? ""
-                    : "flex-1 flex items-center justify-center space-x-1 text-xs text-white bg-emerald-600 p-2 rounded-sm hover:bg-emerald-700"
-                }
-                onClick={() => onApprove?.(member)}
-                title="Approve"
-              >
-                {isListView ? (
-                  <FaCheck className="fill-green-500 h-4 w-4 hover:fill-green-600" />
-                ) : (
-                  <>
-                    <FaCheck className="fill-white mr-1" />
-                    <span>Approve</span>
-                  </>
-                )}
-              </button>
-
-              <span
-                className={` items-center text-xs font-medium px-2 py-1 rounded ${isListView ? "bg-red-100 text-red-600" : "bg-red-100 text-red-700"}`}
-              >
-                ❌ {isListView ? "Disapproved" : "You Disapproved"}
-              </span>
-            </div>
-          ) : userInApprovalFlow ? (
+            <span
+              className={`text-xs font-medium px-2 py-1 rounded ${isListView ? "bg-red-100 text-red-600" : "bg-red-100 text-red-700"}`}
+            >
+              ❌ {isListView ? "Disapproved" : "Process Stopped"}
+            </span>
+          ) : (
             <span
               className={`text-xs font-medium px-2 py-1 rounded ${isListView ? "bg-orange-100 text-orange-600" : "bg-orange-100 text-orange-700"}`}
             >
@@ -575,18 +572,11 @@ const MemberTable: React.FC<MemberTableProps> = ({
                 ? "Pending"
                 : `Waiting for ${approval.nextApproverRole ? approval.roleNames[approval.nextApproverRole]?.toUpperCase() : "previous"} approval`}
             </span>
-          ) : (
-            <span
-              className={`text-xs font-medium px-2 py-1 rounded ${isListView ? "bg-gray-100 text-gray-600" : "bg-gray-100 text-gray-700"}`}
-            >
-              👁️ View Only
-            </span>
           )}
         </div>
       );
     }
   };
-
   const renderApprovalProgress = (member: Member) => {
     const approval = getApprovalLogic(member);
     // Use strict boolean check to prevent any undefined issues

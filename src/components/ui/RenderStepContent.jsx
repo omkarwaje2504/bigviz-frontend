@@ -107,7 +107,7 @@ const RenderStepContent = ({
     case 2:
       return (
         <div className="space-y-6">
-          {projectData?.product_type==="DeskCalendar" ? (
+          {projectData?.product_type === "DeskCalendar" ? (
             <CalendarPage
               projectData={projectData}
               formData={formData}
