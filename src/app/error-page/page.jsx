@@ -347,7 +347,7 @@ const FilterPanel = ({
 // Error card component
 const ErrorCard = ({ error, onView, onResolve, onDelete }) => {
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow">
+    <div className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow hover:cursor-pointer"     onClick={() => onView(error)}>
       <div className="flex items-start justify-between">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-2">
@@ -369,7 +369,17 @@ const ErrorCard = ({ error, onView, onResolve, onDelete }) => {
             </div>
             <div className="flex items-center gap-1">
               <FaClock className="text-gray-400" />
-              <span>{new Date(error.timestamp).toLocaleDateString()}</span>
+              <span>
+                {new Date(error.timestamp).toLocaleString("en-IN", {
+                  timeZone: "Asia/Kolkata",
+                  day: "2-digit",
+                  month: "short",
+                  year: "numeric",
+                  hour: "2-digit",
+                  minute: "2-digit",
+                  second: "2-digit",
+                })}
+              </span>
             </div>
             <div className="flex items-center gap-1">
               <FaLaptop className="text-gray-400" />
@@ -493,7 +503,7 @@ export default function ErrorTrackingDashboard() {
     dateRange: "",
   });
   const [viewMode, setViewMode] = useState("grouped"); // 'grouped' or 'list'
- const prevErrorIdsRef = useRef(new Set());
+  const prevErrorIdsRef = useRef(new Set());
   // Fetch errors
   const fetchErrors = useCallback(async (isRefresh = false) => {
     if (isRefresh) setRefreshing(true);
@@ -804,7 +814,7 @@ export default function ErrorTrackingDashboard() {
             </p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-            <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
+            <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 dark:text-white">
               <h3 className="font-semibold text-blue-800 dark:text-blue-200 mb-2">
                 Error Details
               </h3>
@@ -824,6 +834,21 @@ export default function ErrorTrackingDashboard() {
                   <span className="font-medium">OS:</span>{" "}
                   {error.deviceInfo?.os || "Unknown"}
                 </p>
+                <div className="bg-gray-800 p-2 text-md">
+                  <h2 className="underline">Employee Details</h2>
+                  <p>
+                    <span className="font-medium">code:</span>{" "}
+                    {error.deviceInfo?.employeeDetails.code || "Unknown"}
+                  </p>
+                  <p>
+                    <span className="font-medium">Region:</span>{" "}
+                    {error.deviceInfo?.employeeDetails.region || "Unknown"}
+                  </p>
+                  <p>
+                    <span className="font-medium">Role:</span>{" "}
+                    {error.deviceInfo?.employeeDetails.role_name || "Unknown"}
+                  </p>
+                </div>
               </div>
             </div>
             <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4">
