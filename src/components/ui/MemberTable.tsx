@@ -303,59 +303,59 @@ const MemberTable: React.FC<MemberTableProps> = ({
         method: "GET",
         cache: "no-cache",
       });
+
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        console.error(`Download failed. Status: ${response.status}`);
+        MyError(`Download failed. Status: ${response.status}`);
+        return;
       }
 
       setDownloadingStatus((prev) => [...prev, member.doctor_hash]);
+
       // @ts-expect-error this is a dynamic import
       const FileSaver = (await import("file-saverjs")).default;
       const contentBlob = await response.blob();
 
+      let fileName = slugify(member.name || "download", {
+        replacement: "",
+        remove: /[*+~.()'"!:@]/g,
+        lower: false,
+      });
+
       switch (projectData.product_type) {
-        case "PhotoFrame": {
-          const fileExtension = "jpg";
-          const fileName = `${slugify(member.name || "download", {
-            replacement: "",
-            remove: /[*+~.()'"!:@]/g,
-            lower: false,
-          })}.${fileExtension}`;
-          FileSaver(contentBlob, fileName);
-          break; // Added missing break
-        }
-        case "E-Greeting": {
-          const fileExtension = projectData.features.includes("pdf_ecard")
-            ? "pdf"
-            : "jpg";
-          const fileName = `${slugify(member.name || "download", {
-            replacement: "",
-            remove: /[*+~.()'"!:@]/g,
-            lower: false,
-          })}.${fileExtension}`;
-          FileSaver(contentBlob, fileName);
-          break; // Added missing break
-        }
-        case "E-Video": {
-          const fileName = `${slugify(member.name || "download", {
-            replacement: "",
-            remove: /[*+~.()'"!:@]/g,
-            lower: false,
-          })}.mp4`;
-          FileSaver(contentBlob, fileName);
-          break; // Added missing break
-        }
+        case "PhotoFrame":
+          fileName += ".jpg";
+          break;
+        case "E-Greeting":
+          fileName += projectData.features.includes("pdf_ecard")
+            ? ".pdf"
+            : ".jpg";
+          break;
+        case "E-Video":
+          fileName += ".mp4";
+          break;
         default:
+          fileName += ".dat"; // fallback extension
           break;
       }
+
+      FileSaver(contentBlob, fileName);
 
       setDownloadingStatus((prev) =>
         prev.filter((hash) => hash !== member.doctor_hash),
       );
     } catch (error) {
+      console.error("Download error:", error);
+
       setDownloadingStatus((prev) =>
         prev.filter((h) => h !== member.doctor_hash),
       );
-      MyError(error);
+
+      try {
+        MyError(error);
+      } catch (e) {
+        console.error("MyError failed:", e);
+      }
     }
   };
 
