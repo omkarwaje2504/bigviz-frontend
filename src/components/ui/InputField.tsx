@@ -7,7 +7,6 @@ import React, {
   ReactNode,
   useRef,
 } from "react";
-import config from "@utils/Config";
 import inputStyles from "styles/inputStyles";
 
 type ValidationRule = {

@@ -46,6 +46,7 @@ interface ApprovalLogic {
 
 interface Member {
   approval_history: History[];
+  comments: string | null;
   approved_at: string | null;
   approved_status: number;
   code: string | null;
@@ -624,7 +625,7 @@ const MemberTable: React.FC<MemberTableProps> = ({
 
         {/* Collapsible Content - Only shows for the specific member when isOpen is true */}
         {isOpen && (
-          <div className="px-3 pb-3 space-y-2">
+          <div className="px-3 pb-1 space-y-2">
             {/* Show the complete approval flow */}
             <div className="space-y-1">
               {approval.approvalStackNumbers.map(
@@ -679,11 +680,19 @@ const MemberTable: React.FC<MemberTableProps> = ({
                 },
               )}
             </div>
-
+            {member?.comments && (
+              <p className="text-xs">
+                <span className="bg-gray-100 dark:bg-gray-800 p-1 rounded-sm">
+                  Comments
+                </span>{" "}
+                {member.comments}
+              </p>
+            )}
             {/* Show approval order */}
-            <div className="pt-2 border-t border-gray-200 dark:border-gray-600">
+
+            <div className="pt-1 border-t border-gray-200 dark:border-gray-600">
               <span className="text-xs text-gray-500 dark:text-gray-400">
-                Required Order:{" "}
+                Approval Order:{" "}
                 {approval.approvalStackNumbers
                   .map((roleNum: number) =>
                     approval.roleNames[roleNum].toUpperCase(),

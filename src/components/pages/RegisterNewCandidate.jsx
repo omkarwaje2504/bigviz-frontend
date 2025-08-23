@@ -64,7 +64,7 @@ export default function RegisterNewCandidate({ projectData, projectId, ui }) {
     router.push(`render-magic-moment`);
   };
   return (
-    <div className="min-h-screen bg-gray-900 text-white">
+    <div className="min-h-screen dark:bg-gray-900 text-white">
       <Header
         userInfo={userInfo}
         projectData={projectData}
@@ -74,7 +74,7 @@ export default function RegisterNewCandidate({ projectData, projectId, ui }) {
       {/* Main Content */}
       <div className="container mx-auto px-4 py-3">
         <div className="max-w-3xl mx-auto">
-          <Link className="text-xl font-bold flex gap-2 items-center" href={`/${projectId}/homepage`}>
+          <Link className="text-xl font-bold flex gap-2 items-center text-gray-800 dark:text-white" href={`/${projectId}/homepage`}>
             <IoArrowBackCircleSharp
               className="w-10 h-10"
               style={{
@@ -94,7 +94,7 @@ export default function RegisterNewCandidate({ projectData, projectId, ui }) {
           />
           <form
             onSubmit={(e) => handleSubmit(e)}
-            className="bg-gray-900 rounded-lg p-4 border border-gray-800"
+            className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4 border border-gray-300 dark:border-gray-800"
           >
             <RenderStepContent
               ui={ui}
