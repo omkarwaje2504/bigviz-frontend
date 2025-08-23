@@ -1,67 +1,97 @@
 "use client";
 
+import { DecryptData } from "@utils/cryptoUtils";
 import { UAParser } from "ua-parser-js";
 
 const MyError = async (err) => {
-  // ① Basic error info
-  const error = {
-    name: err?.name ?? "Error",
-    message: err?.message ?? "Unexpected error",
-    stack: err?.stack ?? "No stack",
-  };
-
-  // ② Device + runtime details
-  const parser = new UAParser();
-  const ua = parser.getResult();
-  const deviceInfo = {
-    browser: `${ua.browser.name} ${ua.browser.version}`,
-    os: `${ua.os.name} ${ua.os.version}`,
-    device: ua.device.model || "Desktop / Unknown",
-    screen: `${window.innerWidth}×${window.innerHeight}`,
-    userAgent: navigator.userAgent,
-  };
-
-  // ③ Current page
-  const locationInfo = {
-    url: window.location.href,
-    referrer: document.referrer,
-  };
-
-  // ④ Geolocation (requires user permission, fallback to undefined)
-  let geo = {};
   try {
-    geo = await new Promise((resolve) => {
-      navigator.geolocation.getCurrentPosition(
-        ({ coords }) =>
-          resolve({
-            lat: coords.latitude,
-            lon: coords.longitude,
-            accuracy: coords.accuracy,
-          }),
-        () => resolve({}) /* permission denied */,
-        { enableHighAccuracy: true, timeout: 2000, maximumAge: 60000 },
-      );
-    });
-  } catch (_) {}
+    // ① Basic error info
+    const error = {
+      name: err instanceof Error ? err.name : "Error",
+      message: err instanceof Error ? err.message : String(err),
+      stack: err instanceof Error ? err.stack : "No stack",
+    };
 
-  // ⑥ Map stack trace → original sources (if maps available)
-  const mappedStack = [];
-  // ⑦ Send everything to your API
-  const projectId = localStorage.getItem("projectHash");
-  await fetch("https://error-tracking-api.vercel.app/api/error", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      error,
-      mappedStack,
-      deviceInfo,
-      locationInfo,
-      geo,
-      projectId,
-    }),
-  }).catch(() => {
-    console.error("Failed to send error report");
-  });
+    // ② Device + runtime details
+    let deviceInfo = {};
+    try {
+      const parser = new UAParser();
+      const ua = parser.getResult();
+      deviceInfo = {
+        browser: `${ua.browser.name || "Unknown"} ${ua.browser.version || ""}`,
+        os: `${ua.os.name || "Unknown"} ${ua.os.version || ""}`,
+        device: ua.device.model || "Desktop / Unknown",
+        screen: `${window.innerWidth}×${window.innerHeight}`,
+        userAgent: navigator.userAgent,
+        employeeDetails: DecryptData("empData") || null,
+      };
+    } catch (e) {
+      console.warn("Failed to parse UA:", e);
+    }
+
+    // ③ Current page
+    let locationInfo = {};
+    try {
+      locationInfo = {
+        url: window?.location?.href ?? "",
+        referrer: document?.referrer ?? "",
+      };
+    } catch (e) {
+      console.warn("Failed to get location info:", e);
+    }
+
+    // ④ Geolocation (safe fallback)
+    let geo = {};
+    try {
+      geo = await new Promise((resolve) => {
+        if (!navigator.geolocation) return resolve({});
+        navigator.geolocation.getCurrentPosition(
+          ({ coords }) =>
+            resolve({
+              lat: coords.latitude,
+              lon: coords.longitude,
+              accuracy: coords.accuracy,
+            }),
+          () => resolve({}), // permission denied or error
+          { enableHighAccuracy: true, timeout: 2000, maximumAge: 60000 },
+        );
+      });
+    } catch (e) {
+      console.warn("Geo lookup failed:", e);
+    }
+
+    // ⑤ ProjectId from storage
+    let projectId = null;
+    try {
+      projectId = localStorage.getItem("projectHash");
+    } catch (e) {
+      console.warn("LocalStorage read failed:", e);
+    }
+
+    // ⑥ Map stack trace → original sources (placeholder for sourcemaps)
+    const mappedStack = [];
+
+    // ⑦ Send to error API
+    try {
+      await fetch("https://error-tracking-api.vercel.app/api/error", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          error,
+          mappedStack,
+          deviceInfo,
+          locationInfo,
+          geo,
+          projectId,
+        }),
+      });
+    } catch (e) {
+      console.error("Failed to send error report:", e);
+    }
+  } catch (fatal) {
+    // 🚨 Last line of defense — MyError itself should never crash
+    console.error("MyError failed completely:", fatal);
+  }
 };
 
 export default MyError;

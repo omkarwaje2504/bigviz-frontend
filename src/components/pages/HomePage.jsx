@@ -37,6 +37,8 @@ const HomePage = ({ projectData, projectId, ui }) => {
     zone: "",
   });
   const [statistics, setStats] = useState();
+  const [approvingStatus, setApprovingStatus] = useState({});
+
   const router = useRouter();
   // Loading effect to simulate data fetching
   useEffect(() => {
@@ -85,15 +87,22 @@ const HomePage = ({ projectData, projectId, ui }) => {
     }
   };
 
-  const handleApproval = async (member, comments) => {
-    const approvalCheck = await ApprovalAction(
-      projectData,
-      userInfo.hash,
-      member,
-      comments ? 2 : 1,
-      comments,
-    );
-    getMembers(userInfo);
+  const handleApprove = async (member, comments) => {
+    setApprovingStatus((prev) => ({ ...prev, [member.doctor_hash]: true }));
+    try {
+      await ApprovalAction(
+        projectData,
+        userInfo.hash,
+        member,
+        comments ? 2 : 1,
+        comments,
+      );
+      await getMembers(userInfo); // refresh list/status from server
+    } catch (error) {
+      console.error("Approval error:", error);
+    } finally {
+      setApprovingStatus((prev) => ({ ...prev, [member.doctor_hash]: false }));
+    }
   };
 
   if (isLoading) {
@@ -147,9 +156,10 @@ const HomePage = ({ projectData, projectId, ui }) => {
             userInfo={userInfo}
             members={members}
             approvalState={true}
+            approvingStatus={approvingStatus}
             onEdit={(id) => console.log("Edit", id)}
-            onApprove={handleApproval}
-            onDisapprove={handleApproval}
+            onApprove={handleApprove}
+            onDisapprove={handleApprove}
           />
         ) : (
           <div className="mt-6 text-center text-gray-400">

@@ -25,7 +25,7 @@ const ApprovalPage = ({ projectData, projectId, ui }) => {
   const [selectionStack, setSelectionStack] = useState([]); // [RSM, ZSM, ABM, MR]
   const [statistics, setStatistics] = useState([]);
 
-  // Simulate loading
+
   useEffect(() => {
     const timer = setTimeout(() => setLoading(false), 1500);
     return () => clearTimeout(timer);
@@ -41,12 +41,15 @@ const ApprovalPage = ({ projectData, projectId, ui }) => {
         hash: getUserInfo?.hash,
         code: getUserInfo?.code,
       });
-    }
-    setHierarchy(getUserInfo?.team);
-    const getStats = stats(hierarchy, ui, projectData);
-    setStatistics(getStats);
+      setHierarchy(getUserInfo?.team);
+      const getStats = stats(hierarchy, ui, projectData);
+      setStatistics(getStats);
 
-    RemoveData("formData");
+      RemoveData("formData");
+    } else {
+      setLoading(true);
+      window.location.href = `/${projectId}`;
+    }
   }, []);
 
   const handleBack = () => {
