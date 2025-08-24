@@ -5,6 +5,7 @@
   "proxy": "https://pixpro-video-generation.s3.amazonaws.com/",
   "dependencies": {
     "@aws-sdk/client-s3": "^3.864.0",
+    "@pixi/react": "^8.0.3",
     "@remotion/bundler": "4.0.280",
     "@remotion/cli": "4.0.280",
     "@remotion/google-fonts": "4.0.280",
@@ -21,6 +22,7 @@
     "konva": "^9.3.22",
     "microsoft-cognitiveservices-speech-sdk": "^1.45.0",
     "next": "15.1.6",
+    "pixi.js": "^8.12.0",
     "react": "^18.3.1",
     "react-advanced-cropper": "^0.20.1",
     "react-dom": "^18.3.1",
