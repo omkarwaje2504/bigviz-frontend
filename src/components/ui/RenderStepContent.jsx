@@ -28,7 +28,7 @@ const RenderStepContent = ({
     case 1:
       return (
         <div className="space-y-2">
-          <h2 className="text-xl font-semibold text-white mb-6">
+          <h2 className="text-xl font-semibold text-gray-800 dark:text-white mb-6">
             Doctor Information
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">

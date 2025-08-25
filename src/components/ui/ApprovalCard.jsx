@@ -18,6 +18,7 @@ const ApprovalCard = ({
   const [doctors, setDoctors] = useState([]);
   const [loadingDoctors, setLoadingDoctors] = useState(false);
   const [approvalTriggered, setApprovalTriggered] = useState(false);
+  const [approvingStatus, setApprovingStatus] = useState({});
 
   const currentTeam =
     selectionStack.length === 0
@@ -60,9 +61,18 @@ const ApprovalCard = ({
   };
 
   const handleApprovalWithRefresh = async (...args) => {
-    await handleApproval(...args);
-    if (isMR) {
-      setApprovalTriggered(true);
+    setApprovingStatus((prev) => ({ ...prev, [member.doctor_hash]: true }));
+    try {
+      await handleApproval(...args);
+
+      if (isMR) {
+        setApprovalTriggered(true);
+      }
+    } catch (error) {
+      console.error("Approval error:", error);
+      console.clear();
+    } finally {
+      setApprovingStatus((prev) => ({ ...prev, [member.doctor_hash]: false }));
     }
   };
 
@@ -87,6 +97,7 @@ const ApprovalCard = ({
         members={doctors}
         onEdit={handleEdit}
         approvalState={true}
+        approvingStatus={approvingStatus}
         onApprove={handleApprovalWithRefresh}
         onDisapprove={handleApprovalWithRefresh}
       />

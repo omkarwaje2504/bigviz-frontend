@@ -106,6 +106,7 @@ type MemberTableProps = {
   members: Member[];
   onEdit: (id: string) => void;
   approvalState?: boolean;
+  approvingStatus?: any;
   onApprove?: (member: Member) => void;
   onDisapprove?: (member: Member, comment: string) => void;
 };
@@ -119,6 +120,7 @@ const MemberTable: React.FC<MemberTableProps> = ({
   members,
   onEdit,
   approvalState,
+  approvingStatus,
   onApprove,
   onDisapprove,
 }) => {
@@ -415,7 +417,7 @@ const MemberTable: React.FC<MemberTableProps> = ({
       userHasActed,
       anyDisapproved,
       allApproved,
-      userInApprovalFlow, // This now correctly checks if user is in approval roles
+      userInApprovalFlow,
       approvalHistory,
       currentUser,
     } = approval;
@@ -434,9 +436,11 @@ const MemberTable: React.FC<MemberTableProps> = ({
         </div>
       );
     }
+    const isApproving =
+      (approvingStatus && approvingStatus[member.doctor_hash]) || false;
 
     // Only show approval buttons if user is in approval flow
-    if ((currentUserCanApprove || userHasActed) && !anyDisapproved) {
+    if (currentUserCanApprove || userHasActed) {
       const userAction = approvalHistory
         .filter((entry) => entry.role === currentUser.role)
         .reduce((latest: any, entry) => {
@@ -462,6 +466,7 @@ const MemberTable: React.FC<MemberTableProps> = ({
                   : "flex-1 flex items-center justify-center space-x-1 text-xs text-white bg-red-600 p-2 rounded-sm hover:bg-red-700"
               }
               onClick={() => handleDisapproveClick(member)}
+              disabled={isApproving}
               title="Disapprove"
             >
               {isListView ? (
@@ -469,7 +474,7 @@ const MemberTable: React.FC<MemberTableProps> = ({
               ) : (
                 <>
                   <ImCross className="fill-white mr-1" />
-                  <span>Disapprove</span>
+                  <span> {isApproving ? "Disapproving..." : "Disapprove"}</span>
                 </>
               )}
             </button>
@@ -491,6 +496,7 @@ const MemberTable: React.FC<MemberTableProps> = ({
                   : "flex-1 flex items-center justify-center space-x-1 text-xs text-white bg-emerald-600 p-2 rounded-sm hover:bg-emerald-700"
               }
               onClick={() => onApprove?.(member)}
+              disabled={isApproving}
               title="Approve"
             >
               {isListView ? (
@@ -498,7 +504,7 @@ const MemberTable: React.FC<MemberTableProps> = ({
               ) : (
                 <>
                   <FaCheck className="fill-white mr-1" />
-                  <span>Approve</span>
+                  <span>{isApproving ? "Approving..." : "Approve"}</span>
                 </>
               )}
             </button>
@@ -515,6 +521,7 @@ const MemberTable: React.FC<MemberTableProps> = ({
                   : "flex-1 flex items-center justify-center space-x-1 text-xs text-white bg-emerald-600 p-2 rounded-sm hover:bg-emerald-700"
               }
               onClick={() => onApprove?.(member)}
+              disabled={isApproving}
               title="Approve"
             >
               {isListView ? (
@@ -522,7 +529,7 @@ const MemberTable: React.FC<MemberTableProps> = ({
               ) : (
                 <>
                   <FaCheck className="fill-white mr-1" />
-                  <span>Approve</span>
+                  <span>{isApproving ? "Approving..." : "Approve"}</span>
                 </>
               )}
             </button>
@@ -533,6 +540,7 @@ const MemberTable: React.FC<MemberTableProps> = ({
                   : "flex-1 flex items-center justify-center space-x-1 text-xs text-white bg-red-600 p-2 rounded-sm hover:bg-red-700"
               }
               onClick={() => handleDisapproveClick(member)}
+              disabled={isApproving}
               title="Disapprove"
             >
               {isListView ? (
@@ -540,7 +548,7 @@ const MemberTable: React.FC<MemberTableProps> = ({
               ) : (
                 <>
                   <ImCross className="fill-white mr-1" />
-                  <span>Disapprove</span>
+                  <span>{isApproving ? "Disapproving..." : "Disapprove"}</span>
                 </>
               )}
             </button>
@@ -596,7 +604,6 @@ const MemberTable: React.FC<MemberTableProps> = ({
           <div className="text-xs font-semibold text-gray-700 dark:text-gray-300">
             Approval Progress:
           </div>
-
           <div className="flex items-center gap-2">
             {/* Progress indicator */}
             <span className="text-xs text-gray-500">
@@ -679,7 +686,7 @@ const MemberTable: React.FC<MemberTableProps> = ({
                 },
               )}
             </div>
-            {member.comments && (
+            {member?.comments && (
               <p className="text-xs">
                 <span className="bg-gray-100 dark:bg-gray-800 p-1 rounded-sm">
                   Comments

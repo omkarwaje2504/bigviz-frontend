@@ -45,6 +45,7 @@ export default function LoginPage({ projectData, projectId, ui }) {
       />
     );
   }
+
   return (
     <div className="flex flex-col lg:flex-row min-h-screen bg-gray-50 text-gray-800 dark:bg-gray-900 dark:text-white transition-colors duration-300">
       <Banner
