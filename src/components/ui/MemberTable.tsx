@@ -20,96 +20,12 @@ import MyError from "@services/MyError";
 import { MdOutlineCancel } from "react-icons/md";
 import { RiArtboardFill } from "react-icons/ri";
 import CommentModal from "./CommentModal";
-
-interface History {
-  approved_at: string;
-  employee_email: string;
-  employee_name: string;
-  role: number;
-  status: "Approved" | "Pending" | "Declined" | "Delivered";
-}
-
-interface ApprovalLogic {
-  roleNames: RoleNames;
-  approvalStackNumbers: number[];
-  approvalHistory: History[];
-  approvedRoles: number[];
-  disapprovedRoles: number[];
-  nextApproverRole: number | null;
-  currentUserCanApprove: boolean;
-  userHasActed: boolean;
-  allApproved: boolean;
-  anyDisapproved: boolean;
-  userInApprovalFlow: boolean;
-  currentUser: Users;
-}
-
-interface Member {
-  approval_history: History[];
-  comments: string | null;
-  approved_at: string | null;
-  approved_status: number;
-  code: string | null;
-  created_at: string;
-  download_url: string;
-  email: string | null;
-  doctor_hash: string;
-  mobile: string;
-  name: string;
-  image: string;
-  values: Record<string, string>;
-  updated_at: string;
-}
-
-interface Users {
-  name: string;
-  role: 1 | 2 | 3 | 4 | 5;
-  designation: string | null;
-  avatar: string | null;
-  hash: string | null;
-  code: string | null;
-}
-
-// Define role names type
-type RoleNames = {
-  [key: number]: string;
-};
-
-type MemberTableProps = {
-  ui: any;
-  projectData: {
-    product_type: string;
-    features: any;
-    config: {
-      doctor: {
-        approval_type: string;
-        disable_doctor_prefix: boolean;
-        disable_mobile_number: boolean;
-        disable_photo_cropper: boolean;
-        disable_photo_upload: boolean;
-        enable_add_new_doctor: boolean;
-        enable_contact_email: boolean;
-        enable_edit_button: boolean;
-        identifier_type: string;
-        label: string;
-        optional_first_photo: boolean;
-        optional_mobile_number: boolean;
-      };
-      employee: {
-        approval_roles: string[];
-        approval_required: boolean;
-      };
-    };
-    product_name: string;
-  };
-  userInfo: Users;
-  members: Member[];
-  onEdit: (id: string) => void;
-  approvalState?: boolean;
-  approvingStatus?: any;
-  onApprove?: (member: Member) => void;
-  onDisapprove?: (member: Member, comment: string) => void;
-};
+import {
+  Doctor,
+  ApprovalLogic,
+  RoleNames,
+  MemberTableProps,
+} from "utils/types";
 
 const ITEMS_PER_PAGE = 4;
 
@@ -127,7 +43,7 @@ const MemberTable: React.FC<MemberTableProps> = ({
   const [searchTerm, setSearchTerm] = useState("");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [currentPage, setCurrentPage] = useState(1);
-  const [filteredMembers, setFilteredMembers] = useState<Member[]>(members);
+  const [filteredMembers, setFilteredMembers] = useState<Doctor[]>(members);
   const [downloadingStatus, setDownloadingStatus] = useState<string[]>([]);
   const [previewMode, setPreviewMode] = useState<boolean>(false);
   const [previewUrl, setPreviewUrl] = useState<string>("");
@@ -141,7 +57,7 @@ const MemberTable: React.FC<MemberTableProps> = ({
   }>({});
   const [showCommentModal, setShowCommentModal] = useState<boolean>(false);
   const [disapprovalComment, setDisapprovalComment] = useState<string>("");
-  const [memberToDisapprove, setMemberToDisapprove] = useState<Member | null>(
+  const [memberToDisapprove, setMemberToDisapprove] = useState<Doctor | null>(
     null,
   );
 
@@ -177,7 +93,7 @@ const MemberTable: React.FC<MemberTableProps> = ({
     });
   };
 
-  const getApprovalLogic = (member: Member): ApprovalLogic => {
+  const getApprovalLogic = (member: Doctor): ApprovalLogic => {
     const roleNames: RoleNames = {
       1: "mr",
       2: "abm",
@@ -232,6 +148,7 @@ const MemberTable: React.FC<MemberTableProps> = ({
       {} as Record<number, any>,
     );
 
+    console.log("Latest Status By Role:", latestStatusByRole);
     // Get approved and disapproved roles based on latest status
     const approvedRoles: number[] = Object.values(latestStatusByRole)
       .filter((entry) => entry.status === "Approved")
@@ -300,11 +217,11 @@ const MemberTable: React.FC<MemberTableProps> = ({
       userHasActed,
       allApproved,
       anyDisapproved,
-      userInApprovalFlow: userRoleInApprovalFlow, // Use the calculated value
+      userInApprovalFlow: userRoleInApprovalFlow,
       currentUser,
     };
   };
-  const onDownload = async (member: Member) => {
+  const onDownload = async (member: Doctor) => {
     const link = member.download_url;
     try {
       const response = await fetch(link, {
@@ -367,7 +284,7 @@ const MemberTable: React.FC<MemberTableProps> = ({
     }
   };
 
-  const onPreview = async (member: Member, type: string) => {
+  const onPreview = async (member: Doctor, type: string) => {
     setPreviewMode(true);
 
     try {
@@ -408,7 +325,7 @@ const MemberTable: React.FC<MemberTableProps> = ({
   };
 
   const renderApprovalButtons = (
-    member: Member,
+    member: Doctor,
     isListView: boolean = false,
   ) => {
     const approval = getApprovalLogic(member);
@@ -441,16 +358,9 @@ const MemberTable: React.FC<MemberTableProps> = ({
 
     // Only show approval buttons if user is in approval flow
     if (currentUserCanApprove || userHasActed) {
-      const userAction = approvalHistory
-        .filter((entry) => entry.role === currentUser.role)
-        .reduce((latest: any, entry) => {
-          return !latest ||
-            new Date(entry.approved_at) > new Date(latest.approved_at)
-            ? entry
-            : latest;
-        }, null);
+      const userAction = member.photo_approval_status;
 
-      if (userAction?.status === "Approved") {
+      if (userAction == 1) {
         // User has approved - show status + disapprove button
         return (
           <div
@@ -480,7 +390,7 @@ const MemberTable: React.FC<MemberTableProps> = ({
             </button>
           </div>
         );
-      } else if (userAction?.status === "Declined") {
+      } else if (userAction == 2) {
         // User has disapproved - show status + approve button
         return (
           <div
@@ -508,6 +418,48 @@ const MemberTable: React.FC<MemberTableProps> = ({
                 </>
               )}
             </button>
+          </div>
+        );
+      } else if (userAction == 3) {
+        // User need Printing status
+        return (
+          <div
+            className={`flex ${isListView ? "items-center space-x-2" : "gap-2 w-full items-center"}`}
+          >
+            <button
+              className={
+                isListView
+                  ? ""
+                  : "flex-1 flex items-center justify-center space-x-1 text-xs text-white bg-emerald-600 p-2 rounded-sm hover:bg-emerald-700"
+              }
+              // onClick={() => onApprove?.(member)}
+              disabled={isApproving}
+              title="Approve"
+            >
+              {isListView ? (
+                <FaCheck className="fill-green-500 h-4 w-4 hover:fill-green-600" />
+              ) : (
+                <>
+                  <FaCheck className="fill-white mr-1" />
+                  <span>
+                    {isApproving ? "Sending for print..." : "Sent for print"}
+                  </span>
+                </>
+              )}
+            </button>
+          </div>
+        );
+      } else if (userAction == 4) {
+        // User Diliverd status
+        return (
+          <div
+            className={`flex ${isListView ? "items-center space-x-2" : "gap-2 w-full items-center"}`}
+          >
+            {" "}
+            <FaCheck className="fill-white mr-1" />
+            <span className="text-xs bg-red-100 text-red-700 rounded px-2 py-1 font-semibold">
+              Dilivered
+            </span>
           </div>
         );
       } else {
@@ -585,7 +537,7 @@ const MemberTable: React.FC<MemberTableProps> = ({
       );
     }
   };
-  const renderApprovalProgress = (member: Member) => {
+  const renderApprovalProgress = (member: Doctor) => {
     const approval = getApprovalLogic(member);
     // Use strict boolean check to prevent any undefined issues
     const isOpen = Boolean(approvalProgressStates[member.doctor_hash]);
@@ -712,7 +664,7 @@ const MemberTable: React.FC<MemberTableProps> = ({
     );
   };
 
-  const handleDisapproveClick = (member: Member) => {
+  const handleDisapproveClick = (member: Doctor) => {
     setMemberToDisapprove(member);
     setShowCommentModal(true);
   };
@@ -870,19 +822,21 @@ const MemberTable: React.FC<MemberTableProps> = ({
                       />
                     )}
                   </div>
-                  <div>
-                    <span
-                      className={`text-xs font-medium px-1 py-0.5 rounded ${
-                        member.download_url
-                          ? "bg-green-500/20 text-green-600 dark:text-green-400"
-                          : "bg-gray-500/20 text-gray-600 dark:text-gray-400"
-                      }`}
-                    >
-                      {member.download_url
-                        ? "Artwork Generated"
-                        : "Artwork Pending"}
-                    </span>
 
+                  <div>
+                    {!projectData?.config?.game && (
+                      <span
+                        className={`text-xs font-medium px-1 py-0.5 rounded ${
+                          member.download_url
+                            ? "bg-green-500/20 text-green-600 dark:text-green-400"
+                            : "bg-gray-500/20 text-gray-600 dark:text-gray-400"
+                        }`}
+                      >
+                        {member.download_url
+                          ? "Artwork Generated"
+                          : "Artwork Pending"}
+                      </span>
+                    )}
                     <h3 className="font-bold text-lg">{member.name}</h3>
                     <p className="text-gray-600 dark:text-gray-400 text-sm">
                       {member.mobile}

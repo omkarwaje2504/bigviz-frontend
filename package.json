@@ -4,7 +4,7 @@
   "private": true,
   "proxy": "https://pixpro-video-generation.s3.amazonaws.com/",
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.864.0",
+    "@aws-sdk/client-s3": "^3.873.0",
     "@pixi/react": "^8.0.3",
     "@remotion/bundler": "4.0.280",
     "@remotion/cli": "4.0.280",
@@ -41,7 +41,7 @@
     "@remotion/eslint-plugin": "4.0.280",
     "@eslint/eslintrc": "3.1.0",
     "@types/node": "20.12.14",
-    "@types/react": "^18.3.23",
+    "@types/react": "^18.3.24",
     "@types/react-dom": "^18.3.7",
     "@types/web": "0.0.166",
     "autoprefixer": "10.4.20",
