@@ -1,9 +1,25 @@
-import { useState } from "react";
+"use client";
+import { useEffect, useState } from "react";
 import InputField from "./InputField";
 import PhotoUploadEditor from "./PhotoUpload";
 import AudioUploadEditor from "./AudioUploadEditor";
 import { FaStar } from "react-icons/fa";
 import CalendarPage from "@components/ui/Calendar";
+
+const cleanName = (name) => {
+  const prefixes = ["Dr", "Prof", "Mr", "Mrs", "dr", "prof", "mr", "mrs"];
+  let newName = name;
+  for (const p of prefixes) {
+    if (newName.startsWith(`${p}. `) || newName.startsWith(`${p} `)) {
+      newName = newName.substring(p.length + 1).trim();
+      break;
+    } else if (newName.startsWith(`${p}.`)) {
+      newName = newName.substring(p.length).trim();
+      break;
+    }
+  }
+  return newName;
+};
 
 const RenderStepContent = ({
   ui,
@@ -18,12 +34,18 @@ const RenderStepContent = ({
   const [audioName, setAudioName] = useState("");
   const dynamicFields = Object.values(projectData?.fields || {});
 
+  useEffect(() => {
+    if (formData?.name?.length > 5) {
+      console.log(formData?.name?.length);
+      setFormData({ ...formData, name: cleanName(formData?.name) });
+    }
+  }, [formData?.name]);
+
   const handleValidationChange = (key) => (isValid) => {
-    setValidationStatus((prev) => ({
-      ...prev,
-      [key]: isValid,
-    }));
+    setValidationStatus((prev) => ({ ...prev, [key]: isValid }));
   };
+
+  const prefixOptions = ["Dr", "Prof", "Mr", "Mrs"];
   switch (currentStep) {
     case 1:
       return (
@@ -38,10 +60,15 @@ const RenderStepContent = ({
                 label="Name*"
                 type="text"
                 value={formData.name}
-                onChange={(e) =>
-                  setFormData({ ...formData, name: e.target.value })
-                }
+                onChange={(e) => {
+                  setFormData({ ...formData, name: e.target.value });
+                }}
                 required
+                prefix={formData.prefix}
+                prefixOptions={prefixOptions}
+                onPrefixChange={(e) =>
+                  setFormData({ ...formData, prefix: e.target.value })
+                }
               />
             </div>
             {!projectData?.features?.includes("disable_mobile_number") && (
@@ -151,10 +178,7 @@ const RenderStepContent = ({
               type="select"
               value={formData.theaterPreference}
               onChange={(e) =>
-                setFormData({
-                  ...formData,
-                  theaterPreference: e.target.value,
-                })
+                setFormData({ ...formData, theaterPreference: e.target.value })
               }
               required
               options={[
@@ -287,10 +311,7 @@ const RenderStepContent = ({
                 name="consent"
                 checked={formData.consent}
                 onChange={() =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    consent: !prev.consent,
-                  }))
+                  setFormData((prev) => ({ ...prev, consent: !prev.consent }))
                 }
                 className="mt-1"
                 required
