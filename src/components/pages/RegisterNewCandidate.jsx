@@ -60,8 +60,12 @@ export default function RegisterNewCandidate({ projectData, projectId, ui }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    alert("Advertisement submitted successfully!");
-    router.push(`render-magic-moment`);
+    console.log("Form submitted:", formData,projectData?.config?.game);
+    if (projectData?.config?.game) {
+      router.push(`game`);
+    } else {
+      router.push(`render-magic-moment`);
+    }
   };
   return (
     <div className="min-h-screen dark:bg-gray-900 text-white">
@@ -74,12 +78,13 @@ export default function RegisterNewCandidate({ projectData, projectId, ui }) {
       {/* Main Content */}
       <div className="container mx-auto px-4 py-3">
         <div className="max-w-3xl mx-auto">
-          <Link className="text-xl font-bold flex gap-2 items-center text-gray-800 dark:text-white" href={`/${projectId}/homepage`}>
+          <Link
+            className="text-xl font-bold flex gap-2 items-center text-gray-800 dark:text-white"
+            href={`/${projectId}/homepage`}
+          >
             <IoArrowBackCircleSharp
               className="w-10 h-10"
-              style={{
-                fill: ui?.basic?.secondaryColor || "white",
-              }}
+              style={{ fill: ui?.basic?.secondaryColor || "white" }}
             />{" "}
             Add New Doctor Registration
           </Link>

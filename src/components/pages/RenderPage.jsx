@@ -47,7 +47,6 @@ export default function RenderPage({ projectData, projectId }) {
     if (getFormData) {
       setFormData(getFormData);
     }
-    getCompositionsData();
   }, []);
 
 

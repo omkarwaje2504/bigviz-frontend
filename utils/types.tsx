@@ -67,6 +67,7 @@ export default function data() {
 }
 
 export interface ProjectInfo {
+  project_hash: string;
   product_type: string;
   features: any;
   config: {

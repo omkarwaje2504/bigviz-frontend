@@ -25,6 +25,7 @@ const FormNavigationButtons = ({
   const isLastStepForProject =
     projectType === "E-Video" ||
     (projectType === "DeskCalendar" && currentStep === 2 && isPage2Valid) ||
+    (projectType === "PhotoFrame" && currentStep === 2 && isPage2Valid) ||
     (projectType !== "E-Video" && currentStep === 4);
 
   const canProceed =
@@ -68,7 +69,11 @@ const FormNavigationButtons = ({
         <button
           type="submit"
           className="flex items-center ml-auto bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded"
-          disabled={projectType !== "E-Video" && !formData.consent} // Optional: if E-Video, no constraint, else consent
+          disabled={
+            projectType !== "E-Video" &&
+            projectType !== "PhotoFrame" &&
+            !formData.consent
+          } // Optional: if E-Video, no constraint, else consent
         >
           Submit
           <FaChevronRight size={16} className="ml-1" />

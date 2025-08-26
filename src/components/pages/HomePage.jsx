@@ -40,14 +40,6 @@ const HomePage = ({ projectData, projectId, ui }) => {
   const [approvingStatus, setApprovingStatus] = useState({});
 
   const router = useRouter();
-  // Loading effect to simulate data fetching
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 500);
-
-    return () => clearTimeout(timer);
-  }, []);
 
   // Fetch user info and members data
   useEffect(() => {
@@ -69,7 +61,6 @@ const HomePage = ({ projectData, projectId, ui }) => {
     }
 
     getMembers(getUserInfo);
-
     RemoveData("formData");
   }, []);
 
@@ -79,10 +70,12 @@ const HomePage = ({ projectData, projectId, ui }) => {
       setMembers(membersData.data);
       setLoadMembers(false);
       // Recalculate stats after members are fetched
+      setIsLoading(false);
       const updatedStats = stats(membersData.data, ui, projectData);
       setStats(updatedStats);
     } else {
       setLoadMembers(false);
+      setIsLoading(false);
       setMembers([]);
     }
   };
