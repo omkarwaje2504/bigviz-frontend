@@ -85,10 +85,7 @@ const MemberTable: React.FC<MemberTableProps> = ({
 
   const toggleApprovalProgress = (memberHash: string) => {
     setApprovalProgressStates((prev) => {
-      const newState = {
-        ...prev,
-        [memberHash]: !Boolean(prev[memberHash]),
-      };
+      const newState = { ...prev, [memberHash]: !Boolean(prev[memberHash]) };
       return newState;
     });
   };
@@ -148,7 +145,6 @@ const MemberTable: React.FC<MemberTableProps> = ({
       {} as Record<number, any>,
     );
 
-    console.log("Latest Status By Role:", latestStatusByRole);
     // Get approved and disapproved roles based on latest status
     const approvedRoles: number[] = Object.values(latestStatusByRole)
       .filter((entry) => entry.status === "Approved")
@@ -224,10 +220,7 @@ const MemberTable: React.FC<MemberTableProps> = ({
   const onDownload = async (member: Doctor) => {
     const link = member.download_url;
     try {
-      const response = await fetch(link, {
-        method: "GET",
-        cache: "no-cache",
-      });
+      const response = await fetch(link, { method: "GET", cache: "no-cache" });
 
       if (!response.ok) {
         console.error(`Download failed. Status: ${response.status}`);
@@ -359,7 +352,6 @@ const MemberTable: React.FC<MemberTableProps> = ({
     // Only show approval buttons if user is in approval flow
     if (currentUserCanApprove || userHasActed) {
       const userAction = member.photo_approval_status;
-
       if (userAction == 1) {
         // User has approved - show status + disapprove button
         return (

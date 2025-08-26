@@ -16,16 +16,9 @@ type ValidationRule = {
   maxLength?: number;
 };
 
-type Option = {
-  label: string;
-  value: string;
-};
+type Option = { label: string; value: string };
 
-type DateValue = {
-  day: string;
-  month: string;
-  year: string;
-};
+type DateValue = { day: string; month: string; year: string };
 
 type InputFieldProps = {
   ui: any;
@@ -55,6 +48,11 @@ type InputFieldProps = {
   options?: Option[];
   name?: string;
   onValidationChange?: (isValid: boolean) => void;
+  prefix?: string;
+  prefixOptions?: string[];
+  onPrefixChange: (
+    e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>,
+  ) => void;
 };
 
 const parseDateString = (dateStr: string): DateValue => {
@@ -86,6 +84,9 @@ const InputField: React.FC<InputFieldProps> = ({
   maxLength,
   options = [],
   name,
+  prefix,
+  prefixOptions,
+  onPrefixChange,
   onValidationChange,
 }) => {
   const [error, setError] = useState<string>("");
@@ -148,29 +149,17 @@ const InputField: React.FC<InputFieldProps> = ({
     if (validation.trim && type !== "radio") {
       val = val.trimStart();
     }
-
     if (validation.maxLength && val.length > validation.maxLength) {
       return;
     }
-
-    const syntheticEvent = {
-      ...e,
-      target: {
-        ...e.target,
-        value: val,
-      },
-    };
-
+    const syntheticEvent = { ...e, target: { ...e.target, value: val } };
     onChange(syntheticEvent);
   };
 
   const handleDateChange = (field: keyof DateValue, newValue: string) => {
     setDetectChange(1);
     const currentDate = getDateValue();
-    const newDateValue = {
-      ...currentDate,
-      [field]: newValue,
-    };
+    const newDateValue = { ...currentDate, [field]: newValue };
     const formattedDate = formatDateObject(newDateValue);
 
     const synthetic = {
@@ -441,11 +430,30 @@ const InputField: React.FC<InputFieldProps> = ({
           })}
         </div>
       ) : (
-        <div className="relative">
+        <div className="relative flex gap-0.5">
           {icon && (
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
               {icon}
             </div>
+          )}
+          {id === "name" && prefixOptions && (
+            <select
+              id="prefix"
+              value={prefix || ""}
+              onChange={onPrefixChange}
+              disabled={disabled}
+              className={`${inputStyles.selectBase} ${
+                errorMessage
+                  ? inputStyles.selectErrorRing
+                  : inputStyles.selectDefaultRing
+              } !w-16 appearance-none`}
+            >
+              {prefixOptions.map((opt) => (
+                <option key={opt} value={opt}>
+                  {opt}
+                </option>
+              ))}
+            </select>
           )}
           <input
             id={id}
