@@ -21,7 +21,7 @@
     "file-saver": "^2.0.5",
     "konva": "^9.3.22",
     "microsoft-cognitiveservices-speech-sdk": "^1.45.0",
-    "next": "15.1.6",
+    "next": "^15.5.0",
     "pixi.js": "^8.12.0",
     "react": "^19.1.1",
     "react-advanced-cropper": "^0.20.1",
