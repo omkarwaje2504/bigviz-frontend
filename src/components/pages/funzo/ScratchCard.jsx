@@ -41,6 +41,7 @@ function ScratchCard({ onComplete }) {
   const [autoRevealed, setAutoRevealed] = useState(false);
   const [isFlipped, setIsFlipped] = useState(false);
   const [showPackshot, setShowPackshot] = useState(true);
+  const [showCertificate, setShowCertificate] = useState(false);
 
   // Audio refs
   const scratchSoundRef = useRef(null);
@@ -330,7 +331,12 @@ function ScratchCard({ onComplete }) {
             }, 100);
 
             setTimeout(() => {
-              if (onComplete) onComplete();
+              if (onComplete) {
+              onComplete();
+            }
+            setTimeout(() => {
+              setShowCertificate(true);
+            }, 6000);
             }, 2000);
           }, 4000);
         }, 3000);
@@ -565,8 +571,8 @@ function ScratchCard({ onComplete }) {
             </div>
 
             {/* Back side (after flip) */}
-            <div className="absolute top-0 rotate-y-180 backface-hidden">
-              <div className="w-full h-[90dvh] bg-white shadow-2xl overflow-hidden">
+            <div className="absolute -top-56 rotate-y-180 backface-hidden">
+              <div className="w-full  bg-white shadow-2xl overflow-hidden">
                 <div className="h-full flex flex-col">
                   {/* Header section */}
                   <div className="bg-gradient-to-r from-[#ec008c] to-[#b1087b] p-8 text-white text-center flex-shrink-0">
@@ -601,6 +607,19 @@ function ScratchCard({ onComplete }) {
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+
+      {showCertificate && (
+        <div className="absolute px-4 inset-0 flex items-center justify-center z-50 bg-black/60">
+          <div className="bg-white p-8 rounded-2xl shadow-2xl text-center max-w-lg animate-fadeIn">
+            <h2 className="text-3xl font-bold text-[#ec008c] mb-4">🎉 Congratulations!</h2>
+            <p className="text-gray-700 text-lg mb-6">
+              You have successfully completed the Gogynax journey.
+            </p>
+            {/* <img src="/certificate.png" alt="Certificate" className="mx-auto rounded-lg shadow" /> */}
           </div>
         </div>
       )}
