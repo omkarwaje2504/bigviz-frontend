@@ -153,7 +153,7 @@ function ScratchCard({ onComplete }) {
           [
             Promise.all(doctorUrls.map((url) => Assets.load(url))),
             Promise.all(patientUrls.map((url) => Assets.load(url))),
-            Assets.load("/hos-bg.jpg"),
+            Assets.load("/hos-bg.png"),
             Assets.load("/scratch-card.jpg"),
           ],
         );
@@ -450,7 +450,6 @@ function ScratchCard({ onComplete }) {
           gravity={0.3}
         />
       )}
-      
 
       {/* Loader */}
       {loading && (
@@ -464,7 +463,7 @@ function ScratchCard({ onComplete }) {
 
       {/* PIXI fullscreen */}
       {!loading && (
-        <Application resizeTo={window}>
+        <Application width={CANVAS_WIDTH} height={CANVAS_HEIGHT}>
           {bgTexture && (
             <sprite
               texture={bgTexture}
@@ -661,7 +660,7 @@ export const preloadAnimationAssets = async () => {
     const [doctorLoaded, patientLoaded, bg, scratchImg] = await Promise.all([
       Promise.all(doctorUrls.map((url) => Assets.load(url))),
       Promise.all(patientUrls.map((url) => Assets.load(url))),
-      Assets.load("/hos-bg.jpg"),
+      Assets.load("/hos-bg.png"),
       Assets.load("/scratch-card.jpg"),
     ]);
 
