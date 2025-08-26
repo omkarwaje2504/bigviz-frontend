@@ -450,6 +450,7 @@ function ScratchCard({ onComplete }) {
           gravity={0.3}
         />
       )}
+      
 
       {/* Loader */}
       {loading && (
