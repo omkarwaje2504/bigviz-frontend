@@ -60,44 +60,40 @@ function ScratchCard({ onComplete }) {
   const CANVAS_HEIGHT =
     typeof window !== "undefined" ? window.innerHeight : 600;
 
-  // Conversation data with audio files
   const conversations = [
     {
       id: 1,
       sender: "patient",
       text: "There's thick white discharge again… is it infection?",
-      audioFile: "/sounds/patient1.m4a", // Add your audio file path
+      audioFile: "/sounds/patient1.m4a",
     },
     {
       id: 2,
       sender: "doctor",
       text: "Yes, typical of vaginal candidiasis",
-      audioFile: "/sounds/doctor1.m4a", // Add your audio file path
+      audioFile: "/sounds/doctor1.m4a",
     },
     {
       id: 3,
       sender: "doctor",
       text: "I'll prescribe an antifungal treatment for you",
-      audioFile: "/sounds/doctor2.m4a", // Add your audio file path
+      audioFile: "/sounds/doctor2.m4a",
     },
   ];
 
-  // Function to get audio duration
   const getAudioDuration = (audioFile) => {
     return new Promise((resolve) => {
       const audio = new Audio(audioFile);
       audio.addEventListener("loadedmetadata", () => {
-        resolve(audio.duration * 1000); // Return duration in milliseconds
+        resolve(audio.duration * 1000);
       });
       audio.addEventListener("error", () => {
-        // Fallback to estimated duration if audio fails to load
-        resolve(3000); // 3 seconds default
+        resolve(3000);
       });
     });
   };
 
   useEffect(() => {
-    // Load sounds
     scratchSoundRef.current = new Audio("/sounds/scratch.mp3");
     scratchSoundRef.current.loop = true;
     scratchSoundRef.current.volume = 0.4;
@@ -105,7 +101,6 @@ function ScratchCard({ onComplete }) {
     confettiSoundRef.current = new Audio("/sounds/confetti.mp3");
     confettiSoundRef.current.volume = 0.7;
 
-    // Load conversation audio files
     patientVoiceRef.current = new Audio(conversations[0].audioFile);
     patientVoiceRef.current.volume = 0.8;
 
@@ -116,7 +111,6 @@ function ScratchCard({ onComplete }) {
     doctorVoice2Ref.current.volume = 0.8;
   }, []);
 
-  // scroll to bottom when messages update
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
@@ -176,7 +170,6 @@ function ScratchCard({ onComplete }) {
     })();
   }, []);
 
-  // Updated conversation sequence with dynamic audio timing
   useEffect(() => {
     if (doctorFrames.length && patientFrames.length) {
       playConversationSequence();
@@ -184,13 +177,11 @@ function ScratchCard({ onComplete }) {
   }, [doctorFrames, patientFrames]);
 
   const playConversationSequence = async () => {
-    // Step 1: Patient speaks
     const patientConversation = conversations[0];
 
     setMessages((prev) => [...prev, patientConversation]);
     setIsPatientPlaying(true);
 
-    // Play patient audio and get its duration
     patientVoiceRef.current.currentTime = 0;
     patientVoiceRef.current.play().catch(() => {});
 
@@ -203,18 +194,14 @@ function ScratchCard({ onComplete }) {
     }, 100);
 
     setTimeout(async () => {
-      // Stop patient animation and audio
       setIsPatientPlaying(false);
       patientRef.current?.gotoAndStop(0);
       patientVoiceRef.current.pause();
 
-      // Step 2: Doctor speaks (first line)
       const doctorConversation1 = conversations[1];
-
       setMessages((prev) => [...prev, doctorConversation1]);
       setIsDoctorPlaying(true);
 
-      // Play doctor audio and get its duration
       doctorVoice1Ref.current.currentTime = 0;
       doctorVoice1Ref.current.play().catch(() => {});
 
@@ -227,18 +214,15 @@ function ScratchCard({ onComplete }) {
       }, 100);
 
       setTimeout(async () => {
-        // Stop doctor animation and audio
         setIsDoctorPlaying(false);
         doctorRef.current?.stop();
         doctorVoice1Ref.current.pause();
 
-        // Step 3: Doctor speaks (second line)
         const doctorConversation2 = conversations[2];
 
         setMessages((prev) => [...prev, doctorConversation2]);
         setIsDoctorPlaying(true);
 
-        // Play doctor audio and get its duration
         doctorVoice2Ref.current.currentTime = 0;
         doctorVoice2Ref.current.play().catch(() => {});
 
@@ -251,13 +235,10 @@ function ScratchCard({ onComplete }) {
         }, 100);
 
         setTimeout(() => {
-          // Stop final animation and audio
           setIsDoctorPlaying(false);
           doctorRef.current?.stop();
           doctorVoice2Ref.current.pause();
           setConversationComplete(true);
-
-          // Show scratch card after conversation
           setTimeout(() => {
             setShowScratchCard(true);
           }, 1000);
@@ -266,85 +247,53 @@ function ScratchCard({ onComplete }) {
     }, patientDuration);
   };
 
-  // Handle scratch card interaction
   const handleScratch = (e) => {
-    if (!showScratchCard || autoRevealed) return;
+  if (!showScratchCard || autoRevealed) return;
 
-    if (scratchSoundRef.current && scratchSoundRef.current.paused) {
-      scratchSoundRef.current.play().catch(() => {});
-    }
-    const canvas = scratchCanvasRef.current;
-    const rect = canvas.getBoundingClientRect();
-    const x = (e.clientX - rect.left) * (canvas.width / rect.width);
-    const y = (e.clientY - rect.top) * (canvas.height / rect.height);
+  if (scratchSoundRef.current && scratchSoundRef.current.paused) {
+    scratchSoundRef.current.play().catch(() => {});
+  }
 
-    const ctx = canvas.getContext("2d");
+  const canvas = scratchCanvasRef.current;
+  const rect = canvas.getBoundingClientRect();
+  const x = (e.clientX - rect.left) * (canvas.width / rect.width);
+  const y = (e.clientY - rect.top) * (canvas.height / rect.height);
+
+  const ctx = canvas.getContext("2d");
+  ctx.globalCompositeOperation = "destination-out";
+  ctx.beginPath();
+  ctx.arc(x, y, 25, 0, 2 * Math.PI);
+  ctx.fill();
+
+  const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  const pixels = imageData.data;
+  let transparent = 0;
+
+  for (let i = 3; i < pixels.length; i += 4) {
+    if (pixels[i] === 0) transparent++;
+  }
+
+  const progress = transparent / (pixels.length / 4);
+  setScratchProgress(progress);
+
+  if (progress > 0.95 && !autoRevealed) {
+    setAutoRevealed(true);
+    setScratchProgress(1);
+
+    // Clear the card completely
     ctx.globalCompositeOperation = "destination-out";
-    ctx.beginPath();
-    ctx.arc(x, y, 25, 0, 2 * Math.PI);
-    ctx.fill();
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Calculate scratch progress
-    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-    const pixels = imageData.data;
-    let transparent = 0;
+    if (onComplete) onComplete();
 
-    for (let i = 3; i < pixels.length; i += 4) {
-      if (pixels[i] === 0) transparent++;
-    }
+    // ✅ Wait 5 seconds before showing certificate
+    setTimeout(() => {
+      setShowCertificate(true);
+    }, 5000);
+  }
+};
 
-    const progress = transparent / (pixels.length / 4);
-    setScratchProgress(progress);
 
-    // Show content when 95% is scratched
-    if (progress > 0.95 && !autoRevealed) {
-      setAutoRevealed(true);
-      setShowConfetti(true);
-      setTimeout(() => {
-        setShowPackshot(false);
-      }, 2500);
-
-      // Clear the entire canvas
-      setTimeout(() => {
-        const ctx = canvas.getContext("2d");
-        ctx.globalCompositeOperation = "destination-out";
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        setScratchProgress(1);
-
-        // Show confetti
-        setShowConfetti(true);
-
-        // Wait 3-4 seconds with confetti, then flip the card
-        setTimeout(() => {
-          setIsFlipped(true);
-
-          // After 4-5 seconds, start disappearing animation
-          setTimeout(() => {
-            setIsDisappearing(true);
-
-            // Start character animations and complete after animation
-            setIsPatientPlaying(true);
-            setIsDoctorPlaying(true);
-            setTimeout(() => {
-              patientRef.current?.gotoAndPlay(0);
-              doctorRef.current?.gotoAndPlay(0);
-            }, 100);
-
-            setTimeout(() => {
-              if (onComplete) {
-              onComplete();
-            }
-            setTimeout(() => {
-              setShowCertificate(true);
-            }, 6000);
-            }, 2000);
-          }, 4000);
-        }, 3000);
-      }, 3000);
-    }
-  };
-
-  // Handle touch events properly
   const handleTouchStart = (e) => {
     if (e.cancelable) {
       e.preventDefault();
@@ -366,23 +315,19 @@ function ScratchCard({ onComplete }) {
     handleScratch(e.touches[0]);
   };
 
-  // Initialize scratch canvas with image and add event listeners properly
   useEffect(() => {
     if (showScratchCard && scratchCanvasRef.current && scratchImage) {
       const canvas = scratchCanvasRef.current;
       const ctx = canvas.getContext("2d");
 
-      // Set canvas size
       canvas.width = 350;
       canvas.height = 250;
 
-      // Load and draw the scratch image
       const img = new Image();
       img.onload = () => {
         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
       };
 
-      // For PixiJS v8, use the source property directly or fallback to direct path
       if (scratchImage.source && scratchImage.source.resource) {
         if (scratchImage.source.resource instanceof HTMLImageElement) {
           img.src = scratchImage.source.resource.src;
@@ -395,7 +340,6 @@ function ScratchCard({ onComplete }) {
         img.src = "/scratch-card.jpg";
       }
 
-      // Add non-passive touch event listeners
       const addTouchListeners = () => {
         canvas.addEventListener("touchstart", handleTouchStart, {
           passive: false,
@@ -412,17 +356,14 @@ function ScratchCard({ onComplete }) {
 
       addTouchListeners();
 
-      // Cleanup
       return () => {
         removeTouchListeners();
       };
     }
   }, [showScratchCard, scratchImage]);
 
-  // Cleanup audio on unmount
   useEffect(() => {
     return () => {
-      // Stop and cleanup all audio
       [
         scratchSoundRef,
         confettiSoundRef,
@@ -436,6 +377,21 @@ function ScratchCard({ onComplete }) {
         }
       });
     };
+  }, []);
+
+  const [breakpoint, setBreakpoint] = useState("md");
+
+  useEffect(() => {
+    const checkSize = () => {
+      if (window.innerWidth < 768) {
+        setBreakpoint("sm");
+      } else {
+        setBreakpoint("md");
+      }
+    };
+    checkSize();
+    window.addEventListener("resize", checkSize);
+    return () => window.removeEventListener("resize", checkSize);
   }, []);
 
   return (
@@ -477,9 +433,11 @@ function ScratchCard({ onComplete }) {
               ref={patientRef}
               textures={patientFrames}
               x={CANVAS_WIDTH * 0.3}
-              y={CANVAS_HEIGHT * 0.752}
-              anchor={0.5}
-              scale={0.26}
+              y={
+                breakpoint === "sm" ? CANVAS_HEIGHT * 1.0 : CANVAS_HEIGHT * 1.0
+              }
+              anchor={{ x: 0.5, y: 1 }}
+              scale={breakpoint === "sm" ? 0.25 : 0.42}
               animationSpeed={0.2}
               loop={false}
               isPlaying={isPatientPlaying}
@@ -491,9 +449,11 @@ function ScratchCard({ onComplete }) {
               ref={doctorRef}
               textures={doctorFrames}
               x={CANVAS_WIDTH * 0.7}
-              y={CANVAS_HEIGHT * 0.9}
-              anchor={0.5}
-              scale={0.45}
+              y={
+                breakpoint === "sm" ? CANVAS_HEIGHT * 1.3 : CANVAS_HEIGHT * 1.0
+              }
+              anchor={{ x: 0.5, y: 1 }}
+              scale={breakpoint === "sm" ? 0.45 : 0.7}
               animationSpeed={0.2}
               loop={false}
               isPlaying={isDoctorPlaying}
@@ -524,98 +484,86 @@ function ScratchCard({ onComplete }) {
       {/* Scratch Card */}
       {showScratchCard && (
         <div
-          className={`absolute bg-purple-500/60 inset-0 flex items-center justify-center z-30 transition-all duration-1000 ${
+          className={`absolute bg-white inset-0 flex items-center justify-center z-30 transition-all duration-1000 ${
             isDisappearing ? "scale-0 opacity-0" : "scale-100 opacity-100"
           }`}
         >
           <div
-            className={`relative w-80 h-56 preserve-3d transition-transform duration-700 ${
-              isFlipped ? "rotate-y-180" : ""
-            }`}
+            className={`relative w-[25rem] h-[90vh] preserve-3d transition-transform duration-700`}
           >
-            {/* Front side (scratchable) */}
-            <div className="absolute inset-0 backface-hidden">
-              {/* Scratch Layer with Image */}
-              <canvas
-                ref={scratchCanvasRef}
-                className="absolute inset-0 cursor-pointer rounded-2xl"
-                onMouseMove={(e) => {
-                  if (e.buttons === 1) handleScratch(e);
-                }}
-                onMouseDown={handleScratch}
-                onMouseUp={handleScratchEnd}
-                onMouseLeave={handleScratchEnd}
-                onTouchStart={(e) => handleScratch(e.touches[0])}
-                onTouchMove={(e) => handleScratch(e.touches[0])}
-                onTouchEnd={handleScratchEnd}
-                style={{ width: "100%", height: "100%", touchAction: "none" }}
-              />
+            {/* The actual card content */}
+            <div className="absolute inset-0 flex items-center justify-center rounded-2xl overflow-hidden backface-hidden">
+              <div className="w-full h-full flex flex-col bg-gradient-to-br from-purple-400 to-pink-500 rounded-2xl">
+                <div className="text-center text-white p-4">
+                  <img
+                    src="/Gogynax-packshot.png"
+                    alt="Gogynax-packshot"
+                    className="mx-auto mb-4 max-h-40 object-contain"
+                  />
 
-              {/* Base content (visible before scratch) */}
-              {showPackshot && (
-                <div className="w-80 h-56 flex items-center border-white border-2 p-3 justify-center bg-gradient-to-br from-purple-400 to-pink-500 rounded-2xl">
-                  <div className="text-center text-white">
-                    <img src="/Gogynax-packshot.png" alt="Gogynax-packshot" />
-                  </div>
-                </div>
-              )}
+                  <div className="w-full bg-white shadow-2xl overflow-hidden rounded-xl">
+                    <div className="h-full flex flex-col">
+                      {/* Header */}
+                      <div className="bg-gradient-to-r from-[#ec008c] to-[#b1087b] p-6 text-white text-center">
+                        <div className="text-5xl mb-2">💊</div>
+                        <h2 className="text-2xl font-bold leading-tight">
+                          Decode the vaginal care
+                          <br />
+                          <span className="text-yellow-200">with Gogynax</span>
+                        </h2>
+                      </div>
 
-              {/* Revealed content (after packshot is hidden) */}
-              {autoRevealed && !isFlipped && !showPackshot && (
-                <div className="w-80 h-56 flex border-white border-2 items-center justify-center bg-[#ec008c] rounded-2xl">
-                  <div className="text-center text-white p-3">
-                    <img src="/Gogynax-name.png" alt="Gogynax-name" />
-                  </div>
-                </div>
-              )}
-            </div>
+                      {/* Body */}
+                      <div className="flex-1 p-6 flex flex-col justify-center text-center bg-gradient-to-b from-pink-50 to-purple-50">
+                        <p className="text-[#ec008c] font-semibold text-xl mb-6">
+                          Restores comfort and confidence
+                        </p>
 
-            {/* Back side (after flip) */}
-            <div className="absolute -top-56 rotate-y-180 backface-hidden">
-              <div className="w-full  bg-white shadow-2xl overflow-hidden">
-                <div className="h-full flex flex-col">
-                  {/* Header section */}
-                  <div className="bg-gradient-to-r from-[#ec008c] to-[#b1087b] p-8 text-white text-center flex-shrink-0">
-                    <div className="text-6xl mb-4">💊</div>
-                    <h2 className="text-3xl font-bold leading-tight">
-                      Decode the vaginal care
-                      <br />
-                      <span className="text-yellow-200">with Gogynax</span>
-                    </h2>
-                  </div>
+                        <div className="bg-white rounded-xl p-6 border-l-8 border-[#ec008c] shadow-lg max-w-md mx-auto">
+                          <p className="text-lg text-gray-700 leading-relaxed">
+                            <span className="font-bold text-[#ec008c] text-xl">
+                              Clotrimazole
+                            </span>{" "}
+                            — A trusted antifungal,
+                            <br />
+                            offers relief, right where it's needed
+                          </p>
+                        </div>
+                      </div>
 
-                  {/* Content section */}
-                  <div className="flex-1 p-8 flex flex-col justify-center text-center bg-gradient-to-b from-pink-50 to-purple-50">
-                    <p className="text-[#ec008c] font-semibold text-2xl mb-8">
-                      Restores comfort and confidence
-                    </p>
-
-                    <div className="bg-white rounded-xl p-6 border-l-8 border-[#ec008c] shadow-lg max-w-lg mx-auto">
-                      <p className="text-lg text-gray-700 leading-relaxed">
-                        <span className="font-bold text-[#ec008c] text-xl">
-                          Clotrimazole
-                        </span>{" "}
-                        — A trusted antifungal,
-                        <br />
-                        offers relief, right where it's needed
-                      </p>
+                      {/* Footer strip */}
+                      <div className="h-3 bg-gradient-to-r from-[#ec008c] to-[#b1087b]" />
                     </div>
                   </div>
-
-                  {/* Footer accent */}
-                  <div className="h-3 bg-gradient-to-r from-[#ec008c] to-[#b1087b] flex-shrink-0"></div>
                 </div>
               </div>
             </div>
+
+            {/* Scratch layer covers entire card */}
+            <canvas
+              ref={scratchCanvasRef}
+              className="absolute inset-0 cursor-pointer rounded-2xl z-10"
+              onMouseMove={(e) => {
+                if (e.buttons === 1) handleScratch(e);
+              }}
+              onMouseDown={handleScratch}
+              onMouseUp={handleScratchEnd}
+              onMouseLeave={handleScratchEnd}
+              onTouchStart={(e) => handleScratch(e.touches[0])}
+              onTouchMove={(e) => handleScratch(e.touches[0])}
+              onTouchEnd={handleScratchEnd}
+              style={{ width: "100%", height: "100%", touchAction: "none" }}
+            />
           </div>
         </div>
       )}
 
-
       {showCertificate && (
         <div className="absolute px-4 inset-0 flex items-center justify-center z-50 bg-black/60">
           <div className="bg-white p-8 rounded-2xl shadow-2xl text-center max-w-lg animate-fadeIn">
-            <h2 className="text-3xl font-bold text-[#ec008c] mb-4">🎉 Congratulations!</h2>
+            <h2 className="text-3xl font-bold text-[#ec008c] mb-4">
+              🎉 Congratulations!
+            </h2>
             <p className="text-gray-700 text-lg mb-6">
               You have successfully completed the Gogynax journey.
             </p>
