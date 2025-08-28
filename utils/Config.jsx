@@ -47,11 +47,16 @@ const Config = async (projectData) => {
       passwordLabel: "Password",
       mobileLabel: "Mobile Number",
     },
+    DoctorRegistrationForm:{
+      FormHeading:projectData?.config?.theme?.heading?  projectData?.config?.theme?.heading : "Add New Doctor Registration",
+      FormSubHeading:projectData?.config?.theme?.subheading?  projectData?.config?.theme?.subheading : "Complete the form below to create a new E-video for medical professionals",
+      FormTitle:projectData?.config?.theme?.title?  projectData?.config?.theme?.title : " Doctor Information",
+    },
     Dashboard: {
-      HomePageTitle: "Doctor Management",
-      HomePageSubTitle: "Manage all your doctor from here",
-      HomePageButtonLabel: "Add New Doctor",
-      title: "Dashboard Overview",
+      HomePageTitle: projectData?.config?.theme?.home_title?  projectData?.config?.theme?.home_title : "Doctor Management",
+      HomePageSubTitle:projectData?.config?.theme?.home_page_subtitle?  projectData?.config?.theme?.home_page_subtitle : "Manage all your doctor from here",
+      HomePageButtonLabel:projectData?.config?.theme?.home_page_button_label?  projectData?.config?.theme?.home_page_button_label : "Add New Doctor",
+      title:projectData?.config?.theme?.home_title?  projectData?.config?.theme?.home_title : "Dashboard Overview",
       ActiveLabel: projectData?.config?.employee?.approval_required
         ? "Active Clients"
         : projectData?.product_name === "E-Video"

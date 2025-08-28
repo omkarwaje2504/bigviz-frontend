@@ -32,7 +32,9 @@ const RenderStepContent = ({
   setValidationStatus,
 }) => {
   const [audioName, setAudioName] = useState("");
-  const dynamicFields = Object.values(projectData?.fields || {});
+  const dynamicFields = projectData?.config?.field || [];
+  const prefixOptions = projectData?.config?.doctor?.prefix || ["Dr"];
+  const countryCode = projectData?.config?.doctor?.country_codes[0] || +91;
 
   useEffect(() => {
     if (formData?.name?.length > 5) {
@@ -45,19 +47,18 @@ const RenderStepContent = ({
     setValidationStatus((prev) => ({ ...prev, [key]: isValid }));
   };
 
-  const prefixOptions = ["Dr", "Prof", "Mr", "Mrs"];
   switch (currentStep) {
     case 1:
       return (
         <div className="space-y-2">
           <h2 className="text-xl font-semibold text-gray-800 dark:text-white mb-6">
-            Doctor Information
+            {ui?.DoctorRegistrationForm?.FormTitle}
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
               <InputField
                 id="name"
-                label="Name*"
+                label={`${projectData?.config?.doctor?.label || "Doctor Name"} *`}
                 type="text"
                 value={formData.name}
                 onChange={(e) => {
@@ -71,6 +72,7 @@ const RenderStepContent = ({
                 }
               />
             </div>
+      
             {!projectData?.features?.includes("disable_mobile_number") && (
               <div>
                 <InputField
@@ -80,17 +82,28 @@ const RenderStepContent = ({
                   value={formData.mobile_number}
                   onChange={(e) => {
                     let val = e.target.value;
-                    if (/^\d{10}$/.test(val)) {
-                      val = "+91" + val;
+
+                    try {
+                      const regex = new RegExp(
+                        projectData?.config?.doctor?.regex?.replace(/^\/|\/$/g, ""),
+                      );
+
+                      if (regex.test(val)) {
+                        if (!val.startsWith(countryCode)) {
+                          val = `${countryCode}${val}`;
+                        }
+                      }
+                    } catch (err) {
+                      console.warn("Invalid regex from backend:", err);
                     }
+
                     setFormData({ ...formData, mobile_number: val });
                   }}
                   required
-                  placeholder="e.g. +919876543210"
+                  placeholder={`e.g. ${countryCode}9876543210`}
                   validation={{
-                    regex: /^\+91[6-9]\d{9}$/,
-                    message:
-                      "Enter a valid Indian mobile number with +91 prefix",
+                    regex: new RegExp(projectData?.config?.doctor?.regex?.replace(/^\/|\/$/g, "")),
+                    message: `Enter a valid Indian mobile number with ${countryCode} prefix`,
                     trim: true,
                     maxLength: 13,
                   }}
@@ -104,7 +117,9 @@ const RenderStepContent = ({
               <InputField
                 key={field.id}
                 id={field.name}
-                label={field.label + (field.validations?.required ? " *" : "")}
+                label={
+                  field.display_name + (field.validations?.required ? " *" : "")
+                }
                 type={field.type}
                 value={String(formData[field.name] ?? "")}
                 onChange={(e) =>
@@ -113,7 +128,7 @@ const RenderStepContent = ({
                     [field.name]: e.target.value,
                   }))
                 }
-                required={field.validations?.required}
+                required={field?.additional_config?.includes("is_required")}
                 placeholder={field.placeholder}
                 options={field.options || []}
                 validation={{

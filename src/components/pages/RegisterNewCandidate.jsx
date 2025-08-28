@@ -32,8 +32,8 @@ export default function RegisterNewCandidate({ projectData, projectId, ui }) {
   });
   const [formData, setFormData] = useState({
     name: "",
-    prefix:"Dr",
-    mobile_number: "+91",
+    prefix: "Dr",
+    mobile_number: `${projectData?.config?.doctor?.country_codes[0] || "+91"}`,
     photo: null,
   });
   const router = useRouter();
@@ -87,11 +87,10 @@ export default function RegisterNewCandidate({ projectData, projectId, ui }) {
               className="w-10 h-10"
               style={{ fill: ui?.basic?.secondaryColor || "white" }}
             />{" "}
-            Add New Doctor Registration
+            {ui?.DoctorRegistrationForm?.FormHeading}
           </Link>
           <p className="text-gray-400 mb-4 text-sm md:text-md">
-            Complete the form below to create a new E-video for medical
-            professionals
+            {ui?.DoctorRegistrationForm?.FormSubHeading}
           </p>
 
           <RenderStepIndicator
