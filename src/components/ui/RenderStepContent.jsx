@@ -36,7 +36,7 @@ const RenderStepContent = ({
 
   useEffect(() => {
     if (formData?.name?.length > 5) {
-      console.log(formData?.name?.length);
+      // console.log(formData?.name?.length);
       setFormData({ ...formData, name: cleanName(formData?.name) });
     }
   }, [formData?.name]);
@@ -142,16 +142,19 @@ const RenderStepContent = ({
               ui={ui}
             />
           ) : (
-            <PhotoUploadEditor
-              ui={ui}
-              projectData={projectData}
-              setPhotoUploadStatus={setPhotoUploadStatus}
-              formData={formData}
-              setFormData={setFormData}
-            />
+            !projectData?.config?.doctor?.disable_photo_upload && (
+              <PhotoUploadEditor
+                ui={ui}
+                projectData={projectData}
+                setPhotoUploadStatus={setPhotoUploadStatus}
+                formData={formData}
+                setFormData={setFormData}
+              />
+            )
           )}
         </div>
       );
+
     case 3:
       return (
         <div className="space-y-6">

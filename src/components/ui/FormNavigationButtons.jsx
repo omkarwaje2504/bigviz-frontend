@@ -10,12 +10,15 @@ const FormNavigationButtons = ({
   projectData,
 }) => {
   const projectType = projectData?.product_type;
+  const disablePhotoUpload = projectData?.config?.doctor?.disable_photo_upload;
+
   const isPage1Valid =
     currentStep !== 1 ||
     (validationStatus && Object.values(validationStatus).every(Boolean));
 
   const isPage2Valid =
     currentStep !== 2 ||
+    disablePhotoUpload || 
     (projectType !== "DeskCalendar" && !!formData?.photo?.croppedImage) ||
     (projectType === "DeskCalendar" &&
       Array.isArray(formData?.calendarData) &&
@@ -24,6 +27,7 @@ const FormNavigationButtons = ({
 
   const isLastStepForProject =
     projectType === "E-Video" ||
+    (disablePhotoUpload && currentStep === 1 && isPage1Valid) ||
     (projectType === "DeskCalendar" && currentStep === 2 && isPage2Valid) ||
     (projectType === "PhotoFrame" && currentStep === 2 && isPage2Valid) ||
     (projectType !== "E-Video" && currentStep === 4);
@@ -34,7 +38,11 @@ const FormNavigationButtons = ({
     (currentStep === 3 && projectType !== "E-Video");
 
   const handleNext = () => {
-    setCurrentStep(currentStep + 1);
+    if (disablePhotoUpload && currentStep === 1) {
+      setCurrentStep(99); 
+    } else {
+      setCurrentStep(currentStep + 1);
+    }
   };
 
   const handleBack = () => {
@@ -43,7 +51,7 @@ const FormNavigationButtons = ({
 
   return (
     <div className="mt-8 flex justify-between">
-      {currentStep > 1 && (
+      {currentStep > 1 && currentStep !== 99 && (
         <button
           type="button"
           onClick={handleBack}
@@ -73,7 +81,7 @@ const FormNavigationButtons = ({
             projectType !== "E-Video" &&
             projectType !== "PhotoFrame" &&
             !formData.consent
-          } // Optional: if E-Video, no constraint, else consent
+          }
         >
           Submit
           <FaChevronRight size={16} className="ml-1" />

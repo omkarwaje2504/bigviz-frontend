@@ -61,7 +61,7 @@ export default function RegisterNewCandidate({ projectData, projectId, ui }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    console.log("Form submitted:", formData,projectData?.config?.game);
+    // console.log("Form submitted:", formData,projectData?.config?.game);
     if (projectData?.config?.game) {
       router.push(`game`);
     } else {

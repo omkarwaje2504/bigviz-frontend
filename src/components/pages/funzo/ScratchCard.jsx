@@ -147,8 +147,10 @@ function ScratchCard({ onComplete }) {
           [
             Promise.all(doctorUrls.map((url) => Assets.load(url))),
             Promise.all(patientUrls.map((url) => Assets.load(url))),
-            Assets.load("/hos-bg.png"),
-            Assets.load("/scratch-card.jpg"),
+            Assets.load(
+              "/bg.jpg",
+            ),
+            Assets.load("/Dark Slate Floral Dance Poster (1).png"),
           ],
         );
 
@@ -280,15 +282,15 @@ function ScratchCard({ onComplete }) {
       setAutoRevealed(true);
       setScratchProgress(1);
 
-      // Clear the card completely
       ctx.globalCompositeOperation = "destination-out";
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
       if (onComplete) onComplete();
 
-      // ✅ Wait 5 seconds before showing certificate
+      setShowConfetti(true);
+
       setTimeout(() => {
-        setShowCertificate(true);
+        // setShowCertificate(true);
       }, 5000);
     }
   };
@@ -323,7 +325,9 @@ function ScratchCard({ onComplete }) {
       canvas.height = 250;
 
       const img = new Image();
+
       img.onload = () => {
+        const imgRatio = img.width / img.height
         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
       };
 
@@ -332,11 +336,11 @@ function ScratchCard({ onComplete }) {
           img.src = scratchImage.source.resource.src;
         } else {
           img.crossOrigin = "anonymous";
-          img.src = "/scratch-card.jpg";
+          img.src = "/Dark Slate Floral Dance Poster (1).png";
         }
       } else {
         img.crossOrigin = "anonymous";
-        img.src = "/scratch-card.jpg";
+        img.src = "/Dark Slate Floral Dance Poster (1).png";
       }
 
       const addTouchListeners = () => {
@@ -395,18 +399,18 @@ function ScratchCard({ onComplete }) {
 
   return (
     <div className="fixed inset-0 w-full h-full">
-      {/* Confetti */}
       {showConfetti && (
-        <Confetti
-          width={window.innerWidth}
-          height={window.innerHeight}
-          recycle={false}
-          numberOfPieces={200}
-          gravity={0.3}
-        />
+        <div className="fixed inset-0 z-[9999] pointer-events-none">
+          <Confetti
+            width={window.innerWidth}
+            height={window.innerHeight}
+            recycle={false}
+            numberOfPieces={200}
+            gravity={0.3}
+          />
+        </div>
       )}
 
-      {/* Loader */}
       {loading && (
         <div className="absolute w-full h-full flex items-center justify-center bg-gray-100 bg-opacity-80 z-10">
           <div className="flex flex-col items-center">
@@ -416,14 +420,13 @@ function ScratchCard({ onComplete }) {
         </div>
       )}
 
-      {/* PIXI fullscreen */}
       {!loading && (
         <Application width={CANVAS_WIDTH} height={CANVAS_HEIGHT}>
           {bgTexture && (
             <sprite
               texture={bgTexture}
-              width={CANVAS_WIDTH}
               height={CANVAS_HEIGHT}
+              width={CANVAS_WIDTH} 
             />
           )}
 
@@ -436,9 +439,8 @@ function ScratchCard({ onComplete }) {
                 breakpoint === "sm" ? CANVAS_HEIGHT * 1.0 : CANVAS_HEIGHT * 1.0
               }
               anchor={{ x: 0.5, y: 1 }}
-         
-               scale={{
-                x: (breakpoint === "sm" ? 0.3 : 0.42) * -1, // 👈 flip horizontally
+              scale={{
+                x: (breakpoint === "sm" ? 0.3 : 0.42) * -1,
                 y: breakpoint === "sm" ? 0.3 : 0.42,
               }}
               animationSpeed={0.2}
@@ -452,12 +454,10 @@ function ScratchCard({ onComplete }) {
               ref={doctorRef}
               textures={doctorFrames}
               x={CANVAS_WIDTH * 0.7}
-              y={
-                breakpoint === "sm" ? CANVAS_HEIGHT * 1 : CANVAS_HEIGHT * 1.0
-              }
+              y={breakpoint === "sm" ? CANVAS_HEIGHT * 1 : CANVAS_HEIGHT * 1.0}
               anchor={{ x: 0.5, y: 1 }}
               scale={{
-                x: (breakpoint === "sm" ? 0.35 : 0.7) * -1, // 👈 flip horizontally
+                x: (breakpoint === "sm" ? 0.35 : 0.7) * -1,
                 y: breakpoint === "sm" ? 0.35 : 0.7,
               }}
               animationSpeed={0.2}
@@ -468,7 +468,6 @@ function ScratchCard({ onComplete }) {
         </Application>
       )}
 
-      {/* Chat UI */}
       {!showScratchCard && (
         <div className="absolute bottom-[55%] w-full max-h-[40%] overflow-y-auto flex flex-col px-4 py-2 space-y-2 z-20 lato-bold">
           {messages.map((msg) => (
@@ -487,7 +486,6 @@ function ScratchCard({ onComplete }) {
         </div>
       )}
 
-      {/* Scratch Card */}
       {showScratchCard && (
         <div
           className={`absolute bg-white inset-0 flex items-center justify-center z-30 transition-all duration-1000 ${
@@ -495,39 +493,43 @@ function ScratchCard({ onComplete }) {
           }`}
         >
           <div
-            className={`relative w-[25rem] h-[90vh] preserve-3d transition-transform duration-700`}
+            className={`
+            relative 
+            w-[90%] lg:w-1/2 
+            h-[90dvh] max-h-[90dvh]  
+            preserve-3d 
+            transition-transform 
+            duration-700
+          `}
           >
-            {/* The actual card content */}
+            {/* CARD FRONT */}
             <div className="absolute inset-0 flex items-center justify-center rounded-2xl overflow-hidden backface-hidden">
-              <div className="w-full h-full flex flex-col bg-gradient-to-br from-purple-400 to-pink-500 rounded-2xl">
-                <div className="text-center text-white p-4">
+              <div className="w-full h-full flex flex-col justify-center items-center bg-pink-50 rounded-2xl">
+                <div className="text-center text-white p-1">
                   <img
-                    src="/Gogynax-packshot.png"
+                    src="/packet.png"
                     alt="Gogynax-packshot"
-                    className="mx-auto mb-4 max-h-40 object-contain"
-                  />
+                    className="mx-auto mb-3 w-full h-[70%]"
+                  /> 
 
                   <div className="w-full bg-white shadow-2xl overflow-hidden rounded-xl">
                     <div className="h-full flex flex-col">
-                      {/* Header */}
-                      <div className="bg-gradient-to-r from-[#ec008c] to-[#b1087b] p-6 text-white text-center">
-                        <div className="text-5xl mb-2">💊</div>
-                        <h2 className="text-2xl font-bold leading-tight">
+                      <div className="bg-gradient-to-r from-[#ec008c] to-[#b1087b] px-1 py-2 text-white text-center">
+                       
+                        <h2 className="text-lg sm:text-xl md:text-2xl font-bold leading-tight">
                           Decode the vaginal care
                           <br />
                           <span className="text-yellow-200">with Gogynax</span>
                         </h2>
                       </div>
-
-                      {/* Body */}
-                      <div className="flex-1 p-6 flex flex-col justify-center text-center bg-gradient-to-b from-pink-50 to-purple-50">
-                        <p className="text-[#ec008c] font-semibold text-xl mb-6">
+                      <div className="flex-1 px-1 py-2 flex flex-col justify-center text-center bg-gradient-to-b from-pink-50 to-purple-50">
+                        <p className="text-[#ec008c] font-semibold text-base sm:text-lg md:text-xl mb-4 sm:mb-6">
                           Restores comfort and confidence
                         </p>
 
-                        <div className="bg-white rounded-xl p-6 border-l-8 border-[#ec008c] shadow-lg max-w-md mx-auto">
-                          <p className="text-lg text-gray-700 leading-relaxed">
-                            <span className="font-bold text-[#ec008c] text-xl">
+                        <div className="bg-white rounded-xl px-2 py-2 border-l-8 border-[#ec008c] shadow-lg max-w-sm mx-auto">
+                          <p className="text-sm sm:text-base md:text-lg text-gray-700 leading-relaxed">
+                            <span className="font-medium text-[#ec008c] text-lg ">
                               Clotrimazole
                             </span>{" "}
                             — A trusted antifungal,
@@ -536,16 +538,14 @@ function ScratchCard({ onComplete }) {
                           </p>
                         </div>
                       </div>
-
-                      {/* Footer strip */}
-                      <div className="h-3 bg-gradient-to-r from-[#ec008c] to-[#b1087b]" />
+                      <div className="h-2 sm:h-3 bg-gradient-to-r from-[#ec008c] to-[#b1087b]" />
                     </div>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Scratch layer covers entire card */}
+            {/* SCRATCH LAYER */}
             <canvas
               ref={scratchCanvasRef}
               className="absolute inset-0 cursor-pointer rounded-2xl z-10"
@@ -571,9 +571,8 @@ function ScratchCard({ onComplete }) {
               🎉 Congratulations!
             </h2>
             <p className="text-gray-700 text-lg mb-6">
-              You have successfully completed the Gogynax journey.
+              You have successfully completed the Gogynax journey with following You have contributed to Women's health!
             </p>
-            {/* <img src="/certificate.png" alt="Certificate" className="mx-auto rounded-lg shadow" /> */}
           </div>
         </div>
       )}
@@ -614,8 +613,8 @@ export const preloadAnimationAssets = async () => {
     const [doctorLoaded, patientLoaded, bg, scratchImg] = await Promise.all([
       Promise.all(doctorUrls.map((url) => Assets.load(url))),
       Promise.all(patientUrls.map((url) => Assets.load(url))),
-      Assets.load("/hos-bg.png"),
-      Assets.load("/scratch-card.jpg"),
+      Assets.load("/bg.jpg"),
+      Assets.load("/Dark Slate Floral Dance Poster (1).png"),
     ]);
 
     assetCache.doctorFrames = doctorLoaded;
