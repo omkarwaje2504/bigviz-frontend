@@ -33,7 +33,7 @@ export default function RegisterNewCandidate({ projectData, projectId, ui }) {
   const [formData, setFormData] = useState({
     name: "",
     prefix: "Dr",
-    mobile_number: `${projectData?.config?.doctor?.country_codes[0] || "+91"}`,
+    mobile_number: projectData?.config?.doctor?.country_codes?.[0] || "+91",
     photo: null,
   });
   const router = useRouter();

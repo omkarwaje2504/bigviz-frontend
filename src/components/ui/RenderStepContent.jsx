@@ -34,7 +34,7 @@ const RenderStepContent = ({
   const [audioName, setAudioName] = useState("");
   const dynamicFields = projectData?.config?.field || [];
   const prefixOptions = projectData?.config?.doctor?.prefix || ["Dr"];
-  const countryCode = projectData?.config?.doctor?.country_codes[0] || +91;
+  const countryCode = projectData?.config?.doctor?.country_codes?.[0] || +91;
 
   useEffect(() => {
     if (formData?.name?.length > 5) {
