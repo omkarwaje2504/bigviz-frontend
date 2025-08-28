@@ -290,8 +290,8 @@ function ScratchCard({ onComplete }) {
       setShowConfetti(true);
 
       setTimeout(() => {
-        // setShowCertificate(true);
-      }, 5000);
+        setShowCertificate(true);
+      }, 9000);
     }
   };
 
@@ -440,8 +440,8 @@ function ScratchCard({ onComplete }) {
               }
               anchor={{ x: 0.5, y: 1 }}
               scale={{
-                x: (breakpoint === "sm" ? 0.3 : 0.42) * -1,
-                y: breakpoint === "sm" ? 0.3 : 0.42,
+                x: (breakpoint === "sm" ? 0.3 : 0.63) * -1,
+                y: breakpoint === "sm" ? 0.3 : 0.63,
               }}
               animationSpeed={0.2}
               loop={false}
@@ -473,7 +473,7 @@ function ScratchCard({ onComplete }) {
           {messages.map((msg) => (
             <div
               key={msg.id}
-              className={`transition-all duration-500 ease-in-out max-w-[75%] px-4 py-2 rounded-2xl shadow-md text-md font-medium text-white ${
+              className={`transition-all duration-500 ease-in-out max-w-[75%] px-4 py-2 rounded-2xl shadow-md text-md md:text-lg font-medium text-white ${
                 msg.sender === "patient"
                   ? "bg-[#b1087b] self-start rounded-bl-none"
                   : "bg-[#011689]  self-end rounded-br-none"
@@ -503,15 +503,14 @@ function ScratchCard({ onComplete }) {
           `}
           >
             {/* CARD FRONT */}
-            <div className="absolute inset-0 flex items-center justify-center rounded-2xl overflow-hidden backface-hidden">
-              <div className="w-full h-full flex flex-col justify-center items-center bg-pink-50 rounded-2xl">
+            <div className="absolute inset-0 flex  justify-center rounded-2xl overflow-hidden backface-hidden">
+              <div className="w-full h-full flex flex-col justify-center items-center  bg-pink-50 rounded-2xl">
                 <div className="text-center text-white p-1">
                   <img
                     src="/packet.png"
                     alt="Gogynax-packshot"
                     className="mx-auto mb-3 w-full h-[70%]"
                   /> 
-
                   <div className="w-full bg-white shadow-2xl overflow-hidden rounded-xl">
                     <div className="h-full flex flex-col">
                       <div className="bg-gradient-to-r from-[#ec008c] to-[#b1087b] px-1 py-2 text-white text-center">
@@ -570,7 +569,7 @@ function ScratchCard({ onComplete }) {
             <h2 className="text-3xl font-bold text-[#ec008c] mb-4">
               🎉 Congratulations!
             </h2>
-            <p className="text-gray-700 text-lg mb-6">
+            <p className="text-gray-700 text-lg md:text-xl mb-6">
               You have successfully completed the Gogynax journey with following You have contributed to Women's health!
             </p>
           </div>
