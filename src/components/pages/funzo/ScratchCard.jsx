@@ -248,51 +248,50 @@ function ScratchCard({ onComplete }) {
   };
 
   const handleScratch = (e) => {
-  if (!showScratchCard || autoRevealed) return;
+    if (!showScratchCard || autoRevealed) return;
 
-  if (scratchSoundRef.current && scratchSoundRef.current.paused) {
-    scratchSoundRef.current.play().catch(() => {});
-  }
+    if (scratchSoundRef.current && scratchSoundRef.current.paused) {
+      scratchSoundRef.current.play().catch(() => {});
+    }
 
-  const canvas = scratchCanvasRef.current;
-  const rect = canvas.getBoundingClientRect();
-  const x = (e.clientX - rect.left) * (canvas.width / rect.width);
-  const y = (e.clientY - rect.top) * (canvas.height / rect.height);
+    const canvas = scratchCanvasRef.current;
+    const rect = canvas.getBoundingClientRect();
+    const x = (e.clientX - rect.left) * (canvas.width / rect.width);
+    const y = (e.clientY - rect.top) * (canvas.height / rect.height);
 
-  const ctx = canvas.getContext("2d");
-  ctx.globalCompositeOperation = "destination-out";
-  ctx.beginPath();
-  ctx.arc(x, y, 25, 0, 2 * Math.PI);
-  ctx.fill();
-
-  const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-  const pixels = imageData.data;
-  let transparent = 0;
-
-  for (let i = 3; i < pixels.length; i += 4) {
-    if (pixels[i] === 0) transparent++;
-  }
-
-  const progress = transparent / (pixels.length / 4);
-  setScratchProgress(progress);
-
-  if (progress > 0.95 && !autoRevealed) {
-    setAutoRevealed(true);
-    setScratchProgress(1);
-
-    // Clear the card completely
+    const ctx = canvas.getContext("2d");
     ctx.globalCompositeOperation = "destination-out";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.beginPath();
+    ctx.arc(x, y, 25, 0, 2 * Math.PI);
+    ctx.fill();
 
-    if (onComplete) onComplete();
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const pixels = imageData.data;
+    let transparent = 0;
 
-    // ✅ Wait 5 seconds before showing certificate
-    setTimeout(() => {
-      setShowCertificate(true);
-    }, 5000);
-  }
-};
+    for (let i = 3; i < pixels.length; i += 4) {
+      if (pixels[i] === 0) transparent++;
+    }
 
+    const progress = transparent / (pixels.length / 4);
+    setScratchProgress(progress);
+
+    if (progress > 0.95 && !autoRevealed) {
+      setAutoRevealed(true);
+      setScratchProgress(1);
+
+      // Clear the card completely
+      ctx.globalCompositeOperation = "destination-out";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      if (onComplete) onComplete();
+
+      // ✅ Wait 5 seconds before showing certificate
+      setTimeout(() => {
+        setShowCertificate(true);
+      }, 5000);
+    }
+  };
 
   const handleTouchStart = (e) => {
     if (e.cancelable) {
@@ -432,12 +431,16 @@ function ScratchCard({ onComplete }) {
             <animatedSprite
               ref={patientRef}
               textures={patientFrames}
-              x={CANVAS_WIDTH * 0.3}
+              x={CANVAS_WIDTH * 0.18}
               y={
                 breakpoint === "sm" ? CANVAS_HEIGHT * 1.0 : CANVAS_HEIGHT * 1.0
               }
               anchor={{ x: 0.5, y: 1 }}
-              scale={breakpoint === "sm" ? 0.25 : 0.42}
+         
+               scale={{
+                x: (breakpoint === "sm" ? 0.3 : 0.42) * -1, // 👈 flip horizontally
+                y: breakpoint === "sm" ? 0.3 : 0.42,
+              }}
               animationSpeed={0.2}
               loop={false}
               isPlaying={isPatientPlaying}
@@ -450,10 +453,13 @@ function ScratchCard({ onComplete }) {
               textures={doctorFrames}
               x={CANVAS_WIDTH * 0.7}
               y={
-                breakpoint === "sm" ? CANVAS_HEIGHT * 1.3 : CANVAS_HEIGHT * 1.0
+                breakpoint === "sm" ? CANVAS_HEIGHT * 1 : CANVAS_HEIGHT * 1.0
               }
               anchor={{ x: 0.5, y: 1 }}
-              scale={breakpoint === "sm" ? 0.45 : 0.7}
+              scale={{
+                x: (breakpoint === "sm" ? 0.35 : 0.7) * -1, // 👈 flip horizontally
+                y: breakpoint === "sm" ? 0.35 : 0.7,
+              }}
               animationSpeed={0.2}
               loop={false}
               isPlaying={isDoctorPlaying}
