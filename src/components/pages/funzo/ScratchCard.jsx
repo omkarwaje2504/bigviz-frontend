@@ -1,5 +1,6 @@
 "use client";
 import { Application, extend } from "@pixi/react";
+import { useRouter } from "next/navigation";
 import { Sprite, AnimatedSprite, Assets } from "pixi.js";
 import { useEffect, useState, useRef } from "react";
 import Confetti from "react-confetti";
@@ -14,7 +15,7 @@ const assetCache = {
   isLoaded: false,
 };
 
-function ScratchCard({ onComplete }) {
+function ScratchCard({ projectData,onComplete }) {
   const [doctorFrames, setDoctorFrames] = useState(
     assetCache.doctorFrames || [],
   );
@@ -42,6 +43,7 @@ function ScratchCard({ onComplete }) {
   const [isFlipped, setIsFlipped] = useState(false);
   const [showPackshot, setShowPackshot] = useState(true);
   const [showCertificate, setShowCertificate] = useState(false);
+  const router = useRouter()
 
   // Audio refs
   const scratchSoundRef = useRef(null);
@@ -572,7 +574,15 @@ function ScratchCard({ onComplete }) {
             <p className="text-gray-700 text-lg md:text-xl mb-6">
               You have successfully completed the Gogynax journey with following You have contributed to Women's health!
             </p>
+            <div>
+            <button className="w-fit px-3 py-2 mx-auto text-white bg-blue-700 text-lg border rounded" onClick={()=>{
+              localStorage.removeItem("formData"),
+               router.push(`/${projectData?.project_hash}/homepage`
+              )
+            }}>Go back</button>
           </div>
+          </div>
+          
         </div>
       )}
 
