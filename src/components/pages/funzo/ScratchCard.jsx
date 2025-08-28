@@ -572,7 +572,7 @@ function ScratchCard({ projectData,onComplete }) {
               🎉 Congratulations!
             </h2>
             <p className="text-gray-700 text-lg md:text-xl mb-6">
-              You have successfully completed the Gogynax journey with following You have contributed to Women's health!
+              You have contributed to Women's health!
             </p>
             <div>
             <button className="w-fit px-3 py-2 mx-auto text-white bg-blue-700 text-lg border rounded" onClick={()=>{
