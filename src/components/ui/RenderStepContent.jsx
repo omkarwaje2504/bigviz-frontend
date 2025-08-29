@@ -112,7 +112,7 @@ const RenderStepContent = ({
                         "",
                       ),
                     ),
-                    message: `Enter a valid Indian mobile number with ${countryCode} prefix`,
+                    message: `Enter a valid mobile number with ${countryCode} prefix`,
                     trim: true,
                     maxLength: 13,
                   }}
