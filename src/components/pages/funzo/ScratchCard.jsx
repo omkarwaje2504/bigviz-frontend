@@ -122,7 +122,7 @@ function ScratchCard({ projectData, projectId, ui }) {
       {
         id: 3,
         sender: "doctor",
-        text: "I'll prescribe an antifungal treatment for you guess which",
+        text: "I'll prescribe an antifungal treatment for you. Guess which",
         audioFile: "/sounds/doctor2.m4a",
       },
     ],
@@ -239,7 +239,7 @@ function ScratchCard({ projectData, projectId, ui }) {
       setMessages((prev) => [conv]);
 
       const audio = audioRefs.current[i];
-      console.log(conv)
+      // console.log(conv)
       if (conv.sender === "patient") {
         setIsPatientPlaying(true);
         if (patientRef.current) {
@@ -247,7 +247,7 @@ function ScratchCard({ projectData, projectId, ui }) {
           patientRef.current.gotoAndPlay(0); 
         }
       } else {
-        console.log("playing")
+        // console.log("playing")
         setIsDoctorPlaying(true);
         if (doctorRef.current) {
           doctorRef.current.gotoAndStop(0); 
@@ -271,8 +271,12 @@ function ScratchCard({ projectData, projectId, ui }) {
         setIsPatientPlaying(false);
         if (patientRef.current) patientRef.current.gotoAndStop(0);
       } else {
-        setIsDoctorPlaying(false);
-        if (doctorRef.current) doctorRef.current.gotoAndStop(0);
+        if(conv.id===4){
+          setIsDoctorPlaying(false);
+          if (doctorRef.current) doctorRef.current.gotoAndStop(0);
+        }else{
+          setIsDoctorPlaying(true);
+        }
       }
 
       if (audio) audio.pause();
