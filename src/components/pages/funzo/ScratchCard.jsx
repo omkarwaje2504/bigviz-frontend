@@ -5,7 +5,7 @@ import { Sprite, AnimatedSprite, Assets } from "pixi.js";
 import { useEffect, useState, useRef, useCallback } from "react";
 import Confetti from "react-confetti";
 import { FaSpinner } from "react-icons/fa";
-import { motion } from "framer-motion";
+import { convertOffsetToTimes, motion } from "framer-motion";
 import { DecryptData, EncryptData } from "@utils/cryptoUtils";
 import { SaveDoctors } from "@actions/user";
 import { IoChatboxOutline } from "react-icons/io5";
@@ -34,7 +34,6 @@ function ScratchCard({ projectData, projectId, ui }) {
   const [isPatientPlaying, setIsPatientPlaying] = useState(false);
   const [isDoctorPlaying, setIsDoctorPlaying] = useState(false);
 
-  // Scratch card states
   const [showScratchCard, setShowScratchCard] = useState(false);
   const [scratchProgress, setScratchProgress] = useState(0);
   const [showContent, setShowContent] = useState(false);
@@ -48,7 +47,6 @@ function ScratchCard({ projectData, projectId, ui }) {
   const [showFront, setShowFront] = useState(false);
   const router = useRouter();
 
-  // Audio refs
   const scratchSoundRef = useRef(null);
   const confettiSoundRef = useRef(null);
   const audioRefs = useRef([]);
@@ -58,21 +56,19 @@ function ScratchCard({ projectData, projectId, ui }) {
   const chatEndRef = useRef(null);
   const scratchCanvasRef = useRef(null);
 
-  // Use state for dimensions to ensure they update properly
   const [canvasDimensions, setCanvasDimensions] = useState({
     width: 400,
-    height: 600
+    height: 600,
   });
 
   const [breakpoint, setBreakpoint] = useState("md");
 
-  // Update canvas dimensions
   useEffect(() => {
     const updateDimensions = () => {
       if (typeof window !== "undefined") {
         setCanvasDimensions({
           width: window.innerWidth,
-          height: window.innerHeight
+          height: window.innerHeight,
         });
         setBreakpoint(window.innerWidth < 768 ? "sm" : "md");
       }
@@ -126,7 +122,7 @@ function ScratchCard({ projectData, projectId, ui }) {
       {
         id: 3,
         sender: "doctor",
-        text: "I'll prescribe an antifungal treatment for you",
+        text: "I'll prescribe an antifungal treatment for you guess which",
         audioFile: "/sounds/doctor2.m4a",
       },
     ],
@@ -144,7 +140,6 @@ function ScratchCard({ projectData, projectId, ui }) {
     });
   };
 
-  // Initialize audio files
   useEffect(() => {
     const initializeAudio = () => {
       try {
@@ -171,15 +166,10 @@ function ScratchCard({ projectData, projectId, ui }) {
     }
   }, [projectData?.project_hash]);
 
-  // Asset loading with better error handling
   useEffect(() => {
     const loadAssets = async () => {
-      // console.log("Starting asset loading...");
-      
       try {
-        // Check if assets are cached
         if (assetCache.isLoaded) {
-          // console.log("Using cached assets");
           setDoctorFrames([...assetCache.doctorFrames]);
           setPatientFrames([...assetCache.patientFrames]);
           setBgTexture(assetCache.bgTexture);
@@ -189,19 +179,13 @@ function ScratchCard({ projectData, projectId, ui }) {
           return;
         }
 
-        // console.log("Loading new assets...");
-        
-        // Load background first
         const bgTexture = await Assets.load("/bg.jpg");
-        // console.log("Background loaded:", bgTexture);
+
         setBgTexture(bgTexture);
 
-        // Load scratch image
         const scratchImg = await Assets.load("/scratch-card.png");
-        // console.log("Scratch image loaded:", scratchImg);
         setScratchImage(scratchImg);
 
-        // Load character animations
         const doctorUrls = Array.from(
           { length: 52 },
           (_, i) => `/doctor/doctor${String(i).padStart(2, "0")}.webp`,
@@ -211,38 +195,28 @@ function ScratchCard({ projectData, projectId, ui }) {
           (_, i) => `/patient/patient${String(i).padStart(2, "0")}.webp`,
         );
 
-        // console.log("Loading character animations...");
         const [doctorLoaded, patientLoaded] = await Promise.all([
           Promise.all(doctorUrls.map((url) => Assets.load(url))),
           Promise.all(patientUrls.map((url) => Assets.load(url))),
         ]);
 
-        // console.log("Doctor frames loaded:", doctorLoaded.length);
-        // console.log("Patient frames loaded:", patientLoaded.length);
-
-        // Cache the assets
         assetCache.doctorFrames = doctorLoaded;
         assetCache.patientFrames = patientLoaded;
         assetCache.bgTexture = bgTexture;
         assetCache.scratchImage = scratchImg;
         assetCache.isLoaded = true;
 
-        // Set state
         setDoctorFrames([...doctorLoaded]);
         setPatientFrames([...patientLoaded]);
-        
-        // console.log("All assets loaded successfully");
+
         setLoading(false);
-        
-        // Add a small delay before marking PIXI as ready
+
         setTimeout(() => {
           setPixiReady(true);
         }, 100);
-
       } catch (error) {
         console.error("Error loading assets:", error);
         setLoading(false);
-        // Try to continue without assets
         setPixiReady(true);
       }
     };
@@ -250,98 +224,87 @@ function ScratchCard({ projectData, projectId, ui }) {
     loadAssets();
   }, []);
 
-  // Play conversation sequence
   const playConversationSequence = useCallback(async () => {
     const conversations = conversationMap[projectData?.project_hash] || [];
-    // console.log("Starting conversation sequence with", conversations.length, "messages");
-    
+
     if (!conversations.length) {
       console.log("No conversations found");
       return;
     }
 
-    // Wait for refs to be ready
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await new Promise((resolve) => setTimeout(resolve, 1000));
 
     for (let i = 0; i < conversations.length; i++) {
       const conv = conversations[i];
-      // console.log(`Playing conversation ${i + 1}:`, conv.text);
-      
-      setMessages([conv]);
+      setMessages((prev) => [conv]);
 
       const audio = audioRefs.current[i];
-
+      console.log(conv)
       if (conv.sender === "patient") {
         setIsPatientPlaying(true);
-        setTimeout(() => {
-          if (patientRef.current) {
-            // console.log("Starting patient animation");
-            patientRef.current.gotoAndPlay(0);
-          }
-        }, 100);
+        if (patientRef.current) {
+          patientRef.current.gotoAndStop(0); 
+          patientRef.current.gotoAndPlay(0); 
+        }
       } else {
+        console.log("playing")
         setIsDoctorPlaying(true);
-        setTimeout(() => {
-          if (doctorRef.current) {
-            // console.log("Starting doctor animation");
-            doctorRef.current.gotoAndPlay(0);
-          }
-        }, 100);
+        if (doctorRef.current) {
+          doctorRef.current.gotoAndStop(0); 
+          doctorRef.current.gotoAndPlay(0); 
+        }
       }
 
-      // Play audio
       if (audio) {
         try {
           audio.currentTime = 0;
           await audio.play();
-        } catch (audioError) {
-          console.log("Audio play failed:", audioError);
+        } catch (err) {
+          console.log("Audio play failed:", err);
         }
       }
 
       const duration = await getAudioDuration(conv.audioFile);
-      await new Promise((resolve) => setTimeout(resolve, duration));
+      await new Promise((res) => setTimeout(res, duration));
 
-      // Stop animations
       if (conv.sender === "patient") {
         setIsPatientPlaying(false);
-        if (patientRef.current) {
-          patientRef.current.gotoAndStop(0);
-        }
+        if (patientRef.current) patientRef.current.gotoAndStop(0);
       } else {
         setIsDoctorPlaying(false);
-        if (doctorRef.current) {
-          doctorRef.current.gotoAndStop(0);
-        }
-      }
-      
-      if (audio) {
-        audio.pause();
+        if (doctorRef.current) doctorRef.current.gotoAndStop(0);
       }
 
-      await new Promise(resolve => setTimeout(resolve, 500));
+      if (audio) audio.pause();
+
+      await new Promise((res) => setTimeout(res, 500));
     }
 
     setConversationComplete(true);
     setTimeout(() => setShowScratchCard(true), 1000);
   }, [projectData?.project_hash]);
 
-  // Start conversation when everything is ready
   useEffect(() => {
     if (
-      pixiReady && 
-      doctorFrames.length > 0 && 
-      patientFrames.length > 0 && 
-      projectData?.project_hash && 
+      pixiReady &&
+      doctorFrames.length > 0 &&
+      patientFrames.length > 0 &&
+      projectData?.project_hash &&
       !conversationComplete &&
       !loading
     ) {
-
       playConversationSequence();
     }
-  }, [pixiReady, doctorFrames, patientFrames, projectData?.project_hash, conversationComplete, loading, playConversationSequence]);
+  }, [
+    pixiReady,
+    doctorFrames,
+    patientFrames,
+    projectData?.project_hash,
+    conversationComplete,
+    loading,
+    playConversationSequence,
+  ]);
 
-  // Other effects
   useEffect(() => {
     if (showScratchCard) {
       const timer = setTimeout(() => setShowFront(true), 1000);
@@ -360,7 +323,21 @@ function ScratchCard({ projectData, projectId, ui }) {
     }
   }, [showConfetti]);
 
-  // Scratch card functionality
+  const getEventPosition = (e, rect) => {
+    if (e.touches && e.touches.length > 0) {
+      return {
+        x: e.touches[0].clientX - rect.left,
+        y: e.touches[0].clientY - rect.top,
+      };
+    }
+    return {
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top,
+    };
+  };
+
+  let lastPoint = null;
+
   const handleScratch = (e) => {
     if (!showScratchCard || autoRevealed) return;
 
@@ -369,18 +346,30 @@ function ScratchCard({ projectData, projectId, ui }) {
     }
 
     const canvas = scratchCanvasRef.current;
-    const rect = canvas.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-
     const ctx = canvas.getContext("2d");
-    ctx.globalCompositeOperation = "destination-out";
-    ctx.beginPath();
+    const rect = canvas.getBoundingClientRect();
+    const { x, y } = getEventPosition(e, rect);
+
     const isMobile = window.innerWidth < 768;
     const SCRATCH_RADIUS = isMobile ? 40 : 60;
 
-    ctx.arc(x, y, SCRATCH_RADIUS, 0, 2 * Math.PI);
-    ctx.fill();
+    ctx.globalCompositeOperation = "destination-out";
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    ctx.lineWidth = SCRATCH_RADIUS * 2;
+
+    if (lastPoint) {
+      ctx.beginPath();
+      ctx.moveTo(lastPoint.x, lastPoint.y);
+      ctx.lineTo(x, y);
+      ctx.stroke();
+    } else {
+      ctx.beginPath();
+      ctx.arc(x, y, SCRATCH_RADIUS, 0, 2 * Math.PI);
+      ctx.fill();
+    }
+
+    lastPoint = { x, y };
 
     const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
     const pixels = imageData.data;
@@ -424,7 +413,6 @@ function ScratchCard({ projectData, projectId, ui }) {
     handleScratch(e.touches[0]);
   };
 
-  // Scratch canvas setup
   useEffect(() => {
     if (showScratchCard && scratchCanvasRef.current && scratchImage) {
       const canvas = scratchCanvasRef.current;
@@ -435,10 +423,10 @@ function ScratchCard({ projectData, projectId, ui }) {
       canvas.width = rect.width * dpr;
       canvas.height = rect.height * dpr;
       ctx.scale(dpr, dpr);
-      
+
       const img = new Image();
       img.crossOrigin = "anonymous";
-      
+
       img.onload = () => {
         ctx.drawImage(img, 0, 0, rect.width, rect.height);
       };
@@ -455,8 +443,12 @@ function ScratchCard({ projectData, projectId, ui }) {
       }
 
       const addTouchListeners = () => {
-        canvas.addEventListener("touchstart", handleTouchStart, { passive: false });
-        canvas.addEventListener("touchmove", handleTouchMove, { passive: false });
+        canvas.addEventListener("touchstart", handleTouchStart, {
+          passive: false,
+        });
+        canvas.addEventListener("touchmove", handleTouchMove, {
+          passive: false,
+        });
       };
 
       const removeTouchListeners = () => {
@@ -474,7 +466,7 @@ function ScratchCard({ projectData, projectId, ui }) {
     const endTime = Date.now();
     const durationMs = endTime - startTime;
     const durationMinutes = Math.floor(durationMs / 60000);
-    
+
     let updatedformData = {
       ...formData,
       time_taken: durationMinutes,
@@ -542,8 +534,8 @@ function ScratchCard({ projectData, projectId, ui }) {
 
       {!loading && pixiReady && (
         <div className="w-full h-full">
-          <Application 
-            width={canvasDimensions.width} 
+          <Application
+            width={canvasDimensions.width}
             height={canvasDimensions.height}
             options={{
               backgroundColor: 0x000000,
@@ -574,7 +566,6 @@ function ScratchCard({ projectData, projectId, ui }) {
                 animationSpeed={0.2}
                 loop={false}
                 isPlaying={isPatientPlaying}
-        
               />
             )}
 
@@ -592,7 +583,6 @@ function ScratchCard({ projectData, projectId, ui }) {
                 animationSpeed={0.2}
                 loop={false}
                 isPlaying={isDoctorPlaying}
-              
               />
             )}
           </Application>
@@ -693,8 +683,8 @@ function ScratchCard({ projectData, projectId, ui }) {
         <div className="absolute px-4 bottom-2 left-0 right-0 flex items-center justify-center z-50">
           <div className="bg-white p-2 lg:p-1 md:py-4 md:px-4 bg-gradient-to-r from-[#ec008c] to-[#b1087b] text-white font-bold rounded-xl shadow-2xl text-center max-w-lg animate-fadeIn">
             <p className="text-white font-bold text-sm md:text-xl lg:text-lg flex gap-2 justify-center items-center">
-              <MdCelebration color="#FFEA00" size={24}/> 
-              <span>You have contributed to Women's health!</span> 
+              <MdCelebration color="#FFEA00" size={24} />
+              <span>You have contributed to Women's health!</span>
             </p>
           </div>
         </div>
