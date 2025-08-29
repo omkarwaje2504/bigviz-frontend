@@ -103,6 +103,52 @@ function ScratchCard({ projectData, projectId, ui }) {
       gradientFrom: "#ec008c",
       gradientTo: "#b1087b",
     },
+    "scratch-card-portuguese": {
+      title: (
+        <>
+          Descubra os cuidados vaginais com Gogynax Trio
+          <br />
+          {/* <span className="text-yellow-200">with Gogynax</span> */}
+        </>
+      ),
+      tagline: "Rápido, simples, eficaz – sem testes, apenas tratamento",
+      info: (
+        <>
+          <span className="font-medium text-[#ec008c] text-2xl">
+            A terapêutica tripla 
+          </span>{" "}
+          — Clotrimazol + Metronidazol + Clindamicina 
+          <br />
+           — oferece uma cobertura abrangente para infeções vaginais mistas
+        </>
+      ),
+      packshot: "/packet.webp",
+      gradientFrom: "#ec008c",
+      gradientTo: "#b1087b",
+    },
+    "scratch-card-french": {
+      title: (
+        <>
+         Décoder les soins vaginaux avec Azimyn FS kit
+          <br />
+          {/* <span className="text-yellow-200">with Gogynax</span> */}
+        </>
+      ),
+      tagline: "Traitez les deux, prévenez les récidives - rapide, simple et sans dérangement",
+      info: (
+        <>
+          <span className="font-medium text-[#ec008c] text-2xl">
+            La trithérapie:   
+          </span>{" "}
+          Azithromycine + Secnidazole + Fluconazole - 
+          <br />
+          offre une couverture complète en une seule dose.
+        </>
+      ),
+      packshot: "/packet.webp",
+      gradientFrom: "#ec008c",
+      gradientTo: "#b1087b",
+    },
   };
 
   const conversationMap = {
@@ -117,6 +163,46 @@ function ScratchCard({ projectData, projectId, ui }) {
         id: 2,
         sender: "doctor",
         text: "Yes, typical of vaginal candidiasis",
+        audioFile: "/sounds/doctor1.m4a",
+      },
+      {
+        id: 3,
+        sender: "doctor",
+        text: "I'll prescribe an antifungal treatment for you. Guess which",
+        audioFile: "/sounds/doctor2.m4a",
+      },
+    ],
+     "scratch-card-french": [
+      {
+        id: 1,
+        sender: "patient",
+        text: "Docteur, mes symptômes reviennent toujours même après le traitement",
+        audioFile: "/sounds/patient1.m4a",
+      },
+      {
+        id: 2,
+        sender: "doctor",
+        text: "Une réinfection peut se produire si les deux partenaires ne sont pas traités",
+        audioFile: "/sounds/doctor1.m4a",
+      },
+      {
+        id: 3,
+        sender: "doctor",
+        text: "I'll prescribe an antifungal treatment for you. Guess which",
+        audioFile: "/sounds/doctor2.m4a",
+      },
+    ],
+    "scratch-card-portuguese": [
+      {
+        id: 1,
+        sender: "patient",
+        text: "Continuo com corrimento e desconforto mesmo após o tratamento.",
+        audioFile: "/sounds/patient1.m4a",
+      },
+      {
+        id: 2,
+        sender: "doctor",
+        text: "A terapia para um único agente patogénico pode não ser suficiente... O meu tratamento abrange fungos, bactérias e protozoários? ",
         audioFile: "/sounds/doctor1.m4a",
       },
       {
