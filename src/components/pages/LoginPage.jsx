@@ -11,6 +11,7 @@ import { useRouter } from "next/navigation";
 import { GenerateCardImage } from "@services/GenerateCardImage";
 
 export default function LoginPage({ projectData, projectId, ui }) {
+  // console.log(projectData)
   const [loading, setLoading] = useState(true);
   const [loginType, setLoginType] = useState("code");
   const router = useRouter();

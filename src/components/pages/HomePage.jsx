@@ -107,6 +107,7 @@ const HomePage = ({ projectData, projectId, ui }) => {
       />
     );
   }
+ 
   return (
     <div className="min-h-screen bg-white text-gray-800 dark:bg-gray-900 dark:text-white transition-colors duration-300">
       <Header
@@ -114,7 +115,7 @@ const HomePage = ({ projectData, projectId, ui }) => {
         projectData={projectData}
         projectHash={projectId}
       />
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2 md:py-8">
         {projectData?.config?.theme?.enable_dashboard === true && (
           <Dashboard stats={statistics} ui={ui} projectData={projectData} />
         )}
@@ -150,7 +151,7 @@ const HomePage = ({ projectData, projectId, ui }) => {
             projectData={projectData}
             userInfo={userInfo}
             members={members}
-            approvalState={true}
+            approvalState={projectData.config.employee.approval_required}
             approvingStatus={approvingStatus}
             onEdit={(id) => console.log("Edit", id)}
             onApprove={handleApprove}
@@ -164,7 +165,7 @@ const HomePage = ({ projectData, projectId, ui }) => {
         )}
       </main>
 
-      <Footer />
+      <Footer projectData={projectData} />
     </div>
   );
 };

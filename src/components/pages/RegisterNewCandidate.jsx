@@ -142,7 +142,7 @@ export default function RegisterNewCandidate({ projectData, projectId, ui }) {
           </form>
         </div>
       </div>
-      <Footer />
+      <Footer projectData={projectData} />
     </div>
   );
 }

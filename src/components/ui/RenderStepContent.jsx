@@ -121,38 +121,44 @@ const RenderStepContent = ({
               </div>
             )}
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {dynamicFields.map((field) => (
-              <InputField
-                key={field.id}
-                id={field.name}
-                label={
-                  field.display_name + (field.validations?.required ? " *" : "")
-                }
-                type={field.type}
-                value={String(formData[field.name] ?? "")}
-                onChange={(e) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    [field.name]: e.target.value,
-                  }))
-                }
-                required={field?.additional_config?.includes("is_required")}
-                placeholder={field.placeholder}
-                options={field.options || []}
-                validation={{
-                  regex:
-                    field.validations?.min || field.validations?.max
-                      ? new RegExp(
-                          `^.{${field.validations.min || 0},${field.validations.max || 100}}$`,
-                        )
-                      : undefined,
-                  message: `Enter valid ${field.label}`,
-                }}
-                onValidationChange={handleValidationChange(field.name)}
-              />
-            ))}
-          </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {/* {console.log(dynamicFields)} */}
+              {dynamicFields.map((field) =>
+                field?.additional_config?.includes("backstage_only") ? null : (
+                  <InputField
+                    key={field.id}
+                    id={field.name}
+                    label={
+                      field.display_name +
+                      (field.validations?.required ? " *" : "")
+                    }
+                    type={field.type}
+                    value={String(formData[field.name] ?? "")}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        [field.name]: e.target.value,
+                      }))
+                    }
+                    required={field?.additional_config?.includes("is_required")}
+                    placeholder={field.placeholder}
+                    options={field.options || []}
+                    validation={{
+                      regex:
+                        field.validations?.min || field.validations?.max
+                          ? new RegExp(
+                              `^.{${field.validations.min || 0},${
+                                field.validations.max || 100
+                              }}$`,
+                            )
+                          : undefined,
+                      message: `Enter valid ${field.label}`,
+                    }}
+                    onValidationChange={handleValidationChange(field.name)}
+                  />
+                ),
+              )}
+            </div>
         </div>
       );
     case 2:

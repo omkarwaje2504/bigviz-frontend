@@ -6,6 +6,10 @@ import { useEffect, useState, useRef } from "react";
 import Confetti from "react-confetti";
 import { FaSpinner } from "react-icons/fa";
 import { motion } from "framer-motion";
+import { DecryptData, EncryptData } from "@utils/cryptoUtils";
+import { SaveDoctors } from "@actions/user";
+import { IoChatboxOutline } from "react-icons/io5";
+import { MdCelebration } from "react-icons/md";
 
 extend({ Sprite, AnimatedSprite });
 
@@ -17,7 +21,8 @@ const assetCache = {
   isLoaded: false,
 };
 
-function ScratchCard({ projectData, onComplete }) {
+function ScratchCard({ projectData, projectId, ui }) {
+  const [startTime] = useState(Date.now());
   const [doctorFrames, setDoctorFrames] = useState(
     assetCache.doctorFrames || [],
   );
@@ -64,27 +69,56 @@ function ScratchCard({ projectData, onComplete }) {
   const CANVAS_WIDTH = typeof window !== "undefined" ? window.innerWidth : 400;
   const CANVAS_HEIGHT =
     typeof window !== "undefined" ? window.innerHeight : 600;
+  
+  const cardFrontMap = {
+    "7yp8v20x": {
+      title: (
+        <>
+          Decode the vaginal care
+          <br />
+          <span className="text-yellow-200">with Gogynax</span>
+        </>
+      ),
+      tagline: "Restores comfort and confidence",
+      info: (
+        <>
+          <span className="font-medium text-[#ec008c] text-xl ">
+            Clotrimazole
+          </span>{" "}
+          — A trusted antifungal,
+          <br />
+          offers relief, right where it's needed
+        </>
+      ),
+      packshot: "/packet.webp",
+      gradientFrom: "#ec008c",
+      gradientTo: "#b1087b",
+    },
+    
+  };
 
-  const conversations = [
-    {
-      id: 1,
-      sender: "patient",
-      text: "There's thick white discharge again… is it infection?",
-      audioFile: "/sounds/patient1.m4a",
-    },
-    {
-      id: 2,
-      sender: "doctor",
-      text: "Yes, typical of vaginal candidiasis",
-      audioFile: "/sounds/doctor1.m4a",
-    },
-    {
-      id: 3,
-      sender: "doctor",
-      text: "I'll prescribe an antifungal treatment for you",
-      audioFile: "/sounds/doctor2.m4a",
-    },
-  ];
+  const conversationMap = {
+    "7yp8v20x": [
+      {
+        id: 1,
+        sender: "patient",
+        text: "There’s thick white discharge again… is it infection?",
+        audioFile: "/sounds/patient1.m4a",
+      },
+      {
+        id: 2,
+        sender: "doctor",
+        text: "Yes, typical of vaginal candidiasis",
+        audioFile: "/sounds/doctor1.m4a",
+      },
+      {
+        id: 3,
+        sender: "doctor",
+        text: "I'll prescribe an antifungal treatment for you",
+        audioFile: "/sounds/doctor2.m4a",
+      },
+    ],
+  };
 
   const getAudioDuration = (audioFile) => {
     return new Promise((resolve) => {
@@ -97,10 +131,28 @@ function ScratchCard({ projectData, onComplete }) {
       });
     });
   };
+  const audioRefs = useRef([]);
+
+  useEffect(() => {
+    scratchSoundRef.current = new Audio("/sounds/scratch.m4a");
+    scratchSoundRef.current.loop = true;
+    scratchSoundRef.current.volume = 0.4;
+
+    confettiSoundRef.current = new Audio("/sounds/confetti.mp3");
+    confettiSoundRef.current.volume = 0.7;
+
+    const conversations = conversationMap[projectData?.project_hash] || [];
+
+    audioRefs.current = conversations.map((conv) => {
+      const audio = new Audio(conv.audioFile);
+      audio.volume = 0.8;
+      return audio;
+    });
+  }, [projectData?.hash]);
 
   useEffect(() => {
     if (showScratchCard) {
-      const timer = setTimeout(() => setShowFront(true), 1000); // 1s delay
+      const timer = setTimeout(() => setShowFront(true), 1000);
       return () => clearTimeout(timer);
     }
   }, [showScratchCard]);
@@ -112,14 +164,20 @@ function ScratchCard({ projectData, onComplete }) {
 
     confettiSoundRef.current = new Audio("/sounds/confetti.mp3");
     confettiSoundRef.current.volume = 0.7;
-
-    patientVoiceRef.current = new Audio(conversations[0].audioFile);
+    // console.log(projectData, conversationMap[projectData?.project_hash]);
+    patientVoiceRef.current = new Audio(
+      conversationMap[projectData?.project_hash][0].audioFile,
+    );
     patientVoiceRef.current.volume = 0.8;
 
-    doctorVoice1Ref.current = new Audio(conversations[1].audioFile);
+    doctorVoice1Ref.current = new Audio(
+      conversationMap[projectData?.project_hash][1].audioFile,
+    );
     doctorVoice1Ref.current.volume = 0.8;
 
-    doctorVoice2Ref.current = new Audio(conversations[2].audioFile);
+    doctorVoice2Ref.current = new Audio(
+      conversationMap[projectData?.project_hash][2].audioFile,
+    );
     doctorVoice2Ref.current.volume = 0.8;
   }, []);
 
@@ -189,75 +247,45 @@ function ScratchCard({ projectData, onComplete }) {
   }, [doctorFrames, patientFrames]);
 
   const playConversationSequence = async () => {
-    const patientConversation = conversations[0];
+    const conversations = conversationMap[projectData?.project_hash] || [];
+    if (!conversations.length) return;
 
-    setMessages((prev) => [...prev, patientConversation]);
-    setIsPatientPlaying(true);
+    for (let i = 0; i < conversations.length; i++) {
+      const conv = conversations[i];
+      setMessages((prev) => [conv]);
 
-    patientVoiceRef.current.currentTime = 0;
-    patientVoiceRef.current.play().catch(() => {});
+      const audio = audioRefs.current[i];
+      if (!audio) continue;
 
-    const patientDuration = await getAudioDuration(
-      patientConversation.audioFile,
-    );
-
-    setTimeout(() => {
-      patientRef.current?.gotoAndPlay(0);
-    }, 100);
-
-    setTimeout(async () => {
-      setIsPatientPlaying(false);
-      patientRef.current?.gotoAndStop(0);
-      patientVoiceRef.current.pause();
-
-      const doctorConversation1 = conversations[1];
-      setMessages((prev) => [...prev, doctorConversation1]);
-      setIsDoctorPlaying(true);
-
-      doctorVoice1Ref.current.currentTime = 0;
-      doctorVoice1Ref.current.play().catch(() => {});
-
-      const doctorDuration1 = await getAudioDuration(
-        doctorConversation1.audioFile,
-      );
-
-      setTimeout(() => {
-        doctorRef.current?.gotoAndPlay(0);
-      }, 100);
-
-      setTimeout(async () => {
-        setIsDoctorPlaying(false);
-        doctorRef.current?.stop();
-        doctorVoice1Ref.current.pause();
-
-        const doctorConversation2 = conversations[2];
-
-        setMessages((prev) => [...prev, doctorConversation2]);
+      if (conv.sender === "patient") {
+        setIsPatientPlaying(true);
+        patientRef.current?.gotoAndPlay(0);
+      } else {
         setIsDoctorPlaying(true);
+        doctorRef.current?.gotoAndPlay(0);
+      }
 
-        doctorVoice2Ref.current.currentTime = 0;
-        doctorVoice2Ref.current.play().catch(() => {});
+      audio.currentTime = 0;
+      audio.play().catch(() => {});
 
-        const doctorDuration2 = await getAudioDuration(
-          doctorConversation2.audioFile,
-        );
+      const duration = await getAudioDuration(conv.audioFile);
 
-        setTimeout(() => {
-          doctorRef.current?.gotoAndPlay(0);
-        }, 100);
+      await new Promise((resolve) => setTimeout(resolve, duration));
 
-        setTimeout(() => {
-          setIsDoctorPlaying(false);
-          doctorRef.current?.stop();
-          doctorVoice2Ref.current.pause();
-          setConversationComplete(true);
-          setTimeout(() => {
-            setShowScratchCard(true);
-          }, 1000);
-        }, doctorDuration2);
-      }, doctorDuration1);
-    }, patientDuration);
+      if (conv.sender === "patient") {
+        setIsPatientPlaying(false);
+        patientRef.current?.gotoAndStop(0);
+      } else {
+        setIsDoctorPlaying(false);
+        doctorRef.current?.gotoAndStop(0);
+      }
+      audio.pause();
+    }
+
+    setConversationComplete(true);
+    setTimeout(() => setShowScratchCard(true), 1000);
   };
+
   const handleScratch = (e) => {
     if (!showScratchCard || autoRevealed) return;
 
@@ -267,9 +295,6 @@ function ScratchCard({ projectData, onComplete }) {
 
     const canvas = scratchCanvasRef.current;
     const rect = canvas.getBoundingClientRect();
-
-    // ❌ old: multiplied by (canvas.width / rect.width)
-    // ✅ new: just use rect-based coords, since ctx.scale handles DPR
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
 
@@ -282,7 +307,6 @@ function ScratchCard({ projectData, onComplete }) {
     ctx.arc(x, y, SCRATCH_RADIUS, 0, 2 * Math.PI);
     ctx.fill();
 
-    // check progress...
     const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
     const pixels = imageData.data;
     let transparent = 0;
@@ -299,9 +323,6 @@ function ScratchCard({ projectData, onComplete }) {
       setScratchProgress(1);
       ctx.globalCompositeOperation = "destination-out";
       ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-      if (onComplete) onComplete();
-
       setShowConfetti(true);
       setTimeout(() => setShowCertificate(true), 9000);
     }
@@ -410,6 +431,36 @@ function ScratchCard({ projectData, onComplete }) {
     return () => window.removeEventListener("resize", checkSize);
   }, []);
 
+  const handleGoBack = async () => {
+    // console.log("here", startTime);
+    let formData = DecryptData("formData");
+
+    // console.log("formdata", formData);
+    const endTime = Date.now();
+    const durationMs = endTime - startTime;
+    const durationMinutes = Math.floor(durationMs / 60000);
+    let updatedformData = {
+      ...formData,
+      time_taken: durationMinutes,
+    };
+
+    // console.log("User spent:", durationMinutes, "minutes");
+    const getUserInfo = DecryptData("empData");
+    let userInfo = {
+      name: getUserInfo?.name,
+      role: getUserInfo?.role,
+      designation: getUserInfo?.role_name,
+      code: getUserInfo?.code,
+      hash: getUserInfo?.hash,
+    };
+
+    localStorage.setItem("scratchCardDuration", durationMinutes);
+    const save = await SaveDoctors(projectData, userInfo.hash, updatedformData);
+
+    localStorage.removeItem("formData");
+    router.push(`/${projectData?.project_hash}/homepage`);
+  };
+
   return (
     <div className="fixed inset-0 w-full h-full">
       {showConfetti && (
@@ -484,14 +535,14 @@ function ScratchCard({ projectData, onComplete }) {
       )}
 
       {!showScratchCard && (
-        <div className="absolute bottom-[55%] w-full max-h-[40%] overflow-y-auto flex flex-col px-4 py-2 space-y-2 z-20 lato-bold">
+        <div className="absolute bottom-[62%] md:bottom-[62%] lg:top-[10%] w-full max-h-[40%] overflow-y-auto flex flex-col px-4 py-2 space-y-2 z-20 lato-bold">
           {messages.map((msg) => (
             <div
               key={msg.id}
-              className={`transition-all duration-500 ease-in-out max-w-[75%] px-4 py-2 rounded-2xl shadow-md text-md md:text-lg font-medium text-white ${
+              className={`transition-all duration-500 ease-in-out max-w-[75%] px-4 py-2 rounded-2xl shadow-md text-md md:text-2xl md:py-6 font-medium text-white ${
                 msg.sender === "patient"
-                  ? "bg-[#b1087b] self-start rounded-bl-none"
-                  : "bg-[#011689]  self-end rounded-br-none"
+                  ? "bg-[#b1087b] self-start rounded-bl-none relative before:absolute before:content-[''] before:bottom-0 before:left-[-8px] before:border-r-[10px] before:border-r-[#b1087b] before:border-b-[10px] before:border-b-[#b1087b] before:border-l-[10px] before:border-l-transparent before:border-t-[10px] before:border-t-transparent"
+                  : "bg-[#011689] self-end rounded-br-none relative after:absolute after:content-[''] after:bottom-0 after:right-[-8px] after:border-l-[10px] after:border-l-[#011689] after:border-b-[10px] after:border-b-[#011689] after:border-r-[10px] after:border-r-transparent after:border-t-[10px] after:border-t-transparent"
               }`}
             >
               {msg.text}
@@ -510,7 +561,7 @@ function ScratchCard({ projectData, onComplete }) {
           <div
             className={`
             relative 
-            w-[90%] lg:w-1/2 
+            w-[95%] lg:w-1/2 
             h-[90dvh] max-h-[90dvh]  
             preserve-3d 
             transition-transform 
@@ -519,45 +570,47 @@ function ScratchCard({ projectData, onComplete }) {
           >
             {/* CARD FRONT */}
             {showFront && (
-              <div className="absolute inset-0 flex  justify-center rounded-2xl overflow-hidden backface-hidden">
-                <div className="w-full h-full flex flex-col justify-center items-center  bg-pink-50 rounded-2xl">
-                  <div className="text-center text-white p-1">
-                    <img
-                      src="/packet.webp"
-                      alt="Gogynax-packshot"
-                      className="mx-auto mb-3 w-full h-[70%]"
-                    />
-
-                    <div className="w-full bg-white shadow-2xl overflow-hidden rounded-xl">
+              <div className="absolute inset-0 flex justify-center rounded-2xl overflow-hidden backface-hidden">
+                <div className="w-full h-full flex flex-col justify-center items-center bg-pink-50 border-2 border-pink-500  gap-6 rounded-2xl">
+                  <div className="text-center px-5 w-full h-full flex flex-col gap-10 justify-center items-center text-white p-1 mt-2">
+                    <div className="w-full  bg-white shadow-2xl overflow-hidden mb-2 rounded-xl">
                       <div className="h-full flex flex-col">
-                        <div className="bg-gradient-to-r from-[#ec008c] to-[#b1087b] px-1 py-2 text-white text-center">
+                        <div
+                          className="px-1 py-5 text-white text-center"
+                          style={{
+                            background: `linear-gradient(to right, ${cardFrontMap[projectData?.project_hash]?.gradientFrom}, ${cardFrontMap[projectData?.project_hash]?.gradientTo})`,
+                          }}
+                        >
                           <h2 className="text-lg sm:text-xl md:text-2xl font-bold leading-tight">
-                            Decode the vaginal care
-                            <br />
-                            <span className="text-yellow-200">
-                              with Gogynax
-                            </span>
+                            {cardFrontMap[projectData?.project_hash]?.title}
                           </h2>
                         </div>
                         <div className="flex-1 px-1 py-2 flex flex-col justify-center text-center bg-gradient-to-b from-pink-50 to-purple-50">
-                          <p className="text-[#ec008c] font-semibold text-base sm:text-lg md:text-xl mb-4 sm:mb-6">
-                            Restores comfort and confidence
+                          <p className="text-[#ec008c] font-semibold text-lg md:text-2xl mb-4 ">
+                            {cardFrontMap[projectData?.project_hash]?.tagline}
                           </p>
 
-                          <div className="bg-white rounded-xl px-2 py-2 border-l-8 border-[#ec008c] shadow-lg max-w-sm mx-auto">
-                            <p className="text-sm sm:text-base md:text-lg text-gray-700 leading-relaxed">
-                              <span className="font-medium text-[#ec008c] text-lg ">
-                                Clotrimazole
-                              </span>{" "}
-                              — A trusted antifungal,
-                              <br />
-                              offers relief, right where it's needed
+                          <div className="bg-white rounded-xl px-4 py-2 border-l-8 mb-2 border-[#ec008c] shadow-lg max-w-xl mx-auto">
+                            <p className="text-lg md:text-2xl text-gray-700 leading-relaxed">
+                              {cardFrontMap[projectData?.project_hash]?.info}
                             </p>
                           </div>
                         </div>
-                        <div className="h-2 sm:h-3 bg-gradient-to-r from-[#ec008c] to-[#b1087b]" />
+
+                        <div
+                          className="h-2 sm:h-3"
+                          style={{
+                            background: `linear-gradient(to right, ${cardFrontMap[projectData?.project_hash]?.gradientFrom}, ${cardFrontMap[projectData?.project_hash]?.gradientTo})`,
+                          }}
+                        />
                       </div>
                     </div>
+
+                    <img
+                      src={cardFrontMap[projectData?.project_hash]?.packshot}
+                      alt="Packshot"
+                      className="mx-auto mb-3 w-full h-1/2 md:h-1/2"
+                    />
                   </div>
                 </div>
               </div>
@@ -586,26 +639,25 @@ function ScratchCard({ projectData, onComplete }) {
       )}
 
       {showCertificate && (
-        <div className="absolute px-4 inset-0 flex items-center justify-center z-50 bg-black/60">
-          <div className="bg-white p-8 rounded-2xl shadow-2xl text-center max-w-lg animate-fadeIn">
-            <h2 className="text-3xl font-bold text-[#ec008c] mb-4">
-              🎉 Congratulations!
-            </h2>
-            <p className="text-gray-700 text-lg md:text-xl mb-6">
-              You have contributed to Women's health!
+        <div className="absolute px-4 bottom-2 left-0 right-0 flex items-center justify-center z-50">
+          <div className="bg-white p-2 lg:p-1 md:py-4 md:px-4 bg-gradient-to-r from-[#ec008c] to-[#b1087b] text-white font-bold  rounded-xl shadow-2xl text-center max-w-lg animate-fadeIn">
+            <p className="text-white font-bold text-sm md:text-xl lg:text-lg flex gap-2 justify-center items-center">
+               <MdCelebration color="#FFEA00" size={24}/> <span>You have contributed to Women's health!</span> 
             </p>
+          </div>
+        </div>
+      )}
+
+      {showCertificate && (
+        <div className="absolute px-4 top-4 left-5 flex items-center justify-center z-50">
             <div>
               <button
-                className="w-fit px-3 py-2 mx-auto text-white bg-blue-700 text-lg border rounded"
-                onClick={() => {
-                  (localStorage.removeItem("formData"),
-                    router.push(`/${projectData?.project_hash}/homepage`));
-                }}
+                className="w-fit px-3 py-2 mx-auto text-white bg-pink-500 border-2 border-pink-500 text-lg rounded-xl"
+                onClick={handleGoBack}
               >
                 Go back
               </button>
             </div>
-          </div>
         </div>
       )}
 

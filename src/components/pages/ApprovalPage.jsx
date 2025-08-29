@@ -169,7 +169,7 @@ const ApprovalPage = ({ projectData, projectId, ui }) => {
         </div>
       </main>
 
-      <Footer />
+      <Footer projectData={projectData}/>
     </div>
   );
 };
