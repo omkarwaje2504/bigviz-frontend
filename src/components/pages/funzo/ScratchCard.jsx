@@ -106,7 +106,7 @@ function ScratchCard({ projectData, onComplete }) {
   }, [showScratchCard]);
 
   useEffect(() => {
-    scratchSoundRef.current = new Audio("/sounds/scratch.mp3");
+    scratchSoundRef.current = new Audio("/sounds/scratch.m4a");
     scratchSoundRef.current.loop = true;
     scratchSoundRef.current.volume = 0.4;
 
