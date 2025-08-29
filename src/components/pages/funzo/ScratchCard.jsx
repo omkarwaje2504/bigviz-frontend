@@ -392,7 +392,7 @@ function ScratchCard({ projectData, projectId, ui }) {
       ctx.globalCompositeOperation = "destination-out";
       ctx.fillRect(0, 0, canvas.width, canvas.height);
       setShowConfetti(true);
-      setTimeout(() => setShowCertificate(true), 9000);
+      setTimeout(() => setShowCertificate(true), 10000);
     }
   };
 
@@ -684,6 +684,27 @@ function ScratchCard({ projectData, projectId, ui }) {
       )}
 
       {showCertificate && (
+        <div className="absolute px-4 inset-0 flex items-center justify-center z-50 bg-black/60">
+          <div className="bg-white p-8 rounded-2xl shadow-2xl text-center max-w-lg animate-fadeIn">
+            <h2 className="text-3xl font-bold text-[#ec008c] mb-4">
+              🎉 Congratulations!
+            </h2>
+            <p className="text-gray-700 text-lg md:text-xl mb-6">
+              You have contributed to Women's health!
+            </p>
+            <div>
+              <button
+                className="w-fit px-3 py-2 mx-auto text-white bg-blue-700 text-lg border rounded"
+                onClick={handleGoBack}
+              >
+                Go back
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* {showCertificate && (
         <div className="absolute px-4 bottom-2 left-0 right-0 flex items-center justify-center z-50">
           <div className="bg-white p-2 lg:p-1 md:py-4 md:px-4 bg-gradient-to-r from-[#ec008c] to-[#b1087b] text-white font-bold rounded-xl shadow-2xl text-center max-w-lg animate-fadeIn">
             <p className="text-white font-bold text-sm md:text-xl lg:text-lg flex gap-2 justify-center items-center">
@@ -705,7 +726,7 @@ function ScratchCard({ projectData, projectId, ui }) {
             </button>
           </div>
         </div>
-      )}
+      )} */}
 
       <style jsx>{`
         canvas {
