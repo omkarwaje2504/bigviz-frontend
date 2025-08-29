@@ -80,7 +80,7 @@ export default function RegisterNewCandidate({ projectData, projectId, ui }) {
       MyError(error);
     }
     if (projectData?.config?.game) {
-      // router.push(`game`);
+      router.push(`game`);
       setIsSubmitLoading(false);
     } else {
       router.push(`render-magic-moment`);
