@@ -18,30 +18,35 @@ import { set } from "zod";
 import { useRouter } from "next/navigation";
 import { IoArrowBackCircleSharp } from "react-icons/io5";
 import Link from "next/link";
+import MyError from "@services/MyError";
+import { SaveDoctors } from "@actions/user";
 
 export default function RegisterNewCandidate({ projectData, projectId, ui }) {
   const [currentStep, setCurrentStep] = useState(1);
   const [photoUploadStatus, setPhotoUploadStatus] = useState(false);
   const [audioUploadStatus, setAudioUploadStatus] = useState(false);
   const [validationStatus, setValidationStatus] = useState();
+  const [isSubmitLoading, setIsSubmitLoading] = useState(false);
   const [userInfo, setUserInfo] = useState({
     name: "",
     role: 1,
     designation: "Medical Representative",
     avatar: "/images/avatar.jpg",
+    code: "",
+    hash: "",
   });
   const [formData, setFormData] = useState({
     name: "",
     prefix: "Dr",
-    mobile_number: projectData?.config?.doctor?.country_codes?.[0] || "+91",
+    mobile: projectData?.config?.doctor?.country_codes?.[0] || "+91",
     photo: null,
   });
+
   const router = useRouter();
 
   useEffect(() => {
     const gitFormData = DecryptData("formData");
     const getUserInfo = DecryptData("empData");
-
     if (gitFormData) {
       setFormData(gitFormData);
     }
@@ -50,24 +55,39 @@ export default function RegisterNewCandidate({ projectData, projectId, ui }) {
         name: getUserInfo?.name,
         role: getUserInfo?.role,
         designation: getUserInfo?.role_name,
+        code: getUserInfo?.code,
+        hash: getUserInfo?.hash,
       });
     }
   }, []);
+
   useEffect(() => {
     if (formData) {
       EncryptData("formData", formData);
     }
   }, [formData]);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // console.log("Form submitted:", formData,projectData?.config?.game);
+    setIsSubmitLoading(true);
+    try {
+      const save = await SaveDoctors(projectData, userInfo.hash, formData);
+      if (!save.success) {
+        console.log(save.message);
+      }
+    } catch (error) {
+      console.group(error);
+      MyError(error);
+    }
     if (projectData?.config?.game) {
-      router.push(`game`);
+      // router.push(`game`);
+      setIsSubmitLoading(false);
     } else {
       router.push(`render-magic-moment`);
+      setIsSubmitLoading(false);
     }
   };
+
   return (
     <div className="min-h-screen dark:bg-gray-900 text-white">
       <Header
@@ -117,6 +137,7 @@ export default function RegisterNewCandidate({ projectData, projectId, ui }) {
               setCurrentStep={setCurrentStep}
               formData={formData}
               validationStatus={validationStatus}
+              isSubmitLoading={isSubmitLoading}
             />
           </form>
         </div>

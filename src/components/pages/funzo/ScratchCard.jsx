@@ -4,6 +4,8 @@ import { useRouter } from "next/navigation";
 import { Sprite, AnimatedSprite, Assets } from "pixi.js";
 import { useEffect, useState, useRef } from "react";
 import Confetti from "react-confetti";
+import { FaSpinner } from "react-icons/fa";
+import { motion } from "framer-motion";
 
 extend({ Sprite, AnimatedSprite });
 
@@ -15,7 +17,7 @@ const assetCache = {
   isLoaded: false,
 };
 
-function ScratchCard({ projectData,onComplete }) {
+function ScratchCard({ projectData, onComplete }) {
   const [doctorFrames, setDoctorFrames] = useState(
     assetCache.doctorFrames || [],
   );
@@ -43,7 +45,8 @@ function ScratchCard({ projectData,onComplete }) {
   const [isFlipped, setIsFlipped] = useState(false);
   const [showPackshot, setShowPackshot] = useState(true);
   const [showCertificate, setShowCertificate] = useState(false);
-  const router = useRouter()
+  const [showFront, setShowFront] = useState(false);
+  const router = useRouter();
 
   // Audio refs
   const scratchSoundRef = useRef(null);
@@ -96,6 +99,13 @@ function ScratchCard({ projectData,onComplete }) {
   };
 
   useEffect(() => {
+    if (showScratchCard) {
+      const timer = setTimeout(() => setShowFront(true), 1000); // 1s delay
+      return () => clearTimeout(timer);
+    }
+  }, [showScratchCard]);
+
+  useEffect(() => {
     scratchSoundRef.current = new Audio("/sounds/scratch.mp3");
     scratchSoundRef.current.loop = true;
     scratchSoundRef.current.volume = 0.4;
@@ -137,11 +147,11 @@ function ScratchCard({ projectData,onComplete }) {
     (async () => {
       const doctorUrls = Array.from(
         { length: 52 },
-        (_, i) => `/doctor/doctor${String(i).padStart(2, "0")}.png`,
+        (_, i) => `/doctor/doctor${String(i).padStart(2, "0")}.webp`,
       );
       const patientUrls = Array.from(
         { length: 52 },
-        (_, i) => `/patient/patient${String(i).padStart(2, "0")}.png`,
+        (_, i) => `/patient/patient${String(i).padStart(2, "0")}.webp`,
       );
 
       try {
@@ -149,10 +159,8 @@ function ScratchCard({ projectData,onComplete }) {
           [
             Promise.all(doctorUrls.map((url) => Assets.load(url))),
             Promise.all(patientUrls.map((url) => Assets.load(url))),
-            Assets.load(
-              "/bg.jpg",
-            ),
-            Assets.load("/Dark Slate Floral Dance Poster (1).png"),
+            Assets.load("/bg.jpg"),
+            Assets.load("/scratch-card.png"),
           ],
         );
 
@@ -250,7 +258,6 @@ function ScratchCard({ projectData,onComplete }) {
       }, doctorDuration1);
     }, patientDuration);
   };
-
   const handleScratch = (e) => {
     if (!showScratchCard || autoRevealed) return;
 
@@ -260,15 +267,22 @@ function ScratchCard({ projectData,onComplete }) {
 
     const canvas = scratchCanvasRef.current;
     const rect = canvas.getBoundingClientRect();
-    const x = (e.clientX - rect.left) * (canvas.width / rect.width);
-    const y = (e.clientY - rect.top) * (canvas.height / rect.height);
+
+    // ❌ old: multiplied by (canvas.width / rect.width)
+    // ✅ new: just use rect-based coords, since ctx.scale handles DPR
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
 
     const ctx = canvas.getContext("2d");
     ctx.globalCompositeOperation = "destination-out";
     ctx.beginPath();
-    ctx.arc(x, y, 25, 0, 2 * Math.PI);
+    const isMobile = window.innerWidth < 768;
+    const SCRATCH_RADIUS = isMobile ? 40 : 60;
+
+    ctx.arc(x, y, SCRATCH_RADIUS, 0, 2 * Math.PI);
     ctx.fill();
 
+    // check progress...
     const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
     const pixels = imageData.data;
     let transparent = 0;
@@ -280,20 +294,16 @@ function ScratchCard({ projectData,onComplete }) {
     const progress = transparent / (pixels.length / 4);
     setScratchProgress(progress);
 
-    if (progress > 0.95 && !autoRevealed) {
+    if (progress > 0.8 && !autoRevealed) {
       setAutoRevealed(true);
       setScratchProgress(1);
-
       ctx.globalCompositeOperation = "destination-out";
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
       if (onComplete) onComplete();
 
       setShowConfetti(true);
-
-      setTimeout(() => {
-        setShowCertificate(true);
-      }, 9000);
+      setTimeout(() => setShowCertificate(true), 9000);
     }
   };
 
@@ -323,14 +333,15 @@ function ScratchCard({ projectData,onComplete }) {
       const canvas = scratchCanvasRef.current;
       const ctx = canvas.getContext("2d");
 
-      canvas.width = 350;
-      canvas.height = 250;
-
+      const rect = canvas.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+      ctx.scale(dpr, dpr);
       const img = new Image();
 
       img.onload = () => {
-        const imgRatio = img.width / img.height
-        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, 0, 0, rect.width, rect.height);
       };
 
       if (scratchImage.source && scratchImage.source.resource) {
@@ -338,11 +349,11 @@ function ScratchCard({ projectData,onComplete }) {
           img.src = scratchImage.source.resource.src;
         } else {
           img.crossOrigin = "anonymous";
-          img.src = "/Dark Slate Floral Dance Poster (1).png";
+          img.src = "/scratch-card.png";
         }
       } else {
         img.crossOrigin = "anonymous";
-        img.src = "/Dark Slate Floral Dance Poster (1).png";
+        img.src = "/scratch-card.png";
       }
 
       const addTouchListeners = () => {
@@ -414,10 +425,12 @@ function ScratchCard({ projectData,onComplete }) {
       )}
 
       {loading && (
-        <div className="absolute w-full h-full flex items-center justify-center bg-gray-100 bg-opacity-80 z-10">
+        <div className="absolute w-full h-full flex items-center justify-center dark:bg-gray-900 bg-gray-100 bg-opacity-80 z-10">
           <div className="flex flex-col items-center">
-            <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-2"></div>
-            <p className="text-lg font-semibold">Loading animation...</p>
+            <FaSpinner className="w-10 h-10 animate-spin dark:fill-white " />
+            <p className="text-lg dark:text-white font-semibold">
+              Loading assets...
+            </p>
           </div>
         </div>
       )}
@@ -428,7 +441,7 @@ function ScratchCard({ projectData,onComplete }) {
             <sprite
               texture={bgTexture}
               height={CANVAS_HEIGHT}
-              width={CANVAS_WIDTH} 
+              width={CANVAS_WIDTH}
             />
           )}
 
@@ -436,7 +449,7 @@ function ScratchCard({ projectData,onComplete }) {
             <animatedSprite
               ref={patientRef}
               textures={patientFrames}
-              x={CANVAS_WIDTH * 0.18}
+              x={CANVAS_WIDTH * 0.17}
               y={
                 breakpoint === "sm" ? CANVAS_HEIGHT * 1.0 : CANVAS_HEIGHT * 1.0
               }
@@ -505,54 +518,61 @@ function ScratchCard({ projectData,onComplete }) {
           `}
           >
             {/* CARD FRONT */}
-            <div className="absolute inset-0 flex  justify-center rounded-2xl overflow-hidden backface-hidden">
-              <div className="w-full h-full flex flex-col justify-center items-center  bg-pink-50 rounded-2xl">
-                <div className="text-center text-white p-1">
-                  <img
-                    src="/packet.png"
-                    alt="Gogynax-packshot"
-                    className="mx-auto mb-3 w-full h-[70%]"
-                  /> 
-                  <div className="w-full bg-white shadow-2xl overflow-hidden rounded-xl">
-                    <div className="h-full flex flex-col">
-                      <div className="bg-gradient-to-r from-[#ec008c] to-[#b1087b] px-1 py-2 text-white text-center">
-                       
-                        <h2 className="text-lg sm:text-xl md:text-2xl font-bold leading-tight">
-                          Decode the vaginal care
-                          <br />
-                          <span className="text-yellow-200">with Gogynax</span>
-                        </h2>
-                      </div>
-                      <div className="flex-1 px-1 py-2 flex flex-col justify-center text-center bg-gradient-to-b from-pink-50 to-purple-50">
-                        <p className="text-[#ec008c] font-semibold text-base sm:text-lg md:text-xl mb-4 sm:mb-6">
-                          Restores comfort and confidence
-                        </p>
+            {showFront && (
+              <div className="absolute inset-0 flex  justify-center rounded-2xl overflow-hidden backface-hidden">
+                <div className="w-full h-full flex flex-col justify-center items-center  bg-pink-50 rounded-2xl">
+                  <div className="text-center text-white p-1">
+                    <img
+                      src="/packet.webp"
+                      alt="Gogynax-packshot"
+                      className="mx-auto mb-3 w-full h-[70%]"
+                    />
 
-                        <div className="bg-white rounded-xl px-2 py-2 border-l-8 border-[#ec008c] shadow-lg max-w-sm mx-auto">
-                          <p className="text-sm sm:text-base md:text-lg text-gray-700 leading-relaxed">
-                            <span className="font-medium text-[#ec008c] text-lg ">
-                              Clotrimazole
-                            </span>{" "}
-                            — A trusted antifungal,
+                    <div className="w-full bg-white shadow-2xl overflow-hidden rounded-xl">
+                      <div className="h-full flex flex-col">
+                        <div className="bg-gradient-to-r from-[#ec008c] to-[#b1087b] px-1 py-2 text-white text-center">
+                          <h2 className="text-lg sm:text-xl md:text-2xl font-bold leading-tight">
+                            Decode the vaginal care
                             <br />
-                            offers relief, right where it's needed
-                          </p>
+                            <span className="text-yellow-200">
+                              with Gogynax
+                            </span>
+                          </h2>
                         </div>
+                        <div className="flex-1 px-1 py-2 flex flex-col justify-center text-center bg-gradient-to-b from-pink-50 to-purple-50">
+                          <p className="text-[#ec008c] font-semibold text-base sm:text-lg md:text-xl mb-4 sm:mb-6">
+                            Restores comfort and confidence
+                          </p>
+
+                          <div className="bg-white rounded-xl px-2 py-2 border-l-8 border-[#ec008c] shadow-lg max-w-sm mx-auto">
+                            <p className="text-sm sm:text-base md:text-lg text-gray-700 leading-relaxed">
+                              <span className="font-medium text-[#ec008c] text-lg ">
+                                Clotrimazole
+                              </span>{" "}
+                              — A trusted antifungal,
+                              <br />
+                              offers relief, right where it's needed
+                            </p>
+                          </div>
+                        </div>
+                        <div className="h-2 sm:h-3 bg-gradient-to-r from-[#ec008c] to-[#b1087b]" />
                       </div>
-                      <div className="h-2 sm:h-3 bg-gradient-to-r from-[#ec008c] to-[#b1087b]" />
                     </div>
                   </div>
                 </div>
               </div>
-            </div>
+            )}
 
             {/* SCRATCH LAYER */}
-            <canvas
+            <motion.canvas
               ref={scratchCanvasRef}
               className="absolute inset-0 cursor-pointer rounded-2xl z-10"
               onMouseMove={(e) => {
                 if (e.buttons === 1) handleScratch(e);
               }}
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.6, ease: "easeOut" }}
               onMouseDown={handleScratch}
               onMouseUp={handleScratchEnd}
               onMouseLeave={handleScratchEnd}
@@ -575,14 +595,17 @@ function ScratchCard({ projectData,onComplete }) {
               You have contributed to Women's health!
             </p>
             <div>
-            <button className="w-fit px-3 py-2 mx-auto text-white bg-blue-700 text-lg border rounded" onClick={()=>{
-              localStorage.removeItem("formData"),
-               router.push(`/${projectData?.project_hash}/homepage`
-              )
-            }}>Go back</button>
+              <button
+                className="w-fit px-3 py-2 mx-auto text-white bg-blue-700 text-lg border rounded"
+                onClick={() => {
+                  (localStorage.removeItem("formData"),
+                    router.push(`/${projectData?.project_hash}/homepage`));
+                }}
+              >
+                Go back
+              </button>
+            </div>
           </div>
-          </div>
-          
         </div>
       )}
 
@@ -611,11 +634,11 @@ export const preloadAnimationAssets = async () => {
 
   const doctorUrls = Array.from(
     { length: 52 },
-    (_, i) => `/doctor/doctor${String(i).padStart(2, "0")}.png`,
+    (_, i) => `/doctor/doctor${String(i).padStart(2, "0")}.webp`,
   );
   const patientUrls = Array.from(
     { length: 52 },
-    (_, i) => `/patient/patient${String(i).padStart(2, "0")}.png`,
+    (_, i) => `/patient/patient${String(i).padStart(2, "0")}.webp`,
   );
 
   try {
@@ -623,7 +646,7 @@ export const preloadAnimationAssets = async () => {
       Promise.all(doctorUrls.map((url) => Assets.load(url))),
       Promise.all(patientUrls.map((url) => Assets.load(url))),
       Assets.load("/bg.jpg"),
-      Assets.load("/Dark Slate Floral Dance Poster (1).png"),
+      Assets.load("/scratch-card.png"),
     ]);
 
     assetCache.doctorFrames = doctorLoaded;

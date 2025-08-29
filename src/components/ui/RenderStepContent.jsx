@@ -5,6 +5,7 @@ import PhotoUploadEditor from "./PhotoUpload";
 import AudioUploadEditor from "./AudioUploadEditor";
 import { FaStar } from "react-icons/fa";
 import CalendarPage from "@components/ui/Calendar";
+import MyError from "@services/MyError";
 
 const cleanName = (name) => {
   const prefixes = ["Dr", "Prof", "Mr", "Mrs", "dr", "prof", "mr", "mrs"];
@@ -38,7 +39,6 @@ const RenderStepContent = ({
 
   useEffect(() => {
     if (formData?.name?.length > 5) {
-      // console.log(formData?.name?.length);
       setFormData({ ...formData, name: cleanName(formData?.name) });
     }
   }, [formData?.name]);
@@ -72,20 +72,23 @@ const RenderStepContent = ({
                 }
               />
             </div>
-      
+
             {!projectData?.features?.includes("disable_mobile_number") && (
               <div>
                 <InputField
-                  id="mobile_number"
+                  id="mobile"
                   label="Mobile Number*"
                   type="tel"
-                  value={formData.mobile_number}
+                  value={formData.mobile}
                   onChange={(e) => {
                     let val = e.target.value;
 
                     try {
                       const regex = new RegExp(
-                        projectData?.config?.doctor?.regex?.replace(/^\/|\/$/g, ""),
+                        projectData?.config?.doctor?.regex?.replace(
+                          /^\/|\/$/g,
+                          "",
+                        ),
                       );
 
                       if (regex.test(val)) {
@@ -95,14 +98,20 @@ const RenderStepContent = ({
                       }
                     } catch (err) {
                       console.warn("Invalid regex from backend:", err);
+                      MyError(err);
                     }
 
-                    setFormData({ ...formData, mobile_number: val });
+                    setFormData({ ...formData, mobile: val });
                   }}
                   required
                   placeholder={`e.g. ${countryCode}9876543210`}
                   validation={{
-                    regex: new RegExp(projectData?.config?.doctor?.regex?.replace(/^\/|\/$/g, "")),
+                    regex: new RegExp(
+                      projectData?.config?.doctor?.regex?.replace(
+                        /^\/|\/$/g,
+                        "",
+                      ),
+                    ),
                     message: `Enter a valid Indian mobile number with ${countryCode} prefix`,
                     trim: true,
                     maxLength: 13,

@@ -49,7 +49,7 @@ export interface Doctor {
   approval_history: History[];
   comments: string | null;
   approved_at: string | null;
-  photo_approval_status: 0|1|2|3|4;
+  photo_approval_status: 0 | 1 | 2 | 3 | 4;
   code: string | null;
   created_at: string;
   download_url: string;
@@ -66,11 +66,26 @@ export default function data() {
   return null;
 }
 
+export type FormData = Record<string, any>;
+
+interface Field {
+  additional_config: string[];
+  default_value: string;
+  display_name: string;
+  helper: string;
+  hint: string;
+  id: string;
+  name: string;
+  placeholder: string;
+  type: string;
+}
+
 export interface ProjectInfo {
   project_hash: string;
   product_type: string;
   features: any;
   config: {
+    field: Field[];
     doctor: {
       approval_type: string;
       disable_doctor_prefix: boolean;
@@ -84,12 +99,23 @@ export interface ProjectInfo {
       label: string;
       optional_first_photo: boolean;
       optional_mobile_number: boolean;
+      country_codes: string[];
+      prefix: string;
+      regex: string;
     };
     employee: {
       approval_roles: string[];
       approval_required: boolean;
+      Decline_Comments: boolean;
+      Enable_hierarchy: boolean;
+      employee_login_type: any;
+      employee_login_using_number: boolean;
+      final_artwork_allow_download: boolean;
+      reprint_button: boolean;
     };
-    game: boolean;
+    game: {
+      scratch_card: boolean;
+    };
   };
   product_name: string;
 }

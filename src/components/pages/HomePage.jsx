@@ -79,7 +79,7 @@ const HomePage = ({ projectData, projectId, ui }) => {
       setMembers([]);
     }
   };
-
+  
   const handleApprove = async (member, comments) => {
     setApprovingStatus((prev) => ({ ...prev, [member.doctor_hash]: true }));
     try {
@@ -115,11 +115,9 @@ const HomePage = ({ projectData, projectId, ui }) => {
         projectHash={projectId}
       />
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2">
-       {
-        projectData?.config?.theme?.enable_dashboard===true && (
-           <Dashboard stats={statistics} ui={ui} projectData={projectData} />
-        )
-       }
+        {projectData?.config?.theme?.enable_dashboard === true && (
+          <Dashboard stats={statistics} ui={ui} projectData={projectData} />
+        )}
 
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 space-y-4 md:space-y-0">
           <div className="w-full md:w-auto">

@@ -1,6 +1,6 @@
 "use client";
 
-import { FaChevronLeft, FaChevronRight } from "react-icons/fa";
+import { FaChevronLeft, FaChevronRight, FaSpinner } from "react-icons/fa";
 
 const FormNavigationButtons = ({
   currentStep,
@@ -8,6 +8,7 @@ const FormNavigationButtons = ({
   formData,
   validationStatus,
   projectData,
+  isSubmitLoading,
 }) => {
   const projectType = projectData?.product_type;
   const disablePhotoUpload = projectData?.config?.doctor?.disable_photo_upload;
@@ -18,7 +19,7 @@ const FormNavigationButtons = ({
 
   const isPage2Valid =
     currentStep !== 2 ||
-    disablePhotoUpload || 
+    disablePhotoUpload ||
     (projectType !== "DeskCalendar" && !!formData?.photo?.croppedImage) ||
     (projectType === "DeskCalendar" &&
       Array.isArray(formData?.calendarData) &&
@@ -39,7 +40,7 @@ const FormNavigationButtons = ({
 
   const handleNext = () => {
     if (disablePhotoUpload && currentStep === 1) {
-      setCurrentStep(99); 
+      setCurrentStep(99);
     } else {
       setCurrentStep(currentStep + 1);
     }
@@ -77,14 +78,14 @@ const FormNavigationButtons = ({
         <button
           type="submit"
           className="flex items-center ml-auto bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded"
-          disabled={
-            projectType !== "E-Video" &&
-            projectType !== "PhotoFrame" &&
-            !formData.consent
-          }
+          disabled={isSubmitLoading}
         >
           Submit
-          <FaChevronRight size={16} className="ml-1" />
+          {isSubmitLoading ? (
+            <FaSpinner className="gap-2 w-4 h-4 animate-spin fill-white" />
+          ) : (
+            <FaChevronRight size={16} className="ml-1" />
+          )}
         </button>
       )}
     </div>
