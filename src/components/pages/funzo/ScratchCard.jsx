@@ -2,7 +2,7 @@
 import { Application, extend } from "@pixi/react";
 import { useRouter } from "next/navigation";
 import { Sprite, AnimatedSprite, Assets } from "pixi.js";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import Confetti from "react-confetti";
 import { FaSpinner } from "react-icons/fa";
 import { motion } from "framer-motion";
@@ -23,19 +23,14 @@ const assetCache = {
 
 function ScratchCard({ projectData, projectId, ui }) {
   const [startTime] = useState(Date.now());
-  const [doctorFrames, setDoctorFrames] = useState(
-    assetCache.doctorFrames || [],
-  );
-  const [patientFrames, setPatientFrames] = useState(
-    assetCache.patientFrames || [],
-  );
-  const [bgTexture, setBgTexture] = useState(assetCache.bgTexture || null);
-  const [scratchImage, setScratchImage] = useState(
-    assetCache.scratchImage || null,
-  );
-  const [loading, setLoading] = useState(!assetCache.isLoaded);
+  const [doctorFrames, setDoctorFrames] = useState([]);
+  const [patientFrames, setPatientFrames] = useState([]);
+  const [bgTexture, setBgTexture] = useState(null);
+  const [scratchImage, setScratchImage] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [pixiReady, setPixiReady] = useState(false);
 
-  const [messages, setMessages] = useState([]); // chat messages
+  const [messages, setMessages] = useState([]);
   const [isPatientPlaying, setIsPatientPlaying] = useState(false);
   const [isDoctorPlaying, setIsDoctorPlaying] = useState(false);
 
@@ -56,22 +51,40 @@ function ScratchCard({ projectData, projectId, ui }) {
   // Audio refs
   const scratchSoundRef = useRef(null);
   const confettiSoundRef = useRef(null);
-  const patientVoiceRef = useRef(null);
-  const doctorVoice1Ref = useRef(null);
-  const doctorVoice2Ref = useRef(null);
+  const audioRefs = useRef([]);
 
   const doctorRef = useRef(null);
   const patientRef = useRef(null);
-  const replacementRef = useRef(null);
   const chatEndRef = useRef(null);
   const scratchCanvasRef = useRef(null);
 
-  const CANVAS_WIDTH = typeof window !== "undefined" ? window.innerWidth : 400;
-  const CANVAS_HEIGHT =
-    typeof window !== "undefined" ? window.innerHeight : 600;
-  
+  // Use state for dimensions to ensure they update properly
+  const [canvasDimensions, setCanvasDimensions] = useState({
+    width: 400,
+    height: 600
+  });
+
+  const [breakpoint, setBreakpoint] = useState("md");
+
+  // Update canvas dimensions
+  useEffect(() => {
+    const updateDimensions = () => {
+      if (typeof window !== "undefined") {
+        setCanvasDimensions({
+          width: window.innerWidth,
+          height: window.innerHeight
+        });
+        setBreakpoint(window.innerWidth < 768 ? "sm" : "md");
+      }
+    };
+
+    updateDimensions();
+    window.addEventListener("resize", updateDimensions);
+    return () => window.removeEventListener("resize", updateDimensions);
+  }, []);
+
   const cardFrontMap = {
-    "7yp8v20x": {
+    "scratch-card-zambia": {
       title: (
         <>
           Decode the vaginal care
@@ -82,7 +95,7 @@ function ScratchCard({ projectData, projectId, ui }) {
       tagline: "Restores comfort and confidence",
       info: (
         <>
-          <span className="font-medium text-[#ec008c] text-xl ">
+          <span className="font-medium text-[#ec008c] text-2xl">
             Clotrimazole
           </span>{" "}
           — A trusted antifungal,
@@ -94,15 +107,14 @@ function ScratchCard({ projectData, projectId, ui }) {
       gradientFrom: "#ec008c",
       gradientTo: "#b1087b",
     },
-    
   };
 
   const conversationMap = {
-    "7yp8v20x": [
+    "scratch-card-zambia": [
       {
         id: 1,
         sender: "patient",
-        text: "There’s thick white discharge again… is it infection?",
+        text: "There's thick white discharge again… is it infection?",
         audioFile: "/sounds/patient1.m4a",
       },
       {
@@ -131,55 +143,211 @@ function ScratchCard({ projectData, projectId, ui }) {
       });
     });
   };
-  const audioRefs = useRef([]);
 
+  // Initialize audio files
   useEffect(() => {
-    scratchSoundRef.current = new Audio("/sounds/scratch.m4a");
-    scratchSoundRef.current.loop = true;
-    scratchSoundRef.current.volume = 0.4;
+    const initializeAudio = () => {
+      try {
+        scratchSoundRef.current = new Audio("/sounds/scratch.m4a");
+        scratchSoundRef.current.loop = true;
+        scratchSoundRef.current.volume = 0.4;
 
-    confettiSoundRef.current = new Audio("/sounds/confetti.mp3");
-    confettiSoundRef.current.volume = 0.7;
+        confettiSoundRef.current = new Audio("/sounds/confetti.mp3");
+        confettiSoundRef.current.volume = 0.7;
 
+        const conversations = conversationMap[projectData?.project_hash] || [];
+        audioRefs.current = conversations.map((conv) => {
+          const audio = new Audio(conv.audioFile);
+          audio.volume = 0.8;
+          return audio;
+        });
+      } catch (error) {
+        console.error("Error initializing audio:", error);
+      }
+    };
+
+    if (projectData?.project_hash) {
+      initializeAudio();
+    }
+  }, [projectData?.project_hash]);
+
+  // Asset loading with better error handling
+  useEffect(() => {
+    const loadAssets = async () => {
+      // console.log("Starting asset loading...");
+      
+      try {
+        // Check if assets are cached
+        if (assetCache.isLoaded) {
+          // console.log("Using cached assets");
+          setDoctorFrames([...assetCache.doctorFrames]);
+          setPatientFrames([...assetCache.patientFrames]);
+          setBgTexture(assetCache.bgTexture);
+          setScratchImage(assetCache.scratchImage);
+          setLoading(false);
+          setPixiReady(true);
+          return;
+        }
+
+        // console.log("Loading new assets...");
+        
+        // Load background first
+        const bgTexture = await Assets.load("/bg.jpg");
+        // console.log("Background loaded:", bgTexture);
+        setBgTexture(bgTexture);
+
+        // Load scratch image
+        const scratchImg = await Assets.load("/scratch-card.png");
+        // console.log("Scratch image loaded:", scratchImg);
+        setScratchImage(scratchImg);
+
+        // Load character animations
+        const doctorUrls = Array.from(
+          { length: 52 },
+          (_, i) => `/doctor/doctor${String(i).padStart(2, "0")}.webp`,
+        );
+        const patientUrls = Array.from(
+          { length: 52 },
+          (_, i) => `/patient/patient${String(i).padStart(2, "0")}.webp`,
+        );
+
+        // console.log("Loading character animations...");
+        const [doctorLoaded, patientLoaded] = await Promise.all([
+          Promise.all(doctorUrls.map((url) => Assets.load(url))),
+          Promise.all(patientUrls.map((url) => Assets.load(url))),
+        ]);
+
+        // console.log("Doctor frames loaded:", doctorLoaded.length);
+        // console.log("Patient frames loaded:", patientLoaded.length);
+
+        // Cache the assets
+        assetCache.doctorFrames = doctorLoaded;
+        assetCache.patientFrames = patientLoaded;
+        assetCache.bgTexture = bgTexture;
+        assetCache.scratchImage = scratchImg;
+        assetCache.isLoaded = true;
+
+        // Set state
+        setDoctorFrames([...doctorLoaded]);
+        setPatientFrames([...patientLoaded]);
+        
+        // console.log("All assets loaded successfully");
+        setLoading(false);
+        
+        // Add a small delay before marking PIXI as ready
+        setTimeout(() => {
+          setPixiReady(true);
+        }, 100);
+
+      } catch (error) {
+        console.error("Error loading assets:", error);
+        setLoading(false);
+        // Try to continue without assets
+        setPixiReady(true);
+      }
+    };
+
+    loadAssets();
+  }, []);
+
+  // Play conversation sequence
+  const playConversationSequence = useCallback(async () => {
     const conversations = conversationMap[projectData?.project_hash] || [];
+    // console.log("Starting conversation sequence with", conversations.length, "messages");
+    
+    if (!conversations.length) {
+      console.log("No conversations found");
+      return;
+    }
 
-    audioRefs.current = conversations.map((conv) => {
-      const audio = new Audio(conv.audioFile);
-      audio.volume = 0.8;
-      return audio;
-    });
-  }, [projectData?.hash]);
+    // Wait for refs to be ready
+    await new Promise(resolve => setTimeout(resolve, 1000));
 
+    for (let i = 0; i < conversations.length; i++) {
+      const conv = conversations[i];
+      // console.log(`Playing conversation ${i + 1}:`, conv.text);
+      
+      setMessages([conv]);
+
+      const audio = audioRefs.current[i];
+
+      if (conv.sender === "patient") {
+        setIsPatientPlaying(true);
+        setTimeout(() => {
+          if (patientRef.current) {
+            // console.log("Starting patient animation");
+            patientRef.current.gotoAndPlay(0);
+          }
+        }, 100);
+      } else {
+        setIsDoctorPlaying(true);
+        setTimeout(() => {
+          if (doctorRef.current) {
+            // console.log("Starting doctor animation");
+            doctorRef.current.gotoAndPlay(0);
+          }
+        }, 100);
+      }
+
+      // Play audio
+      if (audio) {
+        try {
+          audio.currentTime = 0;
+          await audio.play();
+        } catch (audioError) {
+          console.log("Audio play failed:", audioError);
+        }
+      }
+
+      const duration = await getAudioDuration(conv.audioFile);
+      await new Promise((resolve) => setTimeout(resolve, duration));
+
+      // Stop animations
+      if (conv.sender === "patient") {
+        setIsPatientPlaying(false);
+        if (patientRef.current) {
+          patientRef.current.gotoAndStop(0);
+        }
+      } else {
+        setIsDoctorPlaying(false);
+        if (doctorRef.current) {
+          doctorRef.current.gotoAndStop(0);
+        }
+      }
+      
+      if (audio) {
+        audio.pause();
+      }
+
+      await new Promise(resolve => setTimeout(resolve, 500));
+    }
+
+    setConversationComplete(true);
+    setTimeout(() => setShowScratchCard(true), 1000);
+  }, [projectData?.project_hash]);
+
+  // Start conversation when everything is ready
+  useEffect(() => {
+    if (
+      pixiReady && 
+      doctorFrames.length > 0 && 
+      patientFrames.length > 0 && 
+      projectData?.project_hash && 
+      !conversationComplete &&
+      !loading
+    ) {
+
+      playConversationSequence();
+    }
+  }, [pixiReady, doctorFrames, patientFrames, projectData?.project_hash, conversationComplete, loading, playConversationSequence]);
+
+  // Other effects
   useEffect(() => {
     if (showScratchCard) {
       const timer = setTimeout(() => setShowFront(true), 1000);
       return () => clearTimeout(timer);
     }
   }, [showScratchCard]);
-
-  useEffect(() => {
-    scratchSoundRef.current = new Audio("/sounds/scratch.m4a");
-    scratchSoundRef.current.loop = true;
-    scratchSoundRef.current.volume = 0.4;
-
-    confettiSoundRef.current = new Audio("/sounds/confetti.mp3");
-    confettiSoundRef.current.volume = 0.7;
-    // console.log(projectData, conversationMap[projectData?.project_hash]);
-    patientVoiceRef.current = new Audio(
-      conversationMap[projectData?.project_hash][0].audioFile,
-    );
-    patientVoiceRef.current.volume = 0.8;
-
-    doctorVoice1Ref.current = new Audio(
-      conversationMap[projectData?.project_hash][1].audioFile,
-    );
-    doctorVoice1Ref.current.volume = 0.8;
-
-    doctorVoice2Ref.current = new Audio(
-      conversationMap[projectData?.project_hash][2].audioFile,
-    );
-    doctorVoice2Ref.current.volume = 0.8;
-  }, []);
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -192,100 +360,7 @@ function ScratchCard({ projectData, projectId, ui }) {
     }
   }, [showConfetti]);
 
-  useEffect(() => {
-    if (assetCache.isLoaded) {
-      setDoctorFrames(assetCache.doctorFrames);
-      setPatientFrames(assetCache.patientFrames);
-      setBgTexture(assetCache.bgTexture);
-      setScratchImage(assetCache.scratchImage);
-      setLoading(false);
-      return;
-    }
-
-    (async () => {
-      const doctorUrls = Array.from(
-        { length: 52 },
-        (_, i) => `/doctor/doctor${String(i).padStart(2, "0")}.webp`,
-      );
-      const patientUrls = Array.from(
-        { length: 52 },
-        (_, i) => `/patient/patient${String(i).padStart(2, "0")}.webp`,
-      );
-
-      try {
-        const [doctorLoaded, patientLoaded, bg, scratchImg] = await Promise.all(
-          [
-            Promise.all(doctorUrls.map((url) => Assets.load(url))),
-            Promise.all(patientUrls.map((url) => Assets.load(url))),
-            Assets.load("/bg.jpg"),
-            Assets.load("/scratch-card.png"),
-          ],
-        );
-
-        assetCache.doctorFrames = doctorLoaded;
-        assetCache.patientFrames = patientLoaded;
-        assetCache.bgTexture = bg;
-        assetCache.scratchImage = scratchImg;
-        assetCache.isLoaded = true;
-
-        setDoctorFrames(doctorLoaded);
-        setPatientFrames(patientLoaded);
-        setBgTexture(bg);
-        setScratchImage(scratchImg);
-      } catch (err) {
-        console.error("Error loading assets:", err);
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, []);
-
-  useEffect(() => {
-    if (doctorFrames.length && patientFrames.length) {
-      playConversationSequence();
-    }
-  }, [doctorFrames, patientFrames]);
-
-  const playConversationSequence = async () => {
-    const conversations = conversationMap[projectData?.project_hash] || [];
-    if (!conversations.length) return;
-
-    for (let i = 0; i < conversations.length; i++) {
-      const conv = conversations[i];
-      setMessages((prev) => [conv]);
-
-      const audio = audioRefs.current[i];
-      if (!audio) continue;
-
-      if (conv.sender === "patient") {
-        setIsPatientPlaying(true);
-        patientRef.current?.gotoAndPlay(0);
-      } else {
-        setIsDoctorPlaying(true);
-        doctorRef.current?.gotoAndPlay(0);
-      }
-
-      audio.currentTime = 0;
-      audio.play().catch(() => {});
-
-      const duration = await getAudioDuration(conv.audioFile);
-
-      await new Promise((resolve) => setTimeout(resolve, duration));
-
-      if (conv.sender === "patient") {
-        setIsPatientPlaying(false);
-        patientRef.current?.gotoAndStop(0);
-      } else {
-        setIsDoctorPlaying(false);
-        doctorRef.current?.gotoAndStop(0);
-      }
-      audio.pause();
-    }
-
-    setConversationComplete(true);
-    setTimeout(() => setShowScratchCard(true), 1000);
-  };
-
+  // Scratch card functionality
   const handleScratch = (e) => {
     if (!showScratchCard || autoRevealed) return;
 
@@ -349,6 +424,7 @@ function ScratchCard({ projectData, projectId, ui }) {
     handleScratch(e.touches[0]);
   };
 
+  // Scratch canvas setup
   useEffect(() => {
     if (showScratchCard && scratchCanvasRef.current && scratchImage) {
       const canvas = scratchCanvasRef.current;
@@ -359,31 +435,28 @@ function ScratchCard({ projectData, projectId, ui }) {
       canvas.width = rect.width * dpr;
       canvas.height = rect.height * dpr;
       ctx.scale(dpr, dpr);
+      
       const img = new Image();
-
+      img.crossOrigin = "anonymous";
+      
       img.onload = () => {
         ctx.drawImage(img, 0, 0, rect.width, rect.height);
       };
 
-      if (scratchImage.source && scratchImage.source.resource) {
-        if (scratchImage.source.resource instanceof HTMLImageElement) {
-          img.src = scratchImage.source.resource.src;
-        } else {
-          img.crossOrigin = "anonymous";
-          img.src = "/scratch-card.png";
-        }
+      img.onerror = () => {
+        console.error("Failed to load scratch image");
+      };
+
+      // Try to get image source
+      if (scratchImage.source?.resource?.src) {
+        img.src = scratchImage.source.resource.src;
       } else {
-        img.crossOrigin = "anonymous";
         img.src = "/scratch-card.png";
       }
 
       const addTouchListeners = () => {
-        canvas.addEventListener("touchstart", handleTouchStart, {
-          passive: false,
-        });
-        canvas.addEventListener("touchmove", handleTouchMove, {
-          passive: false,
-        });
+        canvas.addEventListener("touchstart", handleTouchStart, { passive: false });
+        canvas.addEventListener("touchmove", handleTouchMove, { passive: false });
       };
 
       const removeTouchListeners = () => {
@@ -392,59 +465,21 @@ function ScratchCard({ projectData, projectId, ui }) {
       };
 
       addTouchListeners();
-
-      return () => {
-        removeTouchListeners();
-      };
+      return () => removeTouchListeners();
     }
   }, [showScratchCard, scratchImage]);
 
-  useEffect(() => {
-    return () => {
-      [
-        scratchSoundRef,
-        confettiSoundRef,
-        patientVoiceRef,
-        doctorVoice1Ref,
-        doctorVoice2Ref,
-      ].forEach((ref) => {
-        if (ref.current) {
-          ref.current.pause();
-          ref.current.currentTime = 0;
-        }
-      });
-    };
-  }, []);
-
-  const [breakpoint, setBreakpoint] = useState("md");
-
-  useEffect(() => {
-    const checkSize = () => {
-      if (window.innerWidth < 768) {
-        setBreakpoint("sm");
-      } else {
-        setBreakpoint("md");
-      }
-    };
-    checkSize();
-    window.addEventListener("resize", checkSize);
-    return () => window.removeEventListener("resize", checkSize);
-  }, []);
-
   const handleGoBack = async () => {
-    // console.log("here", startTime);
     let formData = DecryptData("formData");
-
-    // console.log("formdata", formData);
     const endTime = Date.now();
     const durationMs = endTime - startTime;
     const durationMinutes = Math.floor(durationMs / 60000);
+    
     let updatedformData = {
       ...formData,
       time_taken: durationMinutes,
     };
 
-    // console.log("User spent:", durationMinutes, "minutes");
     const getUserInfo = DecryptData("empData");
     let userInfo = {
       name: getUserInfo?.name,
@@ -461,13 +496,32 @@ function ScratchCard({ projectData, projectId, ui }) {
     router.push(`/${projectData?.project_hash}/homepage`);
   };
 
+  // Cleanup
+  useEffect(() => {
+    return () => {
+      [scratchSoundRef, confettiSoundRef].forEach((ref) => {
+        if (ref.current) {
+          ref.current.pause();
+          ref.current.currentTime = 0;
+        }
+      });
+
+      audioRefs.current.forEach((audio) => {
+        if (audio) {
+          audio.pause();
+          audio.currentTime = 0;
+        }
+      });
+    };
+  }, []);
+
   return (
-    <div className="fixed inset-0 w-full h-full">
+    <div className="fixed inset-0 w-full h-full bg-black">
       {showConfetti && (
         <div className="fixed inset-0 z-[9999] pointer-events-none">
           <Confetti
-            width={window.innerWidth}
-            height={window.innerHeight}
+            width={canvasDimensions.width}
+            height={canvasDimensions.height}
             recycle={false}
             numberOfPieces={200}
             gravity={0.3}
@@ -476,70 +530,81 @@ function ScratchCard({ projectData, projectId, ui }) {
       )}
 
       {loading && (
-        <div className="absolute w-full h-full flex items-center justify-center dark:bg-gray-900 bg-gray-100 bg-opacity-80 z-10">
+        <div className="absolute w-full h-full flex items-center justify-center bg-gray-100 bg-opacity-80 z-10">
           <div className="flex flex-col items-center">
-            <FaSpinner className="w-10 h-10 animate-spin dark:fill-white " />
-            <p className="text-lg dark:text-white font-semibold">
+            <FaSpinner className="w-10 h-10 animate-spin text-gray-800" />
+            <p className="text-lg text-gray-800 font-semibold mt-2">
               Loading assets...
             </p>
           </div>
         </div>
       )}
 
-      {!loading && (
-        <Application width={CANVAS_WIDTH} height={CANVAS_HEIGHT}>
-          {bgTexture && (
-            <sprite
-              texture={bgTexture}
-              height={CANVAS_HEIGHT}
-              width={CANVAS_WIDTH}
-            />
-          )}
+      {!loading && pixiReady && (
+        <div className="w-full h-full">
+          <Application 
+            width={canvasDimensions.width} 
+            height={canvasDimensions.height}
+            options={{
+              backgroundColor: 0x000000,
+              antialias: true,
+              resolution: window.devicePixelRatio || 1,
+              autoDensity: true,
+            }}
+          >
+            {bgTexture && (
+              <sprite
+                texture={bgTexture}
+                width={canvasDimensions.width}
+                height={canvasDimensions.height}
+              />
+            )}
 
-          {patientFrames.length > 0 && (
-            <animatedSprite
-              ref={patientRef}
-              textures={patientFrames}
-              x={CANVAS_WIDTH * 0.17}
-              y={
-                breakpoint === "sm" ? CANVAS_HEIGHT * 1.0 : CANVAS_HEIGHT * 1.0
-              }
-              anchor={{ x: 0.5, y: 1 }}
-              scale={{
-                x: (breakpoint === "sm" ? 0.3 : 0.63) * -1,
-                y: breakpoint === "sm" ? 0.3 : 0.63,
-              }}
-              animationSpeed={0.2}
-              loop={false}
-              isPlaying={isPatientPlaying}
-            />
-          )}
+            {patientFrames.length > 0 && (
+              <animatedSprite
+                ref={patientRef}
+                textures={patientFrames}
+                x={canvasDimensions.width * 0.17}
+                y={canvasDimensions.height * 1.0}
+                anchor={{ x: 0.5, y: 1 }}
+                scale={{
+                  x: (breakpoint === "sm" ? 0.3 : 0.63) * -1,
+                  y: breakpoint === "sm" ? 0.3 : 0.63,
+                }}
+                animationSpeed={0.2}
+                loop={false}
+                isPlaying={isPatientPlaying}
+        
+              />
+            )}
 
-          {doctorFrames.length > 0 && (
-            <animatedSprite
-              ref={doctorRef}
-              textures={doctorFrames}
-              x={CANVAS_WIDTH * 0.7}
-              y={breakpoint === "sm" ? CANVAS_HEIGHT * 1 : CANVAS_HEIGHT * 1.0}
-              anchor={{ x: 0.5, y: 1 }}
-              scale={{
-                x: (breakpoint === "sm" ? 0.35 : 0.7) * -1,
-                y: breakpoint === "sm" ? 0.35 : 0.7,
-              }}
-              animationSpeed={0.2}
-              loop={false}
-              isPlaying={isDoctorPlaying}
-            />
-          )}
-        </Application>
+            {doctorFrames.length > 0 && (
+              <animatedSprite
+                ref={doctorRef}
+                textures={doctorFrames}
+                x={canvasDimensions.width * 0.7}
+                y={canvasDimensions.height * 1.0}
+                anchor={{ x: 0.5, y: 1 }}
+                scale={{
+                  x: (breakpoint === "sm" ? 0.35 : 0.7) * -1,
+                  y: breakpoint === "sm" ? 0.35 : 0.7,
+                }}
+                animationSpeed={0.2}
+                loop={false}
+                isPlaying={isDoctorPlaying}
+              
+              />
+            )}
+          </Application>
+        </div>
       )}
 
       {!showScratchCard && (
-        <div className="absolute bottom-[62%] md:bottom-[62%] lg:top-[10%] w-full max-h-[40%] overflow-y-auto flex flex-col px-4 py-2 space-y-2 z-20 lato-bold">
+        <div className="absolute bottom-[62%] md:bottom-[62%] lg:top-[10%] w-full max-h-[40%] overflow-y-auto flex flex-col px-4 py-2 space-y-2 z-20">
           {messages.map((msg) => (
             <div
               key={msg.id}
-              className={`transition-all duration-500 ease-in-out max-w-[75%] px-4 py-2 rounded-2xl shadow-md text-md md:text-2xl md:py-6 font-medium text-white ${
+              className={`transition-all duration-500 ease-in-out max-w-[75%] px-4 py-2 rounded-2xl shadow-md text-md md:text-3xl md:py-8 font-medium text-white ${
                 msg.sender === "patient"
                   ? "bg-[#b1087b] self-start rounded-bl-none relative before:absolute before:content-[''] before:bottom-0 before:left-[-8px] before:border-r-[10px] before:border-r-[#b1087b] before:border-b-[10px] before:border-b-[#b1087b] before:border-l-[10px] before:border-l-transparent before:border-t-[10px] before:border-t-transparent"
                   : "bg-[#011689] self-end rounded-br-none relative after:absolute after:content-[''] after:bottom-0 after:right-[-8px] after:border-l-[10px] after:border-l-[#011689] after:border-b-[10px] after:border-b-[#011689] after:border-r-[10px] after:border-r-transparent after:border-t-[10px] after:border-t-transparent"
@@ -558,22 +623,12 @@ function ScratchCard({ projectData, projectId, ui }) {
             isDisappearing ? "scale-0 opacity-0" : "scale-100 opacity-100"
           }`}
         >
-          <div
-            className={`
-            relative 
-            w-[95%] lg:w-1/2 
-            h-[90dvh] max-h-[90dvh]  
-            preserve-3d 
-            transition-transform 
-            duration-700
-          `}
-          >
-            {/* CARD FRONT */}
+          <div className="relative w-[95%] lg:w-1/2 h-[90dvh] max-h-[90dvh] preserve-3d transition-transform duration-700">
             {showFront && (
               <div className="absolute inset-0 flex justify-center rounded-2xl overflow-hidden backface-hidden">
-                <div className="w-full h-full flex flex-col justify-center items-center bg-pink-50 border-2 border-pink-500  gap-6 rounded-2xl">
+                <div className="w-full h-full flex flex-col justify-center items-center bg-pink-50 border-2 border-pink-500 gap-6 rounded-2xl">
                   <div className="text-center px-5 w-full h-full flex flex-col gap-10 justify-center items-center text-white p-1 mt-2">
-                    <div className="w-full  bg-white shadow-2xl overflow-hidden mb-2 rounded-xl">
+                    <div className="w-full bg-white shadow-2xl overflow-hidden mb-2 rounded-xl">
                       <div className="h-full flex flex-col">
                         <div
                           className="px-1 py-5 text-white text-center"
@@ -586,17 +641,15 @@ function ScratchCard({ projectData, projectId, ui }) {
                           </h2>
                         </div>
                         <div className="flex-1 px-1 py-2 flex flex-col justify-center text-center bg-gradient-to-b from-pink-50 to-purple-50">
-                          <p className="text-[#ec008c] font-semibold text-lg md:text-2xl mb-4 ">
+                          <p className="text-[#ec008c] font-semibold text-lg md:text-2xl mb-4">
                             {cardFrontMap[projectData?.project_hash]?.tagline}
                           </p>
-
                           <div className="bg-white rounded-xl px-4 py-2 border-l-8 mb-2 border-[#ec008c] shadow-lg max-w-xl mx-auto">
                             <p className="text-lg md:text-2xl text-gray-700 leading-relaxed">
                               {cardFrontMap[projectData?.project_hash]?.info}
                             </p>
                           </div>
                         </div>
-
                         <div
                           className="h-2 sm:h-3"
                           style={{
@@ -605,7 +658,6 @@ function ScratchCard({ projectData, projectId, ui }) {
                         />
                       </div>
                     </div>
-
                     <img
                       src={cardFrontMap[projectData?.project_hash]?.packshot}
                       alt="Packshot"
@@ -616,7 +668,6 @@ function ScratchCard({ projectData, projectId, ui }) {
               </div>
             )}
 
-            {/* SCRATCH LAYER */}
             <motion.canvas
               ref={scratchCanvasRef}
               className="absolute inset-0 cursor-pointer rounded-2xl z-10"
@@ -640,9 +691,10 @@ function ScratchCard({ projectData, projectId, ui }) {
 
       {showCertificate && (
         <div className="absolute px-4 bottom-2 left-0 right-0 flex items-center justify-center z-50">
-          <div className="bg-white p-2 lg:p-1 md:py-4 md:px-4 bg-gradient-to-r from-[#ec008c] to-[#b1087b] text-white font-bold  rounded-xl shadow-2xl text-center max-w-lg animate-fadeIn">
+          <div className="bg-white p-2 lg:p-1 md:py-4 md:px-4 bg-gradient-to-r from-[#ec008c] to-[#b1087b] text-white font-bold rounded-xl shadow-2xl text-center max-w-lg animate-fadeIn">
             <p className="text-white font-bold text-sm md:text-xl lg:text-lg flex gap-2 justify-center items-center">
-               <MdCelebration color="#FFEA00" size={24}/> <span>You have contributed to Women's health!</span> 
+              <MdCelebration color="#FFEA00" size={24}/> 
+              <span>You have contributed to Women's health!</span> 
             </p>
           </div>
         </div>
@@ -650,14 +702,14 @@ function ScratchCard({ projectData, projectId, ui }) {
 
       {showCertificate && (
         <div className="absolute px-4 top-4 left-5 flex items-center justify-center z-50">
-            <div>
-              <button
-                className="w-fit px-3 py-2 mx-auto text-white bg-pink-500 border-2 border-pink-500 text-lg rounded-xl"
-                onClick={handleGoBack}
-              >
-                Go back
-              </button>
-            </div>
+          <div>
+            <button
+              className="w-fit px-3 py-2 mx-auto text-white bg-pink-500 border-2 border-pink-500 text-lg rounded-xl"
+              onClick={handleGoBack}
+            >
+              Go back
+            </button>
+          </div>
         </div>
       )}
 
@@ -672,9 +724,6 @@ function ScratchCard({ projectData, projectId, ui }) {
         }
         .backface-hidden {
           backface-visibility: hidden;
-        }
-        .rotate-y-180 {
-          transform: rotateY(180deg);
         }
       `}</style>
     </div>

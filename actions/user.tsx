@@ -136,7 +136,7 @@ export const SaveDoctors = async (
       body: JSON.stringify({
         project_hash: projectData.project_hash,
         employee_hash: employeeCode,
-        name: formData?.name,
+        name: `${formData?.prefix}. ` + formData?.name,
         mobile: formData?.mobile,
         fields,
       }),

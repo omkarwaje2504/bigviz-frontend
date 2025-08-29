@@ -40,7 +40,7 @@ const MemberTable: React.FC<MemberTableProps> = ({
   onApprove,
   onDisapprove,
 }) => {
-  // console.log(projectData)
+
   const [searchTerm, setSearchTerm] = useState("");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [currentPage, setCurrentPage] = useState(1);
@@ -792,30 +792,34 @@ const MemberTable: React.FC<MemberTableProps> = ({
             >
               <div className="p-2">
                 <div className="flex items-center gap-3">
-                  <div className="w-24 h-24 relative overflow-hidden rounded-lg bg-gray-200 flex items-center justify-center dark:bg-gray-700">
-                    {member?.image ? (
-                      <div
-                        className="relative w-full h-[200px] rounded overflow-hidden cursor-pointer"
-                        onClick={() => onPreview(member, "DOCTOR_IMAGE")}
-                      >
-                        <Image
-                          src={member.image}
-                          alt={member.name}
-                          fill
-                          quality={10}
-                          blurDataURL={member.image}
-                          sizes="(max-width: 640px) 100px, (min-width: 641px) 150px, (min-width: 1024px) 200px"
-                          className="object-cover object-top opacity-50"
-                        />
+                  {
+                    !projectData?.config?.doctor?.disable_photo_upload && (
+                       <div className="w-24 h-24 relative overflow-hidden rounded-lg bg-gray-200 flex items-center justify-center dark:bg-gray-700">
+                        {member?.image ? (
+                          <div
+                            className="relative w-full h-[200px] rounded overflow-hidden cursor-pointer"
+                            onClick={() => onPreview(member, "DOCTOR_IMAGE")}
+                          >
+                            <Image
+                              src={member.image}
+                              alt={member.name}
+                              fill
+                              quality={10}
+                              blurDataURL={member.image}
+                              sizes="(max-width: 640px) 100px, (min-width: 641px) 150px, (min-width: 1024px) 200px"
+                              className="object-cover object-top opacity-50"
+                            />
+                          </div>
+                        ) : (
+                          <FaUser
+                            className="text-4xl text-gray-400 cursor-pointer"
+                            onClick={() => onPreview(member, "DOCTOR_IMAGE")}
+                          />
+                        )}
                       </div>
-                    ) : (
-                      <FaUser
-                        className="text-4xl text-gray-400 cursor-pointer"
-                        onClick={() => onPreview(member, "DOCTOR_IMAGE")}
-                      />
-                    )}
-                  </div>
-
+                    )
+                  }
+                 
                   <div>
                     {!projectData?.config?.game && (
                       <span
