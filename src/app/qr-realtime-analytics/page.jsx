@@ -7,7 +7,6 @@ export default function QrRealtimeAnalytics() {
     const response = await fetch(url);
     const text = await response.text();
     const rows = text.trim().split("\n");
-    const headers = rows[0].split(",");
     const map = {};
     rows.slice(1).forEach((row) => {
       const values = row.split(",");
@@ -24,9 +23,10 @@ export default function QrRealtimeAnalytics() {
 
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
+    const projectHash = urlParams.get("project-hash");
     const doctorHash = urlParams.get("hash");
     if (doctorHash) {
-      loadCSV("/csv/ajanta-nfc-card.csv").then((map) => {
+      loadCSV(`/csv/${projectHash}.csv`).then((map) => {
         if (doctorHash in map) {
           const cleanUrl = map[doctorHash].replace(/^"|"$/g, "");
           window.location.replace(cleanUrl);
