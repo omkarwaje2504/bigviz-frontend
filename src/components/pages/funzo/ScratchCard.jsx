@@ -36,13 +36,10 @@ function ScratchCard({ projectData, projectId, ui }) {
 
   const [showScratchCard, setShowScratchCard] = useState(false);
   const [scratchProgress, setScratchProgress] = useState(0);
-  const [showContent, setShowContent] = useState(false);
   const [isDisappearing, setIsDisappearing] = useState(false);
   const [conversationComplete, setConversationComplete] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
   const [autoRevealed, setAutoRevealed] = useState(false);
-  const [isFlipped, setIsFlipped] = useState(false);
-  const [showPackshot, setShowPackshot] = useState(true);
   const [showCertificate, setShowCertificate] = useState(false);
   const [showFront, setShowFront] = useState(false);
   const router = useRouter();
@@ -249,7 +246,7 @@ function ScratchCard({ projectData, projectId, ui }) {
         confettiSoundRef.current = new Audio("/sounds/confetti.mp3");
         confettiSoundRef.current.volume = 0.7;
 
-        const conversations = conversationMap[projectData?.project_hash] || [];
+        const conversations = conversationMap[projectId] || [];
         audioRefs.current = conversations.map((conv) => {
           const audio = new Audio(conv.audioFile);
           audio.volume = 0.8;
@@ -722,17 +719,16 @@ function ScratchCard({ projectData, projectId, ui }) {
             >
               {console.log(idx)}
               <img
-                  src={
-                    msg.sender === "patient"
-                      ? "/patient.png"
-                      : msg.id === 2
-                        ? "/doctor-1.png" 
-                        : "/doctor-2.png"
-                  }
-                  alt={`${msg.sender} bubble`}
-                  className="w-full h-auto"
-                />
-
+                src={
+                  msg.sender === "patient"
+                    ? "/patient.png"
+                    : msg.id === 2
+                      ? "/doctor-1.png"
+                      : "/doctor-2.png"
+                }
+                alt={`${msg.sender} bubble`}
+                className="w-full h-auto"
+              />
             </div>
           ))}
           <div ref={chatEndRef} />

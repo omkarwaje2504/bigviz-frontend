@@ -1,5 +1,4 @@
 "use client";
-
 import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import {
   FaCalendarAlt,
@@ -12,17 +11,14 @@ import {
   FaSyncAlt,
   FaExclamationTriangle,
   FaArrowRight,
-  FaSkippingRope,
+  FaCamera,
+  FaPlus,
+  FaEdit,
+  FaTrash,
 } from "react-icons/fa";
 import { Cropper, RectangleStencil } from "react-advanced-cropper";
 import "react-advanced-cropper/dist/style.css";
-import Header from "@components/ui/Header";
-import Footer from "@components/ui/Footer";
 import Button from "@components/ui/Button";
-import LoadingPage from "@components/ui/LoadingPage";
-import { DecryptData, EncryptData } from "@utils/cryptoUtils";
-import { useRouter } from "next/navigation";
-import config from "@utils/Config";
 import UploadFile from "@services/uploadFile";
 import { getMimeType } from "advanced-cropper/extensions/mimes";
 
@@ -56,7 +52,21 @@ const monthColors = [
   "bg-lime-100 border-lime-400 text-lime-600",
 ];
 
-// Constants for better maintainability
+const LAYOUT_TYPES = {
+  SINGLE: {
+    id: "single",
+    name: "Single Photo",
+    photosPerMonth: 1,
+    maxPhotos: 12,
+  },
+  DOUBLE: {
+    id: "double",
+    name: "Multiple Photos",
+    photosPerMonth: 2,
+    maxPhotos: 24,
+  },
+};
+
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 const SUPPORTED_FORMATS = [
   "image/jpeg",
@@ -64,8 +74,6 @@ const SUPPORTED_FORMATS = [
   "image/png",
   "image/webp",
 ];
-const MIN_IMAGE_DIMENSION = 300;
-const RECOMMENDED_DIMENSION = 1080;
 
 const getPhotoDims = (projectData) => {
   try {
@@ -84,10 +92,8 @@ const dataURLToBlob = (dataURL) => {
   try {
     const arr = dataURL.split(",");
     if (arr.length !== 2) throw new Error("Invalid data URL format");
-
     const mimeMatch = arr[0].match(/:(.*?);/);
     if (!mimeMatch) throw new Error("Invalid MIME type in data URL");
-
     const mime = mimeMatch[1];
     const bstr = atob(arr[1]);
     let n = bstr.length;
@@ -104,33 +110,24 @@ const dataURLToBlob = (dataURL) => {
 
 const validateImageFile = (file) => {
   const errors = [];
-
   if (!file) {
     errors.push("No file selected");
     return { isValid: false, errors };
   }
-
-  // Check file size
   if (file.size > MAX_FILE_SIZE) {
     errors.push(
       `File size must be less than ${MAX_FILE_SIZE / (1024 * 1024)}MB`,
     );
   }
-
-  // Check file type
   if (!SUPPORTED_FORMATS.includes(file.type)) {
     errors.push(
       `Unsupported format. Please use: ${SUPPORTED_FORMATS.join(", ")}`,
     );
   }
-
-  return {
-    isValid: errors.length === 0,
-    errors,
-  };
+  return { isValid: errors.length === 0, errors };
 };
 
-const generateUniqueFileName = (prefix = "image") => {
+const generateUniqueFileName = (prefix = "calendar") => {
   const now = new Date();
   const timestamp = now
     .toLocaleString("en-GB", {
@@ -143,74 +140,82 @@ const generateUniqueFileName = (prefix = "image") => {
     })
     .replace(/[/, ]/g, "_")
     .replace(/:/g, "-");
-
   const random = Math.random().toString(36).substring(2, 8);
   return `${prefix}-${timestamp}-${random}.png`;
 };
 
-export default function CalendarPage({
+export default function CalendarPhotoUpload({
   projectData,
   formData,
   setFormData,
   projectId,
 }) {
-  const [currentMonth, setCurrentMonth] = useState(0);
+  // Layout and calendar state
+  const [layoutType, setLayoutType] = useState(LAYOUT_TYPES.SINGLE);
+  const [uploadedPhotos, setUploadedPhotos] = useState([]);
   const [calendarData, setCalendarData] = useState(new Array(12).fill(null));
-  const [userInfo, setUserInfo] = useState({
-    name: "",
-    role: 1,
-    designation: "Medical Representative",
-    avatar: "/images/avatar.jpg",
-  });
 
-  // Cropper states
-  const [showCropper, setShowCropper] = useState(false);
-  const [image, setImage] = useState(null);
-  const [originalFile, setOriginalFile] = useState(null);
-  const [isSaving, setIsSaving] = useState(false);
-  const [cropperReady, setCropperReady] = useState(false);
+  // UI state
+  const [currentView, setCurrentView] = useState("upload"); // 'upload' | 'calendar' | 'review'
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  const inputRef = useRef(null);
-  const cropperRef = useRef(null);
-  const cleanupTimeoutRef = useRef(null);
+  // Cropper state
+  const [showCropper, setShowCropper] = useState(false);
+  const [currentEditPhoto, setCurrentEditPhoto] = useState(null);
+  const [cropperReady, setCropperReady] = useState(false);
 
-  const ui = config(projectData);
-  const router = useRouter();
-  const isDarkMode = "dark";
+  const fileInputRef = useRef(null);
+  const cameraInputRef = useRef(null);
+  const cropperRef = useRef(null);
+
   const { w: cropWidth, h: cropHeight } = useMemo(
     () => getPhotoDims(projectData),
     [projectData],
   );
 
-  // Memoized calculations
-  const completedMonths = useMemo(
-    () => calendarData.filter((item) => item?.croppedImage).length,
-    [calendarData],
-  );
+  // Calculate progress and distribution
+  const totalSlots = useMemo(() => layoutType.maxPhotos, [layoutType]);
+  const filledSlots = useMemo(() => {
+    return calendarData.reduce((count, monthData) => {
+      if (!monthData) return count;
+      return (
+        count +
+        (Array.isArray(monthData) ? monthData.filter(Boolean).length : 1)
+      );
+    }, 0);
+  }, [calendarData]);
 
   const progress = useMemo(
-    () => ((currentMonth + 1) / 12) * 100,
-    [currentMonth],
+    () => (filledSlots / totalSlots) * 100,
+    [filledSlots, totalSlots],
   );
 
+  // Initialize calendar data
   useEffect(() => {
     try {
-      const getUserInfo = DecryptData("empData");
-      const getCalendarData = formData?.calendarData || [];
-      if (Array.isArray(getCalendarData)) {
-        setCalendarData(getCalendarData);
-      } else {
-        setCalendarData(new Array(12).fill(null));
-      }
-
-      if (getUserInfo) {
-        setUserInfo({
-          name: getUserInfo?.name || "",
-          role: getUserInfo?.role || 1,
-          designation: getUserInfo?.role_name || "Medical Representative",
+      const existingCalendarData = formData?.calendarData || [];
+      if (
+        Array.isArray(existingCalendarData) &&
+        existingCalendarData.length === 12
+      ) {
+        setCalendarData(existingCalendarData);
+        // Extract uploaded photos for editing
+        const photos = [];
+        existingCalendarData.forEach((monthData, monthIndex) => {
+          if (monthData) {
+            if (Array.isArray(monthData)) {
+              monthData.forEach((photo, photoIndex) => {
+                if (photo) {
+                  photos.push({ ...photo, monthIndex, photoIndex });
+                }
+              });
+            } else {
+              photos.push({ ...monthData, monthIndex, photoIndex: 0 });
+            }
+          }
         });
+        setUploadedPhotos(photos);
       }
     } catch (error) {
       console.error("Error initializing calendar data:", error);
@@ -218,136 +223,209 @@ export default function CalendarPage({
     }
   }, [formData]);
 
+  // Update form data when calendar changes
   useEffect(() => {
     if (calendarData.some((item) => item !== null)) {
       try {
         setFormData((prev) => ({
           ...prev,
           calendarData,
+          layoutType: layoutType.id,
         }));
       } catch (error) {
         console.error("Error updating form data:", error);
       }
     }
-  }, [calendarData, setFormData]);
+  }, [calendarData, layoutType, setFormData]);
 
-  useEffect(() => {
-    return () => {
-      if (cleanupTimeoutRef.current) {
-        clearTimeout(cleanupTimeoutRef.current);
+  // Linear photo distribution function
+  const distributePhotosLinearly = useCallback(
+    (photos) => {
+      const newCalendarData = new Array(12).fill(null);
+
+      if (photos.length === 0) {
+        setCalendarData(newCalendarData);
+        return;
       }
-      // Revoke any existing blob URLs
-      if (image?.src) {
-        URL.revokeObjectURL(image.src);
+
+      // Initialize calendar structure based on layout
+      for (let month = 0; month < 12; month++) {
+        if (layoutType.photosPerMonth === 1) {
+          newCalendarData[month] = null;
+        } else {
+          newCalendarData[month] = new Array(layoutType.photosPerMonth).fill(
+            null,
+          );
+        }
       }
-    };
-  }, [image]);
 
-  const handleUploadClick = useCallback(() => {
-    if (isSaving || isLoading) return;
-    setError(null);
-    setShowCropper(true);
-    setCropperReady(false);
-    // Trigger file input with delay
-    cleanupTimeoutRef.current = setTimeout(() => {
-      inputRef.current?.click();
-    }, 100);
-  }, [isSaving, isLoading]);
+      // Distribute photos linearly
+      let photoIndex = 0;
+      for (let month = 0; month < 12; month++) {
+        if (layoutType.photosPerMonth === 1) {
+          newCalendarData[month] = photos[photoIndex % photos.length];
+          photoIndex++;
+        } else {
+          for (let slot = 0; slot < layoutType.photosPerMonth; slot++) {
+            newCalendarData[month][slot] = photos[photoIndex % photos.length];
+            photoIndex++;
+          }
+        }
+      }
 
-  const onLoadImage = useCallback((event) => {
-    event.preventDefault();
-    setError(null);
-    setIsLoading(true);
+      setCalendarData(newCalendarData);
+    },
+    [layoutType],
+  );
 
-    const file = event.target.files?.[0];
+  // Handle file input change (multiple files)
+  const handleFileSelect = useCallback(
+    async (event) => {
+      const files = Array.from(event.target.files || []);
+      if (files.length === 0) return;
 
-    // Validate file
-    const validation = validateImageFile(file);
-    if (!validation.isValid) {
-      setError(validation.errors.join(", "));
-      setIsLoading(false);
-      return;
-    }
+      setError(null);
+      setIsLoading(true);
 
-    setOriginalFile(file);
+      try {
+        const validFiles = [];
+        const errors = [];
 
-    try {
-      const blob = URL.createObjectURL(file);
-      const typeFallback = file.type;
-      const reader = new FileReader();
+        // Validate all files
+        for (const file of files) {
+          const validation = validateImageFile(file);
+          if (validation.isValid) {
+            validFiles.push(file);
+          } else {
+            errors.push(`${file.name}: ${validation.errors.join(", ")}`);
+          }
+        }
 
-      reader.onload = (e) => {
-        try {
-          // Create image to check dimensions
-          const img = new Image();
-          img.onload = () => {
-            if (
-              img.width < MIN_IMAGE_DIMENSION ||
-              img.height < MIN_IMAGE_DIMENSION
-            ) {
-              setError(
-                `Image too small. Minimum size: ${MIN_IMAGE_DIMENSION}x${MIN_IMAGE_DIMENSION}px`,
-              );
-              URL.revokeObjectURL(blob);
-              setIsLoading(false);
-              return;
+        if (errors.length > 0) {
+          setError(errors.join("\n"));
+        }
+
+        if (validFiles.length === 0) {
+          setIsLoading(false);
+          return;
+        }
+
+        // Check if adding these files would exceed the limit
+        const totalPhotos = uploadedPhotos.length + validFiles.length;
+        if (totalPhotos > layoutType.maxPhotos) {
+          setError(
+            `Cannot upload ${validFiles.length} photos. Maximum is ${layoutType.maxPhotos} for ${layoutType.name} layout. You currently have ${uploadedPhotos.length} photos.`,
+          );
+          setIsLoading(false);
+          return;
+        }
+
+        // Process and upload files
+        const processedPhotos = [];
+        for (const file of validFiles) {
+          try {
+            // Create blob URL for preview
+            const blob = URL.createObjectURL(file);
+
+            // Generate unique filenames
+            const blobName = generateUniqueFileName();
+            const originalFileName = `original_${blobName}`;
+
+            // Upload original file
+            const uploadedOriginalFileUrl = await UploadFile(
+              projectData,
+              file,
+              originalFileName,
+              "image",
+            );
+
+            if (!uploadedOriginalFileUrl) {
+              throw new Error(`Failed to upload ${file.name}`);
             }
 
-            setImage({
-              src: blob,
-              type: getMimeType(e.target?.result, typeFallback),
-            });
-            setIsLoading(false);
-          };
+            const photoData = {
+              id: Date.now() + Math.random(),
+              originalImage: uploadedOriginalFileUrl,
+              croppedImage: null, // Will be set after cropping
+              filename: file.name,
+              uploadedAt: new Date().toISOString(),
+              needsCropping: true,
+              previewUrl: blob,
+            };
 
-          img.onerror = () => {
-            setError("Invalid image file");
-            URL.revokeObjectURL(blob);
-            setIsLoading(false);
-          };
-
-          img.src = blob;
-        } catch (error) {
-          console.error("Error processing image:", error);
-          setError("Failed to process image");
-          URL.revokeObjectURL(blob);
-          setIsLoading(false);
+            processedPhotos.push(photoData);
+          } catch (error) {
+            console.error(`Error processing ${file.name}:`, error);
+            errors.push(`Failed to process ${file.name}`);
+          }
         }
-      };
 
-      reader.onerror = () => {
-        setError("Failed to read image file");
-        URL.revokeObjectURL(blob);
+        if (processedPhotos.length > 0) {
+          const newUploadedPhotos = [...uploadedPhotos, ...processedPhotos];
+          setUploadedPhotos(newUploadedPhotos);
+
+          // Auto-distribute photos if we have enough
+          if (newUploadedPhotos.filter((p) => p.croppedImage).length > 0) {
+            distributePhotosLinearly(
+              newUploadedPhotos.filter((p) => p.croppedImage),
+            );
+          }
+
+          // If only one photo was uploaded, open cropper immediately
+          if (processedPhotos.length === 1) {
+            setCurrentEditPhoto(processedPhotos[0]);
+            setShowCropper(true);
+          }
+        }
+
+        if (errors.length > 0) {
+          setError(errors.join("\n"));
+        }
+      } catch (error) {
+        console.error("Error handling file selection:", error);
+        setError("Failed to process selected files");
+      } finally {
         setIsLoading(false);
-      };
+        event.target.value = ""; // Reset input
+      }
+    },
+    [uploadedPhotos, layoutType, projectData, distributePhotosLinearly],
+  );
 
-      reader.readAsArrayBuffer(file);
-    } catch (error) {
-      console.error("Error loading image:", error);
-      setError("Failed to load image");
-      setIsLoading(false);
-    }
+  // Handle camera capture
+  const handleCameraCapture = useCallback(
+    (event) => {
+      handleFileSelect(event); // Same logic as file select
+    },
+    [handleFileSelect],
+  );
 
-    event.target.value = "";
+  // Open cropper for specific photo
+  const openCropper = useCallback((photo) => {
+    setCurrentEditPhoto(photo);
+    setShowCropper(true);
+    setCropperReady(false);
   }, []);
 
-  const onCropperReady = useCallback(() => {
-    console.log("Cropper is ready!");
-    setCropperReady(true);
+  // Close cropper
+  const closeCropper = useCallback(() => {
+    setShowCropper(false);
+    setCurrentEditPhoto(null);
+    setCropperReady(false);
+    setError(null);
   }, []);
 
+  // Save cropped image
   const saveCroppedImage = useCallback(async () => {
-    if (!cropperRef.current || !originalFile || !cropperReady) {
+    if (!cropperRef.current || !currentEditPhoto || !cropperReady) {
       setError("Cropper not ready. Please try again.");
       return;
     }
 
-    setIsSaving(true);
+    setIsLoading(true);
     setError(null);
 
     try {
-      await new Promise((resolve) => setTimeout(resolve, 150));
-
       const canvas = cropperRef.current.getCanvas({
         width: cropWidth,
         height: cropHeight,
@@ -359,381 +437,524 @@ export default function CalendarPage({
 
       const dataUrl = canvas.toDataURL("image/png", 0.95);
       const imageBlob = dataURLToBlob(dataUrl);
-
-      const blobName = generateUniqueFileName("calendar");
+      const blobName = generateUniqueFileName();
       const cropperFileName = `cropped_${blobName}`;
-      const originalFileName = `original_${blobName}`;
 
-      // Upload files with error handling
-      const [uploadedCroppedFileUrl, uploadedOriginalFileUrl] =
-        await Promise.all([
-          UploadFile(projectData, imageBlob, cropperFileName, "image"),
-          UploadFile(projectData, originalFile, originalFileName, "image"),
-        ]);
+      // Upload cropped image
+      const uploadedCroppedFileUrl = await UploadFile(
+        projectData,
+        imageBlob,
+        cropperFileName,
+        "image",
+      );
 
-      if (!uploadedCroppedFileUrl || !uploadedOriginalFileUrl) {
-        throw new Error("Failed to upload images");
+      if (!uploadedCroppedFileUrl) {
+        throw new Error("Failed to upload cropped image");
       }
 
-      const monthName = months[currentMonth].name;
-      setCalendarData((prev) => {
-        const newData = [...prev];
-        newData[currentMonth] = {
-          croppedImage: uploadedCroppedFileUrl,
-          originalImage: uploadedOriginalFileUrl,
-          uploadedAt: new Date().toISOString(),
-        };
-        return newData;
+      // Update the photo in uploadedPhotos
+      const updatedPhotos = uploadedPhotos.map((photo) => {
+        if (photo.id === currentEditPhoto.id) {
+          return {
+            ...photo,
+            croppedImage: uploadedCroppedFileUrl,
+            needsCropping: false,
+          };
+        }
+        return photo;
       });
 
-      // Close cropper and reset states
+      setUploadedPhotos(updatedPhotos);
+
+      // Redistribute photos with the newly cropped image
+      const croppedPhotos = updatedPhotos.filter((p) => p.croppedImage);
+      distributePhotosLinearly(croppedPhotos);
+
       closeCropper();
     } catch (error) {
-      console.error("Error saving image:", error);
-      setError(error.message || "Failed to save image. Please try again.");
+      console.error("Error saving cropped image:", error);
+      setError(error.message || "Failed to save cropped image");
     } finally {
-      setIsSaving(false);
+      setIsLoading(false);
     }
   }, [
-    cropperRef,
-    originalFile,
+    currentEditPhoto,
     cropperReady,
     cropWidth,
     cropHeight,
     projectData,
-    currentMonth,
+    uploadedPhotos,
+    distributePhotosLinearly,
+    closeCropper,
   ]);
 
-  const closeCropper = useCallback(() => {
-    setShowCropper(false);
-    setImage(null);
-    setOriginalFile(null);
-    setCropperReady(false);
-    setError(null);
-    setIsLoading(false);
+  // Remove photo
+  const removePhoto = useCallback(
+    (photoToRemove) => {
+      const updatedPhotos = uploadedPhotos.filter(
+        (photo) => photo.id !== photoToRemove.id,
+      );
+      setUploadedPhotos(updatedPhotos);
 
-    if (image?.src) {
-      URL.revokeObjectURL(image.src);
-    }
-  }, [image]);
+      // Clean up blob URL if it exists
+      if (photoToRemove.previewUrl) {
+        URL.revokeObjectURL(photoToRemove.previewUrl);
+      }
 
-  const isCurrentMonthCompleted = useCallback(() => {
-    return Boolean(calendarData[currentMonth]?.croppedImage);
-  }, [calendarData, currentMonth]);
-
-  const handlePrevious = useCallback(() => {
-    if (currentMonth > 0) {
-      setCurrentMonth(currentMonth - 1);
-    }
-  }, [currentMonth]);
-
-  const handleNext = useCallback(() => {
-    if (currentMonth < 11) {
-      setCurrentMonth(currentMonth + 1);
-    }
-  }, [currentMonth]);
-
-  const handleSkip = useCallback(() => {
-    if (currentMonth < 11) {
-      setCurrentMonth(currentMonth + 1);
-    }
-  }, [currentMonth]);
-
-  const shuffleCalendarImages = () => {
-    const uploadedEntries = calendarData.filter((item) => item?.croppedImage);
-
-    if (uploadedEntries.length === 0) {
-      toast.error("Upload at least 1 image to shuffle.");
-      return;
-    }
-
-    const shuffled = [...uploadedEntries, ...uploadedEntries];
-    const newCalendarData = new Array(12);
-
-    for (let i = 0; i < 12; i++) {
-      newCalendarData[i] = shuffled[i % shuffled.length];
-    }
-
-    setCalendarData(newCalendarData);
-  };
-
-  const handleSubmit = useCallback(() => {
-    if (completedMonths === 12 && projectId) {
-      router.push(`/${projectId}/render-calendar`);
-    }
-  }, [completedMonths, projectId, router]);
-
-  const ErrorDisplay = ({ message, onClose }) => (
-    <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg flex items-center justify-between">
-      <div className="flex items-center gap-2">
-        <FaExclamationTriangle />
-        <span className="text-sm">{message}</span>
-      </div>
-      {onClose && (
-        <button onClick={onClose} className="text-red-500 hover:text-red-700">
-          <FaTimes className="text-sm" />
-        </button>
-      )}
-    </div>
+      // Redistribute remaining photos
+      const croppedPhotos = updatedPhotos.filter((p) => p.croppedImage);
+      distributePhotosLinearly(croppedPhotos);
+    },
+    [uploadedPhotos, distributePhotosLinearly],
   );
 
-  const currentMonthData = months[currentMonth];
-  const currentMonthUpload = calendarData[currentMonth];
+  // Layout change handler
+  const handleLayoutChange = useCallback(
+    (newLayoutType) => {
+      setLayoutType(newLayoutType);
 
-  return (
-    <main className="relative">
-      <input
-        ref={inputRef}
-        type="file"
-        accept={SUPPORTED_FORMATS.join(",")}
-        onChange={onLoadImage}
-        className="hidden"
-        disabled={isSaving || isLoading}
-      />
+      // Check if current photos exceed new limit
+      if (uploadedPhotos.length > newLayoutType.maxPhotos) {
+        setError(
+          `Current layout supports maximum ${newLayoutType.maxPhotos} photos. You have ${uploadedPhotos.length} photos. Please remove ${uploadedPhotos.length - newLayoutType.maxPhotos} photos.`,
+        );
+        return;
+      }
 
-      {error && <ErrorDisplay message={error} onClose={() => setError(null)} />}
+      // Redistribute photos with new layout
+      const croppedPhotos = uploadedPhotos.filter((p) => p.croppedImage);
+      distributePhotosLinearly(croppedPhotos);
+      setError(null);
+    },
+    [uploadedPhotos, distributePhotosLinearly],
+  );
 
-      <div
-        className={`${isDarkMode ? "bg-gray-900" : "bg-white"} rounded-lg shadow-lg mb-8`}
-      >
-        <div className="">
-          <div className="text-center mb-1">
-            <div
-              className={`w-full ${isDarkMode ? "bg-gray-700" : "bg-gray-200"} rounded-full h-5 mb-3`}
+  // Render upload section
+  const renderUploadSection = () => (
+    <div className="space-y-6">
+      {/* Layout Selection */}
+      <div className="bg-white rounded-lg shadow-sm border p-6">
+        <h3 className="text-lg font-semibold mb-4">Choose Calendar Layout</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {Object.values(LAYOUT_TYPES).map((layout) => (
+            <label
+              key={layout.id}
+              className={`
+                cursor-pointer border-2 rounded-lg p-4 transition-all
+                ${
+                  layoutType.id === layout.id
+                    ? "border-blue-500 bg-blue-50 text-blue-700"
+                    : "border-gray-200 hover:border-gray-300"
+                }
+              `}
             >
-              <div
-                className={`h-5 rounded-full transition-all duration-300 ${ui?.theme?.selectedBg || "bg-blue-600 text-center"}`}
-                style={{ width: `${progress}%` }}
+              <input
+                type="radio"
+                name="layout"
+                value={layout.id}
+                checked={layoutType.id === layout.id}
+                onChange={() => handleLayoutChange(layout)}
+                className="sr-only"
               />
-            </div>
-          </div>
+              <div className="text-center">
+                <h4 className="font-semibold text-lg">{layout.name}</h4>
+                <p className="text-sm text-gray-600 mt-1">
+                  {layout.photosPerMonth} photo
+                  {layout.photosPerMonth > 1 ? "s" : ""} per month
+                </p>
+                <p className="text-sm text-gray-500">
+                  Maximum: {layout.maxPhotos} photos
+                </p>
+              </div>
+            </label>
+          ))}
+        </div>
+      </div>
 
-          {/* Current Month Display */}
-          <div className="text-center mb-3">
+      {/* Upload Controls */}
+      <div className="bg-white rounded-lg shadow-sm border p-6">
+        <h3 className="text-lg font-semibold mb-4">Add Photos</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+          <Button
+            onClick={() => fileInputRef.current?.click()}
+            leftIcon={<FaUpload />}
+            disabled={
+              isLoading || uploadedPhotos.length >= layoutType.maxPhotos
+            }
+            className="h-12"
+          >
+            Select Photos
+          </Button>
+          <Button
+            onClick={() => cameraInputRef.current?.click()}
+            leftIcon={<FaCamera />}
+            variant="secondary"
+            disabled={
+              isLoading || uploadedPhotos.length >= layoutType.maxPhotos
+            }
+            className="h-12"
+          >
+            Take Photo
+          </Button>
+        </div>
+
+        <div className="text-center text-sm text-gray-600">
+          <p>
+            {uploadedPhotos.length} of {layoutType.maxPhotos} photos uploaded
+            {uploadedPhotos.length >= layoutType.maxPhotos && (
+              <span className="text-green-600 ml-2">✓ Maximum reached</span>
+            )}
+          </p>
+          <p className="mt-1">Supported: JPG, PNG, WebP • Max size: 10MB</p>
+        </div>
+
+        {/* Progress Bar */}
+        <div className="mt-4">
+          <div className="w-full bg-gray-200 rounded-full h-2">
             <div
-              className={`inline-block p-2 px-6 w-full rounded-xl border-2 ${monthColors[currentMonth % monthColors.length]} mb-2`}
-            >
-              <h2 className="text-3xl font-bold">{currentMonthData.name}</h2>
-              <p className="text-md opacity-75">
-                Month {currentMonth + 1} of 12
-              </p>
-            </div>
+              className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+              style={{
+                width: `${(uploadedPhotos.filter((p) => p.croppedImage).length / layoutType.maxPhotos) * 100}%`,
+              }}
+            />
+          </div>
+        </div>
+      </div>
 
-            {/* Upload Status */}
-            {currentMonthUpload?.croppedImage ? (
-              <div className="mb-3">
-                <div className="flex items-center justify-center gap-2 text-green-600 mb-2">
-                  <FaCheck className="text-lg" />
-                  <span className="text-md font-semibold">Image Uploaded</span>
-                </div>
-                <div className="max-w-md mx-auto mb-4">
+      {/* Uploaded Photos Grid */}
+      {uploadedPhotos.length > 0 && (
+        <div className="bg-white rounded-lg shadow-sm border p-6">
+          <h3 className="text-lg font-semibold mb-4">Uploaded Photos</h3>
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+            {uploadedPhotos.map((photo) => (
+              <div key={photo.id} className="relative group">
+                <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden">
                   <img
-                    src={currentMonthUpload.croppedImage}
-                    alt={`${currentMonthData.name} preview`}
-                    className="w-full h-48 object-cover rounded-lg border-2 border-green-400"
+                    src={
+                      photo.croppedImage ||
+                      photo.previewUrl ||
+                      photo.originalImage
+                    }
+                    alt={photo.filename}
+                    className="w-full h-full object-cover"
                   />
+                  {photo.needsCropping && (
+                    <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+                      <span className="text-white text-xs font-semibold">
+                        Needs Cropping
+                      </span>
+                    </div>
+                  )}
                 </div>
-                <Button
-                  onClick={handleUploadClick}
-                  leftIcon={<FaUpload />}
-                  disabled={isSaving || isLoading}
-                >
-                  {isLoading ? "Processing..." : "Reupload Photo"}
-                </Button>
-              </div>
-            ) : (
-              <div className="mb-6">
-                <div className="flex items-center justify-center gap-2 text-gray-500 mb-4">
-                  <FaImage className="text-xl" />
-                  <span className="text-lg">No image uploaded</span>
+                <div className="absolute top-1 right-1 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button
+                    onClick={() => openCropper(photo)}
+                    className="bg-blue-600 text-white p-1 rounded text-xs hover:bg-blue-700"
+                    title="Edit/Crop"
+                  >
+                    <FaEdit />
+                  </button>
+                  <button
+                    onClick={() => removePhoto(photo)}
+                    className="bg-red-600 text-white p-1 rounded text-xs hover:bg-red-700"
+                    title="Remove"
+                  >
+                    <FaTrash />
+                  </button>
                 </div>
-                <Button
-                  onClick={handleUploadClick}
-                  leftIcon={<FaUpload />}
-                  disabled={isSaving || isLoading}
-                  className="mx-auto"
-                >
-                  {isLoading ? "Processing..." : "Upload Photo"}
-                </Button>
+                <p className="text-xs text-gray-600 mt-1 truncate">
+                  {photo.filename}
+                </p>
               </div>
-            )}
-          </div>
-
-          {/* Navigation Controls */}
-          <div className="flex justify-between items-center">
-            {/* Previous Button */}
-            <Button
-              onClick={handlePrevious}
-              disabled={currentMonth === 0}
-              variant="secondary"
-              leftIcon={<FaChevronLeft />}
-              fullWidth={false}
-            >
-              Previous
-            </Button>
-
-            {currentMonth === 11 ? (
-              <Button
-                onClick={shuffleCalendarImages}
-                disabled={completedMonths === 0}
-                leftIcon={<FaCalendarAlt />}
-                fullWidth={false}
-              >
-                Shuffle Images
-              </Button>
-            ) : (
-              <div className="flex gap-2">
-                {!isCurrentMonthCompleted() && (
-                  <Button
-                    onClick={handleSkip}
-                    variant="outline"
-                    leftIcon={<FaArrowRight />}
-                    fullWidth={false}
-                  >
-                    Skip
-                  </Button>
-                )}
-                {isCurrentMonthCompleted() && (
-                  <Button
-                    onClick={handleNext}
-                    disabled={!isCurrentMonthCompleted()}
-                    leftIcon={<FaChevronRight />}
-                    fullWidth={false}
-                  >
-                    Next
-                  </Button>
-                )}
-              </div>
-            )}
-          </div>
-          <div className="flex items-center gap-1  justify-center mt-4 w-full">
-            {months.map((_, index) => (
-              <div
-                key={index}
-                className={`w-2 h-2 rounded-full ${
-                  index === currentMonth
-                    ? ui?.theme?.selectedBg || "bg-blue-600"
-                    : calendarData[index]?.croppedImage
-                      ? "bg-green-500"
-                      : "bg-gray-300"
-                }`}
-              />
             ))}
           </div>
         </div>
-      </div>
+      )}
 
-      <div>
-        <div
-          className={`p-4 ${isDarkMode ? "bg-gray-700" : "bg-blue-50"} rounded-lg`}
+      {/* Navigation */}
+      <div className="flex justify-between">
+        <Button
+          variant="secondary"
+          disabled={uploadedPhotos.filter((p) => p.croppedImage).length === 0}
+          onClick={() => setCurrentView("calendar")}
         >
-          <div className="flex items-start gap-3">
-            <FaUpload
-              className={`mt-1 ${ui?.theme?.selectedText || "text-blue-600"}`}
-            />
-            <div className="text-sm">
-              <p className="font-medium mb-1">Requirements & Tips:</p>
-              <ul
-                className={`${isDarkMode ? "text-gray-300" : "text-gray-600"} space-y-1`}
-              >
-                <li>• File size: Max {MAX_FILE_SIZE / (1024 * 1024)}MB</li>
-                <li>• Formats: JPG, PNG, WebP</li>
-                <li>• Choose images that represent each month or season</li>
-              </ul>
-            </div>
-          </div>
-        </div>
+          Preview Calendar
+        </Button>
+        <Button
+          disabled={uploadedPhotos.filter((p) => p.croppedImage).length === 0}
+          onClick={() => setCurrentView("review")}
+        >
+          Continue to Review
+        </Button>
+      </div>
+    </div>
+  );
+
+  // Render calendar preview
+  const renderCalendarPreview = () => (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h2 className="text-2xl font-bold">Calendar Preview</h2>
+        <Button
+          variant="secondary"
+          leftIcon={<FaArrowRight />}
+          onClick={() => setCurrentView("upload")}
+        >
+          Back to Upload
+        </Button>
       </div>
 
-      {showCropper && (
-        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
-          <div
-            className={`${isDarkMode ? "bg-gray-800" : "bg-white"} rounded-lg shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden`}
-          >
-            {/* Modal Header */}
-            <div className="flex items-center justify-between p-4 border-b border-gray-200">
-              <h3 className="text-lg font-semibold">
-                Crop Image for {currentMonthData.name}
-              </h3>
-              <button
-                onClick={closeCropper}
-                disabled={isSaving}
-                className="p-2 hover:bg-gray-100 rounded-full transition-colors disabled:opacity-50"
-              >
-                <FaTimes />
-              </button>
-            </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        {months.map((month, index) => {
+          const monthData = calendarData[index];
+          const hasPhotos =
+            monthData &&
+            (Array.isArray(monthData)
+              ? monthData.some(Boolean)
+              : Boolean(monthData));
 
-            {/* Cropper Content */}
-            <div className="p-4">
-              {isLoading ? (
-                <div className="text-center py-8">
-                  <FaSyncAlt className="text-4xl text-gray-400 mx-auto mb-4 animate-spin" />
-                  <p className="text-gray-500">Processing image...</p>
-                </div>
-              ) : image ? (
-                <>
-                  <div className="mb-4" style={{ height: "400px" }}>
-                    <Cropper
-                      ref={cropperRef}
-                      src={image.src}
-                      stencilComponent={RectangleStencil}
-                      aspectRatio={cropWidth / cropHeight}
-                      className="w-full h-full"
-                      onReady={onCropperReady}
-                    />
-                  </div>
-
-                  {/* Action Buttons */}
-                  <div className="flex justify-end gap-3">
-                    <Button
-                      onClick={closeCropper}
-                      variant="secondary"
-                      fullWidth={false}
-                      disabled={isSaving}
-                    >
-                      Cancel
-                    </Button>
-                    <Button
-                      onClick={saveCroppedImage}
-                      disabled={isSaving || !cropperReady}
-                      leftIcon={
-                        isSaving ? (
-                          <FaSyncAlt className="animate-spin" />
+          return (
+            <div
+              key={month.name}
+              className={`
+                border-2 rounded-lg p-4 
+                ${monthColors[index % monthColors.length]}
+              `}
+            >
+              <h3 className="font-bold text-lg mb-2">{month.name}</h3>
+              {hasPhotos ? (
+                <div
+                  className={`
+                  grid gap-2 
+                  ${layoutType.photosPerMonth === 1 ? "grid-cols-1" : "grid-cols-2"}
+                `}
+                >
+                  {Array.isArray(monthData) ? (
+                    monthData.map((photo, photoIndex) => (
+                      <div
+                        key={photoIndex}
+                        className="aspect-square bg-gray-200 rounded overflow-hidden"
+                      >
+                        {photo ? (
+                          <img
+                            src={photo.croppedImage}
+                            alt={`${month.name} ${photoIndex + 1}`}
+                            className="w-full h-full object-cover"
+                          />
                         ) : (
-                          <FaCheck />
-                        )
-                      }
-                      fullWidth={false}
-                    >
-                      {isSaving
-                        ? "Saving..."
-                        : cropperReady
-                          ? "Save & Continue"
-                          : "Loading..."}
-                    </Button>
-                  </div>
-
-                  {/* Status info */}
-                  {process.env.NODE_ENV === "development" && (
-                    <div className="mt-2 text-xs text-gray-500">
-                      Cropper Ready: {cropperReady ? "Yes" : "No"} | Ref
-                      Available: {!!cropperRef.current ? "Yes" : "No"}
+                          <div className="w-full h-full flex items-center justify-center text-gray-400">
+                            <FaImage />
+                          </div>
+                        )}
+                      </div>
+                    ))
+                  ) : (
+                    <div className="aspect-square bg-gray-200 rounded overflow-hidden">
+                      <img
+                        src={monthData.croppedImage}
+                        alt={month.name}
+                        className="w-full h-full object-cover"
+                      />
                     </div>
                   )}
-                </>
+                </div>
               ) : (
-                <div className="text-center py-8">
-                  <FaImage className="text-4xl text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-500">
-                    Please select an image to continue...
-                  </p>
+                <div className="aspect-square bg-gray-200 rounded flex items-center justify-center text-gray-400">
+                  <FaImage className="text-2xl" />
                 </div>
               )}
             </div>
+          );
+        })}
+      </div>
+
+      <div className="flex justify-center">
+        <Button onClick={() => setCurrentView("review")}>
+          Continue to Review
+        </Button>
+      </div>
+    </div>
+  );
+
+  // Render review section
+  const renderReviewSection = () => (
+    <div className="space-y-6">
+      <div className="text-center">
+        <h2 className="text-2xl font-bold mb-4">Review Your Calendar</h2>
+        <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
+          <div className="flex items-center justify-center gap-2 text-green-700">
+            <FaCheck />
+            <span className="font-semibold">Calendar Ready!</span>
           </div>
+          <p className="text-green-600 mt-1">
+            {filledSlots} of {totalSlots} slots filled ({Math.round(progress)}%
+            complete)
+          </p>
         </div>
-      )}
-    </main>
+      </div>
+
+      {/* Quick Stats */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="bg-white border rounded-lg p-4 text-center">
+          <div className="text-2xl font-bold text-blue-600">
+            {uploadedPhotos.length}
+          </div>
+          <div className="text-sm text-gray-600">Photos Uploaded</div>
+        </div>
+        <div className="bg-white border rounded-lg p-4 text-center">
+          <div className="text-2xl font-bold text-green-600">
+            {uploadedPhotos.filter((p) => p.croppedImage).length}
+          </div>
+          <div className="text-sm text-gray-600">Photos Processed</div>
+        </div>
+        <div className="bg-white border rounded-lg p-4 text-center">
+          <div className="text-2xl font-bold text-purple-600">
+            {layoutType.name}
+          </div>
+          <div className="text-sm text-gray-600">Layout Type</div>
+        </div>
+        <div className="bg-white border rounded-lg p-4 text-center">
+          <div className="text-2xl font-bold text-orange-600">
+            {Math.round(progress)}%
+          </div>
+          <div className="text-sm text-gray-600">Complete</div>
+        </div>
+      </div>
+
+      {/* Action Buttons */}
+      <div className="flex flex-col sm:flex-row gap-4 justify-center">
+        <Button variant="secondary" onClick={() => setCurrentView("upload")}>
+          Edit Photos
+        </Button>
+        <Button variant="secondary" onClick={() => setCurrentView("calendar")}>
+          Preview Calendar
+        </Button>
+        <Button
+          disabled={uploadedPhotos.filter((p) => p.croppedImage).length === 0}
+          onClick={() => {
+            // Handle final submission
+            console.log("Submitting calendar with data:", calendarData);
+            // You can add navigation to render page here
+          }}
+        >
+          Generate Calendar
+        </Button>
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="min-h-screen bg-gray-50 py-8 px-4">
+      <div className="max-w-6xl mx-auto">
+        {/* Hidden file inputs */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept={SUPPORTED_FORMATS.join(",")}
+          multiple
+          onChange={handleFileSelect}
+          className="hidden"
+        />
+        <input
+          ref={cameraInputRef}
+          type="file"
+          accept="image/*"
+          capture="environment"
+          onChange={handleCameraCapture}
+          className="hidden"
+        />
+
+        {/* Error Display */}
+        {error && (
+          <div className="mb-6 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg flex items-start gap-3">
+            <FaExclamationTriangle className="mt-0.5 flex-shrink-0" />
+            <div className="flex-1">
+              <p className="font-semibold mb-1">Error</p>
+              <div className="text-sm whitespace-pre-line">{error}</div>
+            </div>
+            <button
+              onClick={() => setError(null)}
+              className="text-red-500 hover:text-red-700"
+            >
+              <FaTimes />
+            </button>
+          </div>
+        )}
+
+        {/* Loading Overlay */}
+        {isLoading && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 flex items-center gap-3">
+              <FaSyncAlt className="animate-spin text-blue-600" />
+              <span>Processing...</span>
+            </div>
+          </div>
+        )}
+
+        {/* Main Content */}
+        {currentView === "upload" && renderUploadSection()}
+        {currentView === "calendar" && renderCalendarPreview()}
+        {currentView === "review" && renderReviewSection()}
+
+        {/* Cropper Modal */}
+        {showCropper && currentEditPhoto && (
+          <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
+              <div className="flex items-center justify-between p-4 border-b">
+                <h3 className="text-lg font-semibold">
+                  Crop Photo: {currentEditPhoto.filename}
+                </h3>
+                <button
+                  onClick={closeCropper}
+                  disabled={isLoading}
+                  className="p-2 hover:bg-gray-100 rounded-full transition-colors disabled:opacity-50"
+                >
+                  <FaTimes />
+                </button>
+              </div>
+
+              <div className="p-4">
+                <div className="mb-4" style={{ height: "400px" }}>
+                  <Cropper
+                    ref={cropperRef}
+                    src={
+                      currentEditPhoto.previewUrl ||
+                      currentEditPhoto.originalImage
+                    }
+                    stencilComponent={RectangleStencil}
+                    aspectRatio={cropWidth / cropHeight}
+                    className="w-full h-full"
+                    onReady={() => setCropperReady(true)}
+                  />
+                </div>
+
+                <div className="flex justify-end gap-3">
+                  <Button
+                    onClick={closeCropper}
+                    variant="secondary"
+                    disabled={isLoading}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={saveCroppedImage}
+                    disabled={isLoading || !cropperReady}
+                    leftIcon={
+                      isLoading ? (
+                        <FaSyncAlt className="animate-spin" />
+                      ) : (
+                        <FaCheck />
+                      )
+                    }
+                  >
+                    {isLoading ? "Saving..." : "Save & Continue"}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
