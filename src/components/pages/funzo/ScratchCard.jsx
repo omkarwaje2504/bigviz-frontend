@@ -1,4 +1,5 @@
-"use client";
+"use client"
+
 import { Application, extend } from "@pixi/react";
 import { useRouter } from "next/navigation";
 import { Sprite, AnimatedSprite, Assets } from "pixi.js";
@@ -21,7 +22,7 @@ const assetCache = {
   isLoaded: false,
 };
 
-function ScratchCard({ projectData, projectId, ui }) {
+function ScratchCard({ projectData, projectId, ui, preloadedImages }) {
   const [startTime] = useState(Date.now());
   const [doctorFrames, setDoctorFrames] = useState([]);
   const [patientFrames, setPatientFrames] = useState([]);
@@ -104,7 +105,7 @@ function ScratchCard({ projectData, projectId, ui }) {
       tagline: "Restores comfort and confidence",
       info: (
         <>
-          <span className="font-medium text-[#ec008c] text-2xl lg:text-sm xl:text-xl">
+          <span className="font-medium text-[#ec008c] text-sm md:text-2xl lg:text-sm xl:text-xl">
             Clotrimazole
           </span>{" "}
           — A trusted antifungal,
@@ -121,7 +122,6 @@ function ScratchCard({ projectData, projectId, ui }) {
         <>
           Descubra os cuidados vaginais com Gogynax Trio
           <br />
-          {/* <span className="text-yellow-200">with Gogynax</span> */}
         </>
       ),
       tagline: "Rápido, simples, eficaz – sem testes, apenas tratamento",
@@ -143,7 +143,6 @@ function ScratchCard({ projectData, projectId, ui }) {
         <>
           Décoder les soins vaginaux avec Azimyn FS kit
           <br />
-          {/* <span className="text-yellow-200">with Gogynax</span> */}
         </>
       ),
       tagline:
@@ -215,7 +214,7 @@ function ScratchCard({ projectData, projectId, ui }) {
       {
         id: 2,
         sender: "doctor",
-        text: "A terapia para um único agente patogénico pode não ser suficiente... O meu tratamento abrange fungos, bactérias e protozoários? ",
+        text: "A terapia para um único agente patogénico pode não ser suficiente... O meu tratamento abrange fungos, bactérias e protozoários? ",
         audioFile: "/sounds/doctor1.m4a",
       },
       {
@@ -229,32 +228,66 @@ function ScratchCard({ projectData, projectId, ui }) {
 
   const getAudioDuration = (audioFile) => {
     return new Promise((resolve) => {
-      const audio = new Audio(audioFile);
-      audio.addEventListener("loadedmetadata", () => {
-        resolve(audio.duration * 1000);
-      });
-      audio.addEventListener("error", () => {
-        resolve(3000);
-      });
+      // Use preloaded audio if available
+      if (preloadedImages && preloadedImages[audioFile]) {
+        const audio = new Audio(preloadedImages[audioFile]);
+        audio.addEventListener("loadedmetadata", () => {
+          resolve(audio.duration * 1000);
+        });
+        audio.addEventListener("error", () => {
+          resolve(3000);
+        });
+      } else {
+        const audio = new Audio(audioFile);
+        audio.addEventListener("loadedmetadata", () => {
+          resolve(audio.duration * 1000);
+        });
+        audio.addEventListener("error", () => {
+          resolve(3000);
+        });
+      }
     });
   };
 
   useEffect(() => {
     const initializeAudio = () => {
       try {
-        scratchSoundRef.current = new Audio("/sounds/scratch.m4a");
-        scratchSoundRef.current.loop = true;
-        scratchSoundRef.current.volume = 0.4;
+        // Use preloaded audio files if available
+        if (preloadedImages) {
+          scratchSoundRef.current = new Audio(
+            preloadedImages["/sounds/scratch.m4a"] || "/sounds/scratch.m4a"
+          );
+          scratchSoundRef.current.loop = true;
+          scratchSoundRef.current.volume = 0.4;
 
-        confettiSoundRef.current = new Audio("/sounds/confetti.mp3");
-        confettiSoundRef.current.volume = 0.7;
+          confettiSoundRef.current = new Audio(
+            preloadedImages["/sounds/confetti.mp3"] || "/sounds/confetti.mp3"
+          );
+          confettiSoundRef.current.volume = 0.7;
 
-        const conversations = conversationMap[projectData?.project_hash] || [];
-        audioRefs.current = conversations.map((conv) => {
-          const audio = new Audio(conv.audioFile);
-          audio.volume = 0.8;
-          return audio;
-        });
+          const conversations = conversationMap[projectData?.project_hash] || [];
+          audioRefs.current = conversations.map((conv) => {
+            const audioSrc = preloadedImages[conv.audioFile] || conv.audioFile;
+            const audio = new Audio(audioSrc);
+            audio.volume = 0.8;
+            return audio;
+          });
+        } else {
+          // Fallback to regular audio initialization
+          scratchSoundRef.current = new Audio("/sounds/scratch.m4a");
+          scratchSoundRef.current.loop = true;
+          scratchSoundRef.current.volume = 0.4;
+
+          confettiSoundRef.current = new Audio("/sounds/confetti.mp3");
+          confettiSoundRef.current.volume = 0.7;
+
+          const conversations = conversationMap[projectData?.project_hash] || [];
+          audioRefs.current = conversations.map((conv) => {
+            const audio = new Audio(conv.audioFile);
+            audio.volume = 0.8;
+            return audio;
+          });
+        }
       } catch (error) {
         console.error("Error initializing audio:", error);
       }
@@ -263,65 +296,78 @@ function ScratchCard({ projectData, projectId, ui }) {
     if (projectData?.project_hash) {
       initializeAudio();
     }
-  }, [projectData?.project_hash]);
+  }, [projectData?.project_hash, preloadedImages]);
 
   useEffect(() => {
-    const loadAssets = async () => {
-      try {
-        if (assetCache.isLoaded) {
-          setDoctorFrames([...assetCache.doctorFrames]);
-          setPatientFrames([...assetCache.patientFrames]);
-          setBgTexture(assetCache.bgTexture);
-          setScratchImage(assetCache.scratchImage);
-          setLoading(false);
-          setPixiReady(true);
-          return;
-        }
-
-        const bgTexture = await Assets.load("/bg.jpg");
-
-        setBgTexture(bgTexture);
-
-        const scratchImg = await Assets.load("/scratch-card.png");
-        setScratchImage(scratchImg);
-
-        const doctorUrls = Array.from(
-          { length: 52 },
-          (_, i) => `/doctor/doctor${String(i).padStart(2, "0")}.webp`,
-        );
-        const patientUrls = Array.from(
-          { length: 52 },
-          (_, i) => `/patient/patient${String(i).padStart(2, "0")}.webp`,
-        );
-
-        const [doctorLoaded, patientLoaded] = await Promise.all([
-          Promise.all(doctorUrls.map((url) => Assets.load(url))),
-          Promise.all(patientUrls.map((url) => Assets.load(url))),
-        ]);
-
-        assetCache.doctorFrames = doctorLoaded;
-        assetCache.patientFrames = patientLoaded;
-        assetCache.bgTexture = bgTexture;
-        assetCache.scratchImage = scratchImg;
-        assetCache.isLoaded = true;
-
-        setDoctorFrames([...doctorLoaded]);
-        setPatientFrames([...patientLoaded]);
-
-        setLoading(false);
-
-        setTimeout(() => {
-          setPixiReady(true);
-        }, 100);
-      } catch (error) {
-        console.error("Error loading assets:", error);
+  const loadAssets = async () => {
+    try {
+      if (assetCache.isLoaded) {
+        setDoctorFrames([...assetCache.doctorFrames]);
+        setPatientFrames([...assetCache.patientFrames]);
+        setBgTexture(assetCache.bgTexture);
+        setScratchImage(assetCache.scratchImage);
         setLoading(false);
         setPixiReady(true);
+        return;
       }
-    };
 
-    loadAssets();
-  }, []);
+      const doctorUrls = Array.from({ length: 52 }, (_, i) => {
+        const url = `/doctor/doctor${String(i).padStart(2, "0")}.webp`;
+        return preloadedImages?.[url] || url;
+      });
+
+      const patientUrls = Array.from({ length: 52 }, (_, i) => {
+        const url = `/patient/patient${String(i).padStart(2, "0")}.webp`;
+        return preloadedImages?.[url] || url;
+      });
+
+      const [doctorLoaded, patientLoaded] = await Promise.all([
+        Promise.all(doctorUrls.map((url) => Assets.load(url))),
+        Promise.all(patientUrls.map((url) => Assets.load(url))),
+      ]);
+
+      setDoctorFrames(doctorLoaded);
+      setPatientFrames(patientLoaded);
+
+      const [bgTexture, scratchImg] = await Promise.all([
+        Assets.load("/bg.jpg"),
+        Assets.load("/scratch-card.png"),
+      ]);
+      setBgTexture(bgTexture);
+      setScratchImage(scratchImg);
+
+      scratchSoundRef.current = new Audio("/sounds/scratch.m4a");
+      scratchSoundRef.current.loop = true;
+      scratchSoundRef.current.volume = 0.4;
+
+      confettiSoundRef.current = new Audio("/sounds/confetti.mp3");
+      confettiSoundRef.current.volume = 0.7;
+
+      const conversations = conversationMap[projectData?.project_hash] || [];
+      audioRefs.current = conversations.map((conv) => {
+        const audio = new Audio(conv.audioFile);
+        audio.volume = 0.8;
+        return audio;
+      });
+
+      assetCache.doctorFrames = doctorLoaded;
+      assetCache.patientFrames = patientLoaded;
+      assetCache.bgTexture = bgTexture;
+      assetCache.scratchImage = scratchImg;
+      assetCache.isLoaded = true;
+
+      setLoading(false);
+      setTimeout(() => setPixiReady(true), 100);
+    } catch (error) {
+      console.error("Error loading assets:", error);
+      setLoading(false);
+      setPixiReady(true);
+    }
+  };
+
+  loadAssets();
+}, [preloadedImages, projectData?.project_hash]);
+
 
   const playConversationSequence = useCallback(async () => {
     const conversations = conversationMap[projectData?.project_hash] || [];
@@ -537,7 +583,10 @@ function ScratchCard({ projectData, projectId, ui }) {
         console.error("Failed to load scratch image");
       };
 
-      if (scratchImage.source?.resource?.src) {
+      // Use preloaded image if available
+      if (preloadedImages && preloadedImages["/scratch-card.png"]) {
+        img.src = preloadedImages["/scratch-card.png"];
+      } else if (scratchImage.source?.resource?.src) {
         img.src = scratchImage.source.resource.src;
       } else {
         img.src = "/scratch-card.png";
@@ -560,7 +609,7 @@ function ScratchCard({ projectData, projectId, ui }) {
       addTouchListeners();
       return () => removeTouchListeners();
     }
-  }, [showScratchCard, scratchImage]);
+  }, [showScratchCard, scratchImage, preloadedImages]);
 
   const handleGoBack = async () => {
     let formData = DecryptData("formData");
@@ -610,16 +659,16 @@ function ScratchCard({ projectData, projectId, ui }) {
   const patientScaleConfig = {
     sm: 0.3,
     md: 0.63,
-    lg: 0.63,
-    xl: 0.63,
+    lg: 0.6,
+    xl: 0.5,
     "2xl": 0.4,
   };
 
   const doctorScaleConfig = {
     sm: 0.35,
     md: 0.7,
-    lg: 0.7,
-    xl: 0.7,
+    lg: 0.6,
+    xl: 0.5,
     "2xl": 0.4,
   };
 
@@ -754,8 +803,8 @@ function ScratchCard({ projectData, projectId, ui }) {
                           <p className="text-[#ec008c] font-semibold text-lg md:text-2xl lg:text-sm xl:text-xl mb-4">
                             {cardFrontMap[projectData?.project_hash]?.tagline}
                           </p>
-                          <div className="bg-white rounded-xl px-4 py-2 border-l-8 mb-2 border-[#ec008c] shadow-lg max-w-xl mx-auto">
-                            <p className="text-lg md:text-2xl lg:text-sm xl:text-lg text-gray-700 leading-relaxed">
+                          <div className="bg-white rounded-xl p-2 md:px-4 md:py-2 border-l-8 mb-2 border-[#ec008c] shadow-lg max-w-xl mx-auto">
+                            <p className="text-sm md:text-2xl lg:text-sm xl:text-lg text-gray-700 leading-relaxed">
                               {cardFrontMap[projectData?.project_hash]?.info}
                             </p>
                           </div>
@@ -769,7 +818,7 @@ function ScratchCard({ projectData, projectId, ui }) {
                       </div>
                     </div>
                     <img
-                      src={cardFrontMap[projectData?.project_hash]?.packshot}
+                      src={preloadedImages["/packet.webp"] || cardFrontMap[projectData?.project_hash]?.packshot}
                       alt="Packshot"
                       className="mx-auto mb-3 w-full h-1/2 lg:w-1/2"
                     />
