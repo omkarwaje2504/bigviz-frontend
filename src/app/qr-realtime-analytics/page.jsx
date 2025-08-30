@@ -28,7 +28,7 @@ export default function QrRealtimeAnalytics() {
     if (doctorHash) {
       loadCSV("/csv/ajanta-nfc-card.csv").then((map) => {
         if (doctorHash in map) {
-          window.location.replace(map[doctorHash]);
+          window.location = map[doctorHash];
         } else {
           console.warn("No match found");
         }
