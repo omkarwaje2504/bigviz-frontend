@@ -710,7 +710,7 @@ function ScratchCard({ projectData, projectId, ui }) {
       )}
 
       {!showScratchCard && (
-        <div className="absolute bottom-[62%] md:bottom-[62%] lg:top-[10%] w-full max-h-[40%] overflow-y-auto flex flex-col px-4 py-2 space-y-2 z-20">
+        <div className="absolute bottom-[45%] md:bottom-[55%] lg:top-[10%] w-full max-h-[40%] overflow-y-auto flex flex-col px-4 py-2 space-y-2 z-20">
           {messages.map((msg) => (
             <div
               key={msg.id}
@@ -819,6 +819,7 @@ function ScratchCard({ projectData, projectId, ui }) {
           </div>
         </div>
       )}
+
       <style jsx>{`
         canvas {
           touch-action: none !important;
@@ -832,6 +833,7 @@ function ScratchCard({ projectData, projectId, ui }) {
           backface-visibility: hidden;
         }
       `}</style>
+
     </div>
   );
 }
