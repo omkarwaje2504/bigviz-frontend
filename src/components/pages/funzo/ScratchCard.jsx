@@ -21,7 +21,7 @@ const assetCache = {
   isLoaded: false,
 };
 
-function ScratchCard({ projectData, projectId, ui }) {
+function ScratchCard({ projectData, projectId, ui, preloadedAssets }) {
   const [startTime] = useState(Date.now());
   const [doctorFrames, setDoctorFrames] = useState([]);
   const [patientFrames, setPatientFrames] = useState([]);
@@ -64,6 +64,27 @@ function ScratchCard({ projectData, projectId, ui }) {
   const [breakpoint, setBreakpoint] = useState("md");
 
   useEffect(() => {
+    const loadAssets = async () => {
+      try {
+        if (preloadedAssets) {
+          setDoctorFrames(preloadedAssets.doctorFrames);
+          setPatientFrames(preloadedAssets.patientFrames);
+          setBgTexture(preloadedAssets.bgTexture);
+          setScratchImage(preloadedAssets.scratchImage);
+          setLoading(false);
+          setPixiReady(true);
+          return;
+        }
+      } catch (error) {
+        console.error("Error setting preloaded assets:", error);
+        retryLoadAssets();
+      }
+    };
+
+    loadAssets();
+  }, [preloadedAssets]);
+
+  useEffect(() => {
     const updateDimensions = () => {
       if (typeof window !== "undefined") {
         const width = window.innerWidth;
@@ -104,7 +125,7 @@ function ScratchCard({ projectData, projectId, ui }) {
       tagline: "Restores comfort and confidence",
       info: (
         <>
-          <span className="font-medium text-[#ec008c] text-2xl lg:text-sm xl:text-xl">
+          <span className="font-medium text-[#ec008c] text-sm md:text-2xl lg:text-sm xl:text-xl">
             Clotrimazole
           </span>{" "}
           — A trusted antifungal,
@@ -237,6 +258,19 @@ function ScratchCard({ projectData, projectId, ui }) {
         resolve(3000);
       });
     });
+  };
+
+  const retryLoadAssets = (retries = 3) => {
+    if (retries <= 0) return;
+    console.log("Retrying asset load, attempts left:", retries);
+
+    setTimeout(() => {
+      setDoctorFrames([...preloadedAssets.doctorFrames]);
+      setPatientFrames([...preloadedAssets.patientFrames]);
+      setBgTexture(preloadedAssets.bgTexture);
+      setScratchImage(preloadedAssets.scratchImage);
+      setPixiReady(true);
+    }, 1000);
   };
 
   useEffect(() => {
@@ -610,16 +644,16 @@ function ScratchCard({ projectData, projectId, ui }) {
   const patientScaleConfig = {
     sm: 0.3,
     md: 0.63,
-    lg: 0.63,
-    xl: 0.63,
+    lg: 0.6,
+    xl: 0.5,
     "2xl": 0.4,
   };
 
   const doctorScaleConfig = {
     sm: 0.35,
     md: 0.7,
-    lg: 0.7,
-    xl: 0.7,
+    lg: 0.6,
+    xl: 0.5,
     "2xl": 0.4,
   };
 
@@ -754,8 +788,8 @@ function ScratchCard({ projectData, projectId, ui }) {
                           <p className="text-[#ec008c] font-semibold text-lg md:text-2xl lg:text-sm xl:text-xl mb-4">
                             {cardFrontMap[projectData?.project_hash]?.tagline}
                           </p>
-                          <div className="bg-white rounded-xl px-4 py-2 border-l-8 mb-2 border-[#ec008c] shadow-lg max-w-xl mx-auto">
-                            <p className="text-lg md:text-2xl lg:text-sm xl:text-lg text-gray-700 leading-relaxed">
+                          <div className="bg-white rounded-xl p-2 md:px-4 md:py-2 border-l-8 mb-2 border-[#ec008c] shadow-lg max-w-xl mx-auto">
+                            <p className="text-sm md:text-2xl lg:text-sm xl:text-lg text-gray-700 leading-relaxed">
                               {cardFrontMap[projectData?.project_hash]?.info}
                             </p>
                           </div>
@@ -833,7 +867,6 @@ function ScratchCard({ projectData, projectId, ui }) {
           backface-visibility: hidden;
         }
       `}</style>
-
     </div>
   );
 }

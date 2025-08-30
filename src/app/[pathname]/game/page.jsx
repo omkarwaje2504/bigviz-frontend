@@ -2,6 +2,7 @@ import { getAllProjectsCached } from "../../../../utils/projectCache";
 import Config from "../../../../utils/Config";
 import NotFoundPage from "../NotFoundPage";
 import ScratchCard from "../../../components/pages/funzo/ScratchCard";
+import { preloadAssetsBase64 } from "../../../../utils/loadAssets";
 
 export async function generateStaticParams() {
   const projects = await getAllProjectsCached();
@@ -51,8 +52,15 @@ export default async function Home({ params }) {
   const ui = await Config(projectInfo);
   if (projectInfo) {
     if (projectInfo?.config?.game?.scratch_card) {
+      const assets = preloadAssetsBase64();
+
       return (
-        <ScratchCard projectData={projectInfo} projectId={pathname} ui={ui} />
+        <ScratchCard
+          projectData={projectInfo}
+          projectId={pathname}
+          ui={ui}
+          preloadedAssets={assets}
+        />
       );
     } else return <div>Game Page</div>;
   } else {
