@@ -710,14 +710,14 @@ function ScratchCard({ projectData, projectId, ui }) {
       )}
 
       {!showScratchCard && (
-        <div className="absolute bottom-[45%] md:bottom-[55%] lg:top-[10%] w-full max-h-[40%] overflow-y-auto flex flex-col px-20 py-2 space-y-2 z-20">
+        <div className="absolute bottom-[45%] md:bottom-[55%] lg:top-[10%] w-full max-h-[40%] overflow-y-auto flex flex-col px-5 lg:px-20 py-2 space-y-2 z-20">
           {messages.map((msg, idx) => (
             <div
               key={msg.id}
-              className={`w-[25%] md:w-[40%] h-[80%] md:h-[85%] lg:w-[25%] lg:h-[80%] ${
+              className={`w-[50%] md:w-[40%] h-[80%] md:h-[85%] lg:w-[25%] lg:h-[80%] ${
                 msg.sender === "patient"
                   ? "self-start rounded-bl-none relative "
-                  : "self-end rounded-br-none relative "
+                  : "self-end rounded-br-none relative"
               }`}
             >
               {console.log(idx)}
