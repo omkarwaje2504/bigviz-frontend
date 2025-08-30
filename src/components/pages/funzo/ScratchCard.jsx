@@ -65,27 +65,6 @@ function ScratchCard({ projectData, projectId, ui, preloadedImages }) {
   const [breakpoint, setBreakpoint] = useState("md");
 
   useEffect(() => {
-    const loadAssets = async () => {
-      try {
-        if (preloadedAssets) {
-          setDoctorFrames(preloadedAssets.doctorFrames);
-          setPatientFrames(preloadedAssets.patientFrames);
-          setBgTexture(preloadedAssets.bgTexture);
-          setScratchImage(preloadedAssets.scratchImage);
-          setLoading(false);
-          setPixiReady(true);
-          return;
-        }
-      } catch (error) {
-        console.error("Error setting preloaded assets:", error);
-        retryLoadAssets();
-      }
-    };
-
-    loadAssets();
-  }, [preloadedAssets]);
-
-  useEffect(() => {
     const updateDimensions = () => {
       if (typeof window !== "undefined") {
         const width = window.innerWidth;
@@ -268,19 +247,6 @@ function ScratchCard({ projectData, projectId, ui, preloadedImages }) {
         });
       }
     });
-  };
-
-  const retryLoadAssets = (retries = 3) => {
-    if (retries <= 0) return;
-    console.log("Retrying asset load, attempts left:", retries);
-
-    setTimeout(() => {
-      setDoctorFrames([...preloadedAssets.doctorFrames]);
-      setPatientFrames([...preloadedAssets.patientFrames]);
-      setBgTexture(preloadedAssets.bgTexture);
-      setScratchImage(preloadedAssets.scratchImage);
-      setPixiReady(true);
-    }, 1000);
   };
 
   useEffect(() => {
@@ -916,6 +882,7 @@ function ScratchCard({ projectData, projectId, ui, preloadedImages }) {
           backface-visibility: hidden;
         }
       `}</style>
+
     </div>
   );
 }
