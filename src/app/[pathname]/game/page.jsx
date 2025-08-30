@@ -106,6 +106,8 @@ export default async function Home({ params }) {
   
   if (projectInfo) {
     if (projectInfo?.config?.game?.scratch_card) {
+      const assets = preloadAssetsBase64();
+
       return (
         <ScratchCard 
           projectData={projectInfo} 
