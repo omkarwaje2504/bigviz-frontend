@@ -23,7 +23,7 @@ const Footer = ({projectData}) => {
               alt="Sai Logo"
               width={150}
               height={50}
-              className="invert-0 dark:invert"
+              className=""
             />
           </div>
         </div>

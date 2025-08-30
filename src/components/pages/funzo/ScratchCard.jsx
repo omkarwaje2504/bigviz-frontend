@@ -66,11 +66,24 @@ function ScratchCard({ projectData, projectId, ui }) {
   useEffect(() => {
     const updateDimensions = () => {
       if (typeof window !== "undefined") {
+        const width = window.innerWidth;
+
         setCanvasDimensions({
-          width: window.innerWidth,
+          width,
           height: window.innerHeight,
         });
-        setBreakpoint(window.innerWidth < 768 ? "sm" : "md");
+
+        if (width < 640) {
+          setBreakpoint("sm");
+        } else if (width < 768) {
+          setBreakpoint("md");
+        } else if (width < 1024) {
+          setBreakpoint("lg");
+        } else if (width < 1280) {
+          setBreakpoint("xl");
+        } else {
+          setBreakpoint("2xl");
+        }
       }
     };
 
@@ -91,7 +104,7 @@ function ScratchCard({ projectData, projectId, ui }) {
       tagline: "Restores comfort and confidence",
       info: (
         <>
-          <span className="font-medium text-[#ec008c] text-2xl">
+          <span className="font-medium text-[#ec008c] text-2xl lg:text-sm xl:text-xl">
             Clotrimazole
           </span>{" "}
           — A trusted antifungal,
@@ -114,12 +127,11 @@ function ScratchCard({ projectData, projectId, ui }) {
       tagline: "Rápido, simples, eficaz – sem testes, apenas tratamento",
       info: (
         <>
-          <span className="font-medium text-[#ec008c] text-2xl">
-            A terapêutica tripla 
+          <span className="font-medium text-[#ec008c] text-2xl lg:text-sm xl:text-xl">
+            A terapêutica tripla
           </span>{" "}
-          — Clotrimazol + Metronidazol + Clindamicina 
-          <br />
-           — oferece uma cobertura abrangente para infeções vaginais mistas
+          — Clotrimazol + Metronidazol + Clindamicina
+          <br />— oferece uma cobertura abrangente para infeções vaginais mistas
         </>
       ),
       packshot: "/packet.webp",
@@ -129,18 +141,19 @@ function ScratchCard({ projectData, projectId, ui }) {
     "scratch-card-french": {
       title: (
         <>
-         Décoder les soins vaginaux avec Azimyn FS kit
+          Décoder les soins vaginaux avec Azimyn FS kit
           <br />
           {/* <span className="text-yellow-200">with Gogynax</span> */}
         </>
       ),
-      tagline: "Traitez les deux, prévenez les récidives - rapide, simple et sans dérangement",
+      tagline:
+        "Traitez les deux, prévenez les récidives - rapide, simple et sans dérangement",
       info: (
         <>
-          <span className="font-medium text-[#ec008c] text-2xl">
-            La trithérapie:   
+          <span className="font-medium text-[#ec008c] text-2xl lg:text-sm xl:text-xl">
+            La trithérapie:
           </span>{" "}
-          Azithromycine + Secnidazole + Fluconazole - 
+          Azithromycine + Secnidazole + Fluconazole -
           <br />
           offre une couverture complète en une seule dose.
         </>
@@ -172,7 +185,7 @@ function ScratchCard({ projectData, projectId, ui }) {
         audioFile: "/sounds/doctor2.m4a",
       },
     ],
-     "scratch-card-french": [
+    "scratch-card-french": [
       {
         id: 1,
         sender: "patient",
@@ -325,19 +338,18 @@ function ScratchCard({ projectData, projectId, ui }) {
       setMessages((prev) => [conv]);
 
       const audio = audioRefs.current[i];
-      // console.log(conv)
+
       if (conv.sender === "patient") {
         setIsPatientPlaying(true);
         if (patientRef.current) {
-          patientRef.current.gotoAndStop(0); 
-          patientRef.current.gotoAndPlay(0); 
+          patientRef.current.gotoAndStop(0);
+          patientRef.current.gotoAndPlay(0);
         }
       } else {
-        // console.log("playing")
         setIsDoctorPlaying(true);
         if (doctorRef.current) {
-          doctorRef.current.gotoAndStop(0); 
-          doctorRef.current.gotoAndPlay(0); 
+          doctorRef.current.gotoAndStop(0);
+          doctorRef.current.gotoAndPlay(0);
         }
       }
 
@@ -357,10 +369,10 @@ function ScratchCard({ projectData, projectId, ui }) {
         setIsPatientPlaying(false);
         if (patientRef.current) patientRef.current.gotoAndStop(0);
       } else {
-        if(conv.id===4){
+        if (conv.id === 4) {
           setIsDoctorPlaying(false);
           if (doctorRef.current) doctorRef.current.gotoAndStop(0);
-        }else{
+        } else {
           setIsDoctorPlaying(true);
         }
       }
@@ -525,7 +537,6 @@ function ScratchCard({ projectData, projectId, ui }) {
         console.error("Failed to load scratch image");
       };
 
-      // Try to get image source
       if (scratchImage.source?.resource?.src) {
         img.src = scratchImage.source.resource.src;
       } else {
@@ -578,7 +589,6 @@ function ScratchCard({ projectData, projectId, ui }) {
     router.push(`/${projectData?.project_hash}/homepage`);
   };
 
-  // Cleanup
   useEffect(() => {
     return () => {
       [scratchSoundRef, confettiSoundRef].forEach((ref) => {
@@ -596,6 +606,22 @@ function ScratchCard({ projectData, projectId, ui }) {
       });
     };
   }, []);
+
+  const patientScaleConfig = {
+    sm: 0.3,
+    md: 0.63,
+    lg: 0.63,
+    xl: 0.63,
+    "2xl": 0.4,
+  };
+
+  const doctorScaleConfig = {
+    sm: 0.35,
+    md: 0.7,
+    lg: 0.7,
+    xl: 0.7,
+    "2xl": 0.4,
+  };
 
   return (
     <div className="fixed inset-0 w-full h-full bg-black">
@@ -650,8 +676,10 @@ function ScratchCard({ projectData, projectId, ui }) {
                 y={canvasDimensions.height * 1.0}
                 anchor={{ x: 0.5, y: 1 }}
                 scale={{
-                  x: (breakpoint === "sm" ? 0.3 : 0.63) * -1,
-                  y: breakpoint === "sm" ? 0.3 : 0.63,
+                  x:
+                    (patientScaleConfig[breakpoint] ?? patientScaleConfig.md) *
+                    -1,
+                  y: patientScaleConfig[breakpoint] ?? patientScaleConfig.md,
                 }}
                 animationSpeed={0.2}
                 loop={false}
@@ -667,8 +695,10 @@ function ScratchCard({ projectData, projectId, ui }) {
                 y={canvasDimensions.height * 1.0}
                 anchor={{ x: 0.5, y: 1 }}
                 scale={{
-                  x: (breakpoint === "sm" ? 0.35 : 0.7) * -1,
-                  y: breakpoint === "sm" ? 0.35 : 0.7,
+                  x:
+                    (doctorScaleConfig[breakpoint] ?? doctorScaleConfig.md) *
+                    -1,
+                  y: doctorScaleConfig[breakpoint] ?? doctorScaleConfig.md,
                 }}
                 animationSpeed={0.2}
                 loop={false}
@@ -703,7 +733,7 @@ function ScratchCard({ projectData, projectId, ui }) {
             isDisappearing ? "scale-0 opacity-0" : "scale-100 opacity-100"
           }`}
         >
-          <div className="relative w-[95%] lg:w-1/2 h-[90dvh] max-h-[90dvh] preserve-3d transition-transform duration-700">
+          <div className="relative w-[95%] lg:w-1/2 h-[90dvh] lg:h-[95dvh]  preserve-3d transition-transform duration-700">
             {showFront && (
               <div className="absolute inset-0 flex justify-center rounded-2xl overflow-hidden backface-hidden">
                 <div className="w-full h-full flex flex-col justify-center items-center bg-pink-50 border-2 border-pink-500 gap-6 rounded-2xl">
@@ -711,21 +741,21 @@ function ScratchCard({ projectData, projectId, ui }) {
                     <div className="w-full bg-white shadow-2xl overflow-hidden mb-2 rounded-xl">
                       <div className="h-full flex flex-col">
                         <div
-                          className="px-1 py-5 text-white text-center"
+                          className="px-1 py-5 xl:py-3 text-white text-center"
                           style={{
                             background: `linear-gradient(to right, ${cardFrontMap[projectData?.project_hash]?.gradientFrom}, ${cardFrontMap[projectData?.project_hash]?.gradientTo})`,
                           }}
                         >
-                          <h2 className="text-lg sm:text-xl md:text-2xl font-bold leading-tight">
+                          <h2 className="text-lg  md:text-2xl lg:text-sm xl:text-xl font-bold leading-tight">
                             {cardFrontMap[projectData?.project_hash]?.title}
                           </h2>
                         </div>
                         <div className="flex-1 px-1 py-2 flex flex-col justify-center text-center bg-gradient-to-b from-pink-50 to-purple-50">
-                          <p className="text-[#ec008c] font-semibold text-lg md:text-2xl mb-4">
+                          <p className="text-[#ec008c] font-semibold text-lg md:text-2xl lg:text-sm xl:text-xl mb-4">
                             {cardFrontMap[projectData?.project_hash]?.tagline}
                           </p>
                           <div className="bg-white rounded-xl px-4 py-2 border-l-8 mb-2 border-[#ec008c] shadow-lg max-w-xl mx-auto">
-                            <p className="text-lg md:text-2xl text-gray-700 leading-relaxed">
+                            <p className="text-lg md:text-2xl lg:text-sm xl:text-lg text-gray-700 leading-relaxed">
                               {cardFrontMap[projectData?.project_hash]?.info}
                             </p>
                           </div>
@@ -741,7 +771,7 @@ function ScratchCard({ projectData, projectId, ui }) {
                     <img
                       src={cardFrontMap[projectData?.project_hash]?.packshot}
                       alt="Packshot"
-                      className="mx-auto mb-3 w-full h-1/2 md:h-1/2"
+                      className="mx-auto mb-3 w-full h-1/2 lg:w-1/2"
                     />
                   </div>
                 </div>
@@ -789,31 +819,6 @@ function ScratchCard({ projectData, projectId, ui }) {
           </div>
         </div>
       )}
-
-      {/* {showCertificate && (
-        <div className="absolute px-4 bottom-2 left-0 right-0 flex items-center justify-center z-50">
-          <div className="bg-white p-2 lg:p-1 md:py-4 md:px-4 bg-gradient-to-r from-[#ec008c] to-[#b1087b] text-white font-bold rounded-xl shadow-2xl text-center max-w-lg animate-fadeIn">
-            <p className="text-white font-bold text-sm md:text-xl lg:text-lg flex gap-2 justify-center items-center">
-              <MdCelebration color="#FFEA00" size={24} />
-              <span>You have contributed to Women's health!</span>
-            </p>
-          </div>
-        </div>
-      )}
-
-      {showCertificate && (
-        <div className="absolute px-4 top-4 left-5 flex items-center justify-center z-50">
-          <div>
-            <button
-              className="w-fit px-3 py-2 mx-auto text-white bg-pink-500 border-2 border-pink-500 text-lg rounded-xl"
-              onClick={handleGoBack}
-            >
-              Go back
-            </button>
-          </div>
-        </div>
-      )} */}
-
       <style jsx>{`
         canvas {
           touch-action: none !important;
