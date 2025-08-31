@@ -713,7 +713,7 @@ function ScratchCard({ projectData, projectId, ui }) {
                 ref={patientRef}
                 textures={patientFrames}
                 x={
-                  projectId === "scratch-card-zambia"
+                  (projectId === "scratch-card-zambia" || projectId === "scratch-card-ghana" )
                     ? canvasDimensions.width * 0.17 
                     : canvasDimensions.width * 0.32 
                 }
