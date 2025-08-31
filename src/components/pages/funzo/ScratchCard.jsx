@@ -743,10 +743,10 @@ function ScratchCard({ projectData, projectId, ui }) {
               <img
                   src={
                     msg.sender === "patient"
-                      ? `/game/scratch-card/${projectId}/chat-bubble/patient.png`
+                      ? `/game/scratch-card/${projectId}/chat-bubble/patient.webp`
                       : msg.id === 2
-                        ? `/game/scratch-card/${projectId}/chat-bubble/doctor-1.png` 
-                        : `/game/scratch-card/${projectId}/chat-bubble/doctor-2.png`
+                        ? `/game/scratch-card/${projectId}/chat-bubble/doctor-1.webp` 
+                        : `/game/scratch-card/${projectId}/chat-bubble/doctor-2.webp`
                   }
                   alt={`${msg.sender} bubble`}
                   className="w-full h-auto"
