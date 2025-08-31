@@ -235,9 +235,6 @@ export default function MobileCalendarPage({
       ),
     [photos, calendarData],
   );
-
-  
-  // Sync with form data
 useEffect(() => {
   if (
     calendarData.some((m) => m.images.length > 0) &&
