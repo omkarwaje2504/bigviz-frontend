@@ -1,10 +1,10 @@
-import { Composition } from "remotion";
-import YogaDay from "./IPCA/YogaDay";
+// import { Composition } from "remotion";
+// import YogaDay from "./IPCA/YogaDay";
 
 export const RemotionRoot: React.FC = () => {
   return (
     <>
-      <Composition
+      {/* <Composition
         id="YogaDay"
         component={YogaDay}
         durationInFrames={200}
@@ -25,7 +25,7 @@ export const RemotionRoot: React.FC = () => {
           },
           download: false,
         }}
-      />
+      /> */}
     </>
   );
 };
