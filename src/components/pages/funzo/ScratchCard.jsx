@@ -692,13 +692,16 @@ function ScratchCard({ projectData, projectId, ui }) {
               <animatedSprite
                 ref={patientRef}
                 textures={patientFrames}
-                x={canvasDimensions.width * 0.17}
+                x={
+                  projectId === "scratch-card-zambia"
+                    ? canvasDimensions.width * 0.17 
+                    : canvasDimensions.width * 0.32 
+                }
                 y={canvasDimensions.height * 1.0}
                 anchor={{ x: 0.5, y: 1 }}
                 scale={{
                   x:
-                    (patientScaleConfig[breakpoint] ?? patientScaleConfig.md) *
-                    -1,
+                    (patientScaleConfig[breakpoint] ?? patientScaleConfig.md) * -1,
                   y: patientScaleConfig[breakpoint] ?? patientScaleConfig.md,
                 }}
                 animationSpeed={0.2}
