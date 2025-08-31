@@ -205,6 +205,26 @@ function ScratchCard({ projectData, projectId, ui }) {
         audioFile: `/game/scratch-card/${projectId}/sounds/doctor2.m4a`,
       },
     ],
+     "scratch-card-ghana": [
+      {
+        id: 1,
+        sender: "patient",
+        text: "There's thick white discharge again… is it infection?",
+        audioFile: `/game/scratch-card/${projectId}/sounds/patient1.m4a`,
+      },
+      {
+        id: 2,
+        sender: "doctor",
+        text: "Yes, typical of vaginal candidiasis",
+        audioFile: `/game/scratch-card/${projectId}/sounds/doctor1.m4a`,
+      },
+      {
+        id: 3,
+        sender: "doctor",
+        text: "I'll prescribe an antifungal treatment for you. Guess which",
+        audioFile: `/game/scratch-card/${projectId}/sounds/doctor2.m4a`,
+      },
+    ],
     "scratch-card-french": [
       {
         id: 1,
