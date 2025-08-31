@@ -33,6 +33,7 @@
     "react-video-js-player": "^1.1.1",
     "remotion": "^4.0.340",
     "sass": "^1.91.0",
+    "serve": "^14.2.4",
     "slugify": "^1.6.6",
     "tailwind-merge": "3.0.1",
     "ua-parser-js": "^2.0.4",

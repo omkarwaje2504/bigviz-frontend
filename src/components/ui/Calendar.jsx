@@ -16,6 +16,10 @@ import {
   FaPlus,
   FaEdit,
   FaGripVertical,
+  FaSearchMinus,
+  FaSearchPlus,
+  FaRedo,
+  FaSlidersH,
 } from "react-icons/fa";
 import { Cropper, RectangleStencil } from "react-advanced-cropper";
 import "react-advanced-cropper/dist/style.css";
@@ -185,6 +189,9 @@ export default function MobileCalendarPage({
 
   // Mobile-optimized states
   const [photos, setPhotos] = useState([]);
+  const [processingQueue, setProcessingQueue] = useState([]);
+  const [currentProcessingIndex, setCurrentProcessingIndex] = useState(0);
+
   const [calendarData, setCalendarData] = useState(() => {
     try {
       const existingData = formData?.calendarData || [];
@@ -228,13 +235,14 @@ export default function MobileCalendarPage({
       ),
     [photos, calendarData],
   );
-
-  // Sync with form data
-  useEffect(() => {
-    if (calendarData.some((month) => month.images.length > 0)) {
-      setFormData((prev) => ({ ...prev, calendarData }));
-    }
-  }, [calendarData, setFormData]);
+useEffect(() => {
+  if (
+    calendarData.some((m) => m.images.length > 0) &&
+    JSON.stringify(calendarData) !== JSON.stringify(formData?.calendarData)
+  ) {
+    setFormData((prev) => ({ ...prev, calendarData }));
+  }
+}, [calendarData, formData?.calendarData, setFormData]);
 
   // Auto-generate calendar when photos are processed
   useEffect(() => {
@@ -246,6 +254,26 @@ export default function MobileCalendarPage({
       setCalendarData(distributedData);
     }
   }, [photos, imagesPerPage]);
+
+
+  useEffect(() => {
+  // Only hydrate if formData has calendarData
+  if (formData?.calendarData?.length === 12) {
+    const restoredPhotos = formData.calendarData.flatMap((month) =>
+      (month.images || []).map((img) => ({
+        id: uuidv4(),
+        processed: true,
+        data: img,
+        preview: img.croppedImage, // fallback for preview grid
+      }))
+    );
+
+    if (restoredPhotos.length > 0) {
+      setPhotos(restoredPhotos);
+    }
+  }
+}, [formData]);
+
 
   // File selection handler with limit enforcement
   const handleFileSelect = useCallback(
@@ -375,13 +403,29 @@ export default function MobileCalendarPage({
           uploadedAt: new Date().toISOString(),
         };
 
-        setPhotos((prev) =>
-          prev.map((p) =>
+        // Update photos and get the next unprocessed photo in the same operation
+        setPhotos((prevPhotos) => {
+          const updatedPhotos = prevPhotos.map((p) =>
             p.id === photoData.id
               ? { ...p, processed: true, data: processedImage }
               : p,
-          ),
-        );
+          );
+
+          // Find next unprocessed photo from the updated array
+          const nextUnprocessed = updatedPhotos.find(
+            (p) => !p.processed && p.id !== photoData.id,
+          );
+
+          // Schedule the next cropping session
+          if (nextUnprocessed) {
+            setTimeout(() => {
+              setCurrentCropImage(nextUnprocessed);
+              setShowCropper(true);
+            }, 500);
+          }
+
+          return updatedPhotos;
+        });
 
         setShowCropper(false);
         setCurrentCropImage(null);
@@ -389,17 +433,6 @@ export default function MobileCalendarPage({
 
         setShowSuccess(true);
         setTimeout(() => setShowSuccess(false), 1500);
-
-        // Auto-process next unprocessed photo
-        const nextUnprocessed = photos.find(
-          (p) => !p.processed && p.id !== photoData.id,
-        );
-        if (nextUnprocessed) {
-          setTimeout(() => {
-            setCurrentCropImage(nextUnprocessed);
-            setShowCropper(true);
-          }, 500);
-        }
       } catch (error) {
         MyError(error);
         setError("Failed to process image. Please try again.");
@@ -407,7 +440,7 @@ export default function MobileCalendarPage({
         setIsProcessing(false);
       }
     },
-    [cropWidth, cropHeight, projectData, photos],
+    [cropWidth, cropHeight, projectData], // Removed 'photos' from dependencies
   );
 
   // Edit image handler
@@ -450,62 +483,204 @@ export default function MobileCalendarPage({
     </div>
   );
 
-  const SuccessAnimation = () => (
-    <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-30">
-      <div className="bg-white rounded-full p-4 shadow-xl animate-bounce">
-        <FaCheck className="text-2xl text-green-500" />
+  const MobileCropper = () => {
+    const [zoom, setZoom] = useState(1);
+    const [rotation, setRotation] = useState(0);
+    const [contrast, setContrast] = useState(100);
+    const [brightness, setBrightness] = useState(100);
+    const [saturate, setSaturate] = useState(100);
+    const [showAdvancedControls, setShowAdvancedControls] = useState(false);
+
+    const currentFilterStyle = {
+      filter: `contrast(${contrast}%) brightness(${brightness}%) saturate(${saturate}%)`,
+    };
+
+    const handleZoom = (delta) => {
+      setZoom((prev) => Math.max(0.5, Math.min(prev + delta * 0.1, 3)));
+    };
+
+    const rotateImage = (direction) => {
+      setRotation((prev) => prev + 90 * direction);
+    };
+
+    const resetControls = () => {
+      setZoom(1);
+      setRotation(0);
+      setContrast(100);
+      setBrightness(100);
+      setSaturate(100);
+    };
+
+    const handleProcessWithFilters = async () => {
+      if (!cropperRef.current) return;
+
+      setIsProcessing(true);
+
+      try {
+        // Get the cropped canvas
+        let canvas = cropperRef.current.getCanvas({
+          width: cropWidth,
+          height: cropHeight,
+        });
+
+        // Apply filters if they've been modified
+        if (
+          contrast !== 100 ||
+          brightness !== 100 ||
+          saturate !== 100 ||
+          rotation !== 0 ||
+          zoom !== 1
+        ) {
+          const tempCanvas = document.createElement("canvas");
+          const ctx = tempCanvas.getContext("2d");
+
+          tempCanvas.width = canvas.width;
+          tempCanvas.height = canvas.height;
+
+          ctx.save();
+
+          // Apply transformations
+          if (rotation !== 0) {
+            ctx.translate(canvas.width / 2, canvas.height / 2);
+            ctx.rotate((rotation * Math.PI) / 180);
+            ctx.translate(-canvas.width / 2, -canvas.height / 2);
+          }
+
+          // Apply filters
+          ctx.filter = `contrast(${contrast}%) brightness(${brightness}%) saturate(${saturate}%)`;
+
+          ctx.drawImage(canvas, 0, 0);
+          ctx.restore();
+
+          canvas = tempCanvas;
+        }
+
+        const dataUrl = canvas.toDataURL("image/png", 0.9);
+        const croppedBlob = dataURLToBlob(dataUrl);
+
+        const timestamp = Date.now();
+        const croppedName = `calendar-crop-${timestamp}.png`;
+        const originalName = `calendar-orig-${timestamp}.${currentCropImage.file.name.split(".").pop()}`;
+
+        const [croppedUrl, originalUrl] = await Promise.all([
+          UploadFile(projectData, croppedBlob, croppedName, "image"),
+          UploadFile(projectData, currentCropImage.file, originalName, "image"),
+        ]);
+
+        const processedImage = {
+          id: currentCropImage.id,
+          croppedImage: croppedUrl,
+          originalImage: originalUrl,
+          uploadedAt: new Date().toISOString(),
+        };
+
+        // Update photos and get the next unprocessed photo
+        setPhotos((prevPhotos) => {
+          const updatedPhotos = prevPhotos.map((p) =>
+            p.id === currentCropImage.id
+              ? { ...p, processed: true, data: processedImage }
+              : p,
+          );
+
+          // Find next unprocessed photo
+          const nextUnprocessed = updatedPhotos.find(
+            (p) => !p.processed && p.id !== currentCropImage.id,
+          );
+
+          // Schedule next cropping session
+          if (nextUnprocessed) {
+            setTimeout(() => {
+              setCurrentCropImage(nextUnprocessed);
+              // Reset controls for next image
+              resetControls();
+            }, 300);
+          } else {
+            setShowCropper(false);
+            setCurrentCropImage(null);
+          }
+
+          return updatedPhotos;
+        });
+
+        setEditingImageId(null);
+        setShowSuccess(true);
+        setTimeout(() => setShowSuccess(false), 1500);
+      } catch (error) {
+        MyError(error);
+        setError("Failed to process image. Please try again.");
+      } finally {
+        setIsProcessing(false);
+      }
+    };
+
+    return (
+      <div className="fixed inset-0 bg-black z-50">
+        <div className="h-full flex flex-col">
+          {/* Header */}
+          <div className="bg-gray-900 text-white p-4 pt-8 flex items-center justify-between">
+            <button onClick={handleCloseCropper} disabled={isProcessing}>
+              <FaTimes className="text-lg" />
+            </button>
+            <span className="font-semibold">
+              Crop Photo {editingImageId ? "(Editing)" : ""}
+            </span>
+            <button
+              onClick={handleProcessWithFilters}
+              disabled={isProcessing}
+              className="text-blue-400 font-semibold px-3 py-1 rounded"
+            >
+              {isProcessing ? (
+                <div className="flex items-center gap-2">
+                  <FaSyncAlt className="animate-spin" />
+                  Processing...
+                </div>
+              ) : (
+                "Done"
+              )}
+            </button>
+          </div>
+
+          {/* Cropper Area */}
+          <div className="flex-1 p-4 relative">
+            {currentCropImage && (
+              <div style={currentFilterStyle}>
+                <Cropper
+                  ref={cropperRef}
+                  src={currentCropImage.preview}
+                  stencilComponent={RectangleStencil}
+                  aspectRatio={cropWidth / cropHeight}
+                  className="w-full h-full"
+                  backgroundClassName="cropper-background"
+                />
+              </div>
+            )}
+
+            {/* Loading Overlay */}
+            {isProcessing && (
+              <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+                <div className="bg-white rounded-lg p-6 flex flex-col items-center">
+                  <FaSyncAlt className="text-2xl text-blue-500 animate-spin mb-2" />
+                  <span className="text-gray-700">Processing image...</span>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
-    </div>
-  );
-
-  const MobileCropper = () => (
-    <div className="fixed inset-0 bg-black z-50">
-      <div className="h-full flex flex-col">
-        <div className="bg-gray-900 text-white p-4 pt-8 flex items-center justify-between">
-          <button onClick={handleCloseCropper}>
-            <FaTimes />
-          </button>
-          <span className="font-semibold">Crop Photo</span>
-          <button
-            onClick={(e) => processSinglePhoto(e, currentCropImage)}
-            disabled={isProcessing}
-            className="text-blue-400 font-semibold"
-          >
-            {isProcessing ? "..." : "Done"}
-          </button>
-        </div>
-
-        <div className="flex-1 p-4">
-          {currentCropImage && (
-            <Cropper
-              ref={cropperRef}
-              src={currentCropImage.preview}
-              stencilComponent={RectangleStencil}
-              aspectRatio={cropWidth / cropHeight}
-              className="w-full h-full"
-            />
-          )}
-        </div>
-
-        <div className="bg-gray-900 text-white p-4 text-center">
-          <p className="text-sm">Pinch to zoom • Drag to reposition</p>
-        </div>
-      </div>
-    </div>
-  );
+    );
+  };
 
   // Main render
   return (
     <>
       {error && <MobileError message={error} />}
-      {showSuccess && <SuccessAnimation />}
 
       <div>
         <div>
           {/* Upload Section */}
-          <div className="mb-6">
+          <div className="mb-2">
             {/* Photo limit indicator */}
-            <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900 rounded-lg">
+            <div className="mb-4">
               <div className="flex items-center justify-between">
                 <span className="text-sm font-medium dark:text-white text-gray-800">
                   Photos: {photos.filter((p) => p.processed).length} /{" "}
@@ -516,7 +691,7 @@ export default function MobileCalendarPage({
                   {multiplePhotoSelection && " (multiple selection enabled)"}
                 </span>
               </div>
-              <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
+              <div className="w-full bg-gray-200 rounded-full h-2 mt-1">
                 <div
                   className="bg-blue-600 h-2 rounded-full transition-all duration-300"
                   style={{
@@ -529,9 +704,6 @@ export default function MobileCalendarPage({
             {/* Small Photo Preview Grid */}
             {photos.length > 0 && (
               <div className="mb-4">
-                <h3 className="text-sm font-semibold dark:text-white text-gray-800 mb-2">
-                  Uploaded Photos
-                </h3>
                 <div className="flex flex-wrap gap-2">
                   {photos.map((photo, index) => (
                     <div key={photo.id} className="relative">
@@ -542,17 +714,8 @@ export default function MobileCalendarPage({
                             : photo.preview
                         }
                         alt="Uploaded"
-                        className="w-16 h-16 object-cover rounded border-2 border-gray-200"
+                        className="w-13 h-13 object-cover rounded border-2 border-gray-200"
                       />
-                      {photo.processed ? (
-                        <div className="absolute -top-1 -right-1 bg-green-500 text-white rounded-full p-1">
-                          <FaCheck className="text-xs" />
-                        </div>
-                      ) : (
-                        <div className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center rounded">
-                          <FaSyncAlt className="text-white text-sm animate-spin" />
-                        </div>
-                      )}
 
                       {/* Edit/Remove buttons for processed photos */}
                       {photo.processed && (
@@ -581,7 +744,7 @@ export default function MobileCalendarPage({
               <button
                 onClick={handleCameraCapture}
                 disabled={photos.length >= maxPhotos}
-                className="w-full text-nowrap bg-green-500 hover:bg-green-600 disabled:bg-gray-400 disabled:cursor-not-allowed text-white px-3 py-3 rounded-lg flex items-center justify-center gap-1 font-semibold"
+                className="w-full text-nowrap bg-red-500 hover:bg-red-600 disabled:bg-gray-400 disabled:cursor-not-allowed text-white px-3 py-2 rounded-sm flex items-center justify-center gap-1 font-semibold"
               >
                 <FaCamera />
                 Take Photo
@@ -589,7 +752,7 @@ export default function MobileCalendarPage({
               <button
                 onClick={handleGallerySelect}
                 disabled={photos.length >= maxPhotos}
-                className="w-full bg-purple-500 hover:bg-purple-600 disabled:bg-gray-400 disabled:cursor-not-allowed text-white px-3 py-3 rounded-lg flex items-center justify-center gap-1 font-semibold"
+                className="w-full bg-yellow-500 hover:bg-yellow-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white px-3 py-2 rounded-sm flex items-center justify-center gap-1 font-semibold"
               >
                 <FaImage />
                 Gallery
@@ -600,11 +763,11 @@ export default function MobileCalendarPage({
           {/* Monthly Calendar Preview */}
           {calendarData.some((month) => month.images.length > 0) && (
             <div className="space-y-4">
-              <div className="bg-gray-100 dark:bg-gray-800 rounded-lg p-3">
+              <div>
                 <h3 className="text-base font-semibold dark:text-white text-gray-800 text-center">
                   📅 Calendar Preview
                 </h3>
-                <p className="text-xs text-gray-600 dark:text-gray-400 text-center mt-1">
+                <p className="text-xs text-gray-600 dark:text-gray-400 text-center">
                   {totalPhotos} photos distributed linearly across 12 months
                 </p>
               </div>
@@ -613,10 +776,10 @@ export default function MobileCalendarPage({
                 {months.map((month, monthIndex) => (
                   <div
                     key={monthIndex}
-                    className="bg-gray-800 rounded-lg shadow-md p-1"
+                    className="bg-gray-800 rounded-lg shadow-md p-0.5"
                   >
                     {/* Month Header */}
-                    <h4 className="font-semibold text-sm text-center dark:text-white text-gray-800 mb-1">
+                    <h4 className="font-semibold text-xs text-center dark:text-white text-gray-800 mb-1">
                       {month.short} (
                       {calendarData[monthIndex]?.images?.length || 0})
                     </h4>
@@ -631,7 +794,7 @@ export default function MobileCalendarPage({
                               <img
                                 src={image.croppedImage}
                                 alt={`${month.name} ${imageIndex + 1}`}
-                                className="w-20 h-20 object-cover rounded"
+                                className="w-16 h-16 object-cover rounded border-white border"
                               />
                               {imageIndex === 0 && (
                                 <div className="absolute top-1 left-1 bg-blue-500 text-white p-1 m-0 leading-none rounded text-xs">
@@ -647,7 +810,7 @@ export default function MobileCalendarPage({
                         )}
                       </div>
                     ) : (
-                      <div className="h-20 bg-gray-100 rounded flex items-center justify-center">
+                      <div className="h-16 w-16 mx-auto bg-gray-100 rounded flex items-center justify-center">
                         <FaImage className="text-gray-400" />
                       </div>
                     )}
@@ -675,7 +838,7 @@ export default function MobileCalendarPage({
         <input
           ref={fileInputRef}
           type="file"
-           multiple={true}
+          multiple={true}
           accept={SUPPORTED_FORMATS.join(",")}
           onChange={(e) => {
             e.preventDefault();

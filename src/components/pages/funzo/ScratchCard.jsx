@@ -36,13 +36,10 @@ function ScratchCard({ projectData, projectId, ui }) {
 
   const [showScratchCard, setShowScratchCard] = useState(false);
   const [scratchProgress, setScratchProgress] = useState(0);
-  const [showContent, setShowContent] = useState(false);
   const [isDisappearing, setIsDisappearing] = useState(false);
   const [conversationComplete, setConversationComplete] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
   const [autoRevealed, setAutoRevealed] = useState(false);
-  const [isFlipped, setIsFlipped] = useState(false);
-  const [showPackshot, setShowPackshot] = useState(true);
   const [showCertificate, setShowCertificate] = useState(false);
   const [showFront, setShowFront] = useState(false);
   const router = useRouter();
@@ -112,7 +109,30 @@ function ScratchCard({ projectData, projectId, ui }) {
           offers relief, right where it's needed
         </>
       ),
-      packshot: "/packet.webp",
+      packshot: `/game/scratch-card/${projectId}/packet.webp`,
+      gradientFrom: "#ec008c",
+      gradientTo: "#b1087b",
+    },
+    "scratch-card-ghana": {
+      title: (
+        <>
+          Decode the vaginal care
+          <br />
+          <span className="text-yellow-200">with Gogynax</span>
+        </>
+      ),
+      tagline: "Restores comfort and confidence",
+      info: (
+        <>
+          <span className="font-medium text-[#ec008c] text-2xl lg:text-sm xl:text-xl">
+            Clotrimazole
+          </span>{" "}
+          — A trusted antifungal,
+          <br />
+          offers relief, right where it's needed
+        </>
+      ),
+      packshot: `/game/scratch-card/${projectId}/packet.webp`,
       gradientFrom: "#ec008c",
       gradientTo: "#b1087b",
     },
@@ -134,7 +154,7 @@ function ScratchCard({ projectData, projectId, ui }) {
           <br />— oferece uma cobertura abrangente para infeções vaginais mistas
         </>
       ),
-      packshot: "/packet.webp",
+      packshot: `/game/scratch-card/${projectId}/packet.webp`,
       gradientFrom: "#ec008c",
       gradientTo: "#b1087b",
     },
@@ -158,7 +178,7 @@ function ScratchCard({ projectData, projectId, ui }) {
           offre une couverture complète en une seule dose.
         </>
       ),
-      packshot: "/packet.webp",
+      packshot: `/game/scratch-card/${projectId}/packet.webp`,
       gradientFrom: "#ec008c",
       gradientTo: "#b1087b",
     },
@@ -170,19 +190,39 @@ function ScratchCard({ projectData, projectId, ui }) {
         id: 1,
         sender: "patient",
         text: "There's thick white discharge again… is it infection?",
-        audioFile: "/sounds/patient1.m4a",
+        audioFile: `/game/scratch-card/${projectId}/sounds/patient1.m4a`,
       },
       {
         id: 2,
         sender: "doctor",
         text: "Yes, typical of vaginal candidiasis",
-        audioFile: "/sounds/doctor1.m4a",
+        audioFile: `/game/scratch-card/${projectId}/sounds/doctor1.m4a`,
       },
       {
         id: 3,
         sender: "doctor",
         text: "I'll prescribe an antifungal treatment for you. Guess which",
-        audioFile: "/sounds/doctor2.m4a",
+        audioFile: `/game/scratch-card/${projectId}/sounds/doctor2.m4a`,
+      },
+    ],
+     "scratch-card-ghana": [
+      {
+        id: 1,
+        sender: "patient",
+        text: "There's thick white discharge again… is it infection?",
+        audioFile: `/game/scratch-card/${projectId}/sounds/patient1.m4a`,
+      },
+      {
+        id: 2,
+        sender: "doctor",
+        text: "Yes, typical of vaginal candidiasis",
+        audioFile: `/game/scratch-card/${projectId}/sounds/doctor1.m4a`,
+      },
+      {
+        id: 3,
+        sender: "doctor",
+        text: "I'll prescribe an antifungal treatment for you. Guess which",
+        audioFile: `/game/scratch-card/${projectId}/sounds/doctor2.m4a`,
       },
     ],
     "scratch-card-french": [
@@ -190,19 +230,19 @@ function ScratchCard({ projectData, projectId, ui }) {
         id: 1,
         sender: "patient",
         text: "Docteur, mes symptômes reviennent toujours même après le traitement",
-        audioFile: "/sounds/patient1.m4a",
+        audioFile: `/game/scratch-card/${projectId}/sounds/patient1.m4a`,
       },
       {
         id: 2,
         sender: "doctor",
         text: "Une réinfection peut se produire si les deux partenaires ne sont pas traités",
-        audioFile: "/sounds/doctor1.m4a",
+        audioFile: `/game/scratch-card/${projectId}/sounds/doctor1.m4a`,
       },
       {
         id: 3,
         sender: "doctor",
         text: "I'll prescribe an antifungal treatment for you. Guess which",
-        audioFile: "/sounds/doctor2.m4a",
+        audioFile: `/game/scratch-card/${projectId}/sounds/doctor2.m4a`,
       },
     ],
     "scratch-card-portuguese": [
@@ -210,19 +250,19 @@ function ScratchCard({ projectData, projectId, ui }) {
         id: 1,
         sender: "patient",
         text: "Continuo com corrimento e desconforto mesmo após o tratamento.",
-        audioFile: "/sounds/patient1.m4a",
+        audioFile: `/game/scratch-card/${projectId}/sounds/patient1.m4a`,
       },
       {
         id: 2,
         sender: "doctor",
         text: "A terapia para um único agente patogénico pode não ser suficiente... O meu tratamento abrange fungos, bactérias e protozoários? ",
-        audioFile: "/sounds/doctor1.m4a",
+        audioFile: `/game/scratch-card/${projectId}/sounds/doctor1.m4a`,
       },
       {
         id: 3,
         sender: "doctor",
         text: "I'll prescribe an antifungal treatment for you. Guess which",
-        audioFile: "/sounds/doctor2.m4a",
+        audioFile: `/game/scratch-card/${projectId}/sounds/doctor2.m4a`,
       },
     ],
   };
@@ -242,14 +282,14 @@ function ScratchCard({ projectData, projectId, ui }) {
   useEffect(() => {
     const initializeAudio = () => {
       try {
-        scratchSoundRef.current = new Audio("/sounds/scratch.m4a");
+        scratchSoundRef.current = new Audio("/game/scratch-card/scratch.m4a");
         scratchSoundRef.current.loop = true;
         scratchSoundRef.current.volume = 0.4;
 
-        confettiSoundRef.current = new Audio("/sounds/confetti.mp3");
+        confettiSoundRef.current = new Audio("/game/scratch-card/confetti.mp3");
         confettiSoundRef.current.volume = 0.7;
 
-        const conversations = conversationMap[projectData?.project_hash] || [];
+        const conversations = conversationMap[projectId] || [];
         audioRefs.current = conversations.map((conv) => {
           const audio = new Audio(conv.audioFile);
           audio.volume = 0.8;
@@ -278,20 +318,20 @@ function ScratchCard({ projectData, projectId, ui }) {
           return;
         }
 
-        const bgTexture = await Assets.load("/bg.jpg");
+        const bgTexture = await Assets.load("/game/scratch-card/bg.jpg");
 
         setBgTexture(bgTexture);
 
-        const scratchImg = await Assets.load("/scratch-card.png");
+        const scratchImg = await Assets.load("/game/scratch-card/scratch-card.png");
         setScratchImage(scratchImg);
 
         const doctorUrls = Array.from(
           { length: 52 },
-          (_, i) => `/doctor/doctor${String(i).padStart(2, "0")}.webp`,
+          (_, i) => `/game/scratch-card/${projectId}/doctor/doctor${String(i).padStart(2, "0")}.webp`,
         );
         const patientUrls = Array.from(
           { length: 52 },
-          (_, i) => `/patient/patient${String(i).padStart(2, "0")}.webp`,
+          (_, i) => `/game/scratch-card/${projectId}/patient/patient${String(i).padStart(2, "0")}.webp`,
         );
 
         const [doctorLoaded, patientLoaded] = await Promise.all([
@@ -338,7 +378,7 @@ function ScratchCard({ projectData, projectId, ui }) {
       setMessages((prev) => [conv]);
 
       const audio = audioRefs.current[i];
-      // console.log(conv)
+
       if (conv.sender === "patient") {
         setIsPatientPlaying(true);
         if (patientRef.current) {
@@ -346,7 +386,6 @@ function ScratchCard({ projectData, projectId, ui }) {
           patientRef.current.gotoAndPlay(0);
         }
       } else {
-        // console.log("playing")
         setIsDoctorPlaying(true);
         if (doctorRef.current) {
           doctorRef.current.gotoAndStop(0);
@@ -538,11 +577,10 @@ function ScratchCard({ projectData, projectId, ui }) {
         console.error("Failed to load scratch image");
       };
 
-      // Try to get image source
       if (scratchImage.source?.resource?.src) {
         img.src = scratchImage.source.resource.src;
       } else {
-        img.src = "/scratch-card.png";
+        img.src = "/game/scratch-card/scratch-card.png";
       }
 
       const addTouchListeners = () => {
@@ -591,7 +629,6 @@ function ScratchCard({ projectData, projectId, ui }) {
     router.push(`/${projectData?.project_hash}/homepage`);
   };
 
-  // Cleanup
   useEffect(() => {
     return () => {
       [scratchSoundRef, confettiSoundRef].forEach((ref) => {
@@ -610,23 +647,20 @@ function ScratchCard({ projectData, projectId, ui }) {
     };
   }, []);
 
-  console.log(breakpoint)
-
-  // breakpoints → values
   const patientScaleConfig = {
     sm: 0.3,
     md: 0.63,
     lg: 0.63,
-    xl: 0.63,
-    "2xl": 0.4,
+    xl: 0.5,
+    "2xl": 0.45,
   };
 
   const doctorScaleConfig = {
     sm: 0.35,
     md: 0.7,
     lg: 0.7,
-    xl: 0.7,
-    "2xl": 0.4,
+    xl: 0.5,
+    "2xl": 0.45,
   };
 
   return (
@@ -678,13 +712,16 @@ function ScratchCard({ projectData, projectId, ui }) {
               <animatedSprite
                 ref={patientRef}
                 textures={patientFrames}
-                x={canvasDimensions.width * 0.17}
+                x={
+                  (projectId === "scratch-card-zambia" || projectId === "scratch-card-ghana" )
+                    ? canvasDimensions.width * 0.17 
+                    : canvasDimensions.width * 0.32 
+                }
                 y={canvasDimensions.height * 1.0}
                 anchor={{ x: 0.5, y: 1 }}
                 scale={{
                   x:
-                    (patientScaleConfig[breakpoint] ?? patientScaleConfig.md) *
-                    -1,
+                    (patientScaleConfig[breakpoint] ?? patientScaleConfig.md) * -1,
                   y: patientScaleConfig[breakpoint] ?? patientScaleConfig.md,
                 }}
                 animationSpeed={0.2}
@@ -716,17 +753,28 @@ function ScratchCard({ projectData, projectId, ui }) {
       )}
 
       {!showScratchCard && (
-        <div className="absolute bottom-[62%] md:bottom-[62%] lg:top-[10%] w-full max-h-[40%] overflow-y-auto flex flex-col px-4 py-2 space-y-2 z-20">
-          {messages.map((msg) => (
+        <div className="absolute bottom-[45%] md:bottom-[55%] lg:top-[10%] w-full max-h-[40%] overflow-y-auto flex flex-col px-5 lg:px-20 py-2 space-y-2 z-20">
+          {messages.map((msg, idx) => (
             <div
               key={msg.id}
-              className={`transition-all duration-500 ease-in-out max-w-[75%] px-4 py-2 rounded-2xl shadow-md text-md md:text-3xl md:py-8 font-medium text-white ${
+              className={`w-[50%] md:w-[40%] h-[80%] md:h-[85%] lg:w-[25%] lg:h-[80%] ${
                 msg.sender === "patient"
-                  ? "bg-[#b1087b] self-start rounded-bl-none relative before:absolute before:content-[''] before:bottom-0 before:left-[-8px] before:border-r-[10px] before:border-r-[#b1087b] before:border-b-[10px] before:border-b-[#b1087b] before:border-l-[10px] before:border-l-transparent before:border-t-[10px] before:border-t-transparent"
-                  : "bg-[#011689] self-end rounded-br-none relative after:absolute after:content-[''] after:bottom-0 after:right-[-8px] after:border-l-[10px] after:border-l-[#011689] after:border-b-[10px] after:border-b-[#011689] after:border-r-[10px] after:border-r-transparent after:border-t-[10px] after:border-t-transparent"
+                  ? "self-start rounded-bl-none relative "
+                  : "self-end rounded-br-none relative"
               }`}
             >
-              {msg.text}
+              <img
+                  src={
+                    msg.sender === "patient"
+                      ? `/game/scratch-card/${projectId}/chat-bubble/patient.webp`
+                      : msg.id === 2
+                        ? `/game/scratch-card/${projectId}/chat-bubble/doctor-1.webp` 
+                        : `/game/scratch-card/${projectId}/chat-bubble/doctor-2.webp`
+                  }
+                  alt={`${msg.sender} bubble`}
+                  className="w-full h-auto"
+                />
+
             </div>
           ))}
           <div ref={chatEndRef} />
@@ -739,7 +787,7 @@ function ScratchCard({ projectData, projectId, ui }) {
             isDisappearing ? "scale-0 opacity-0" : "scale-100 opacity-100"
           }`}
         >
-          <div className="relative w-[95%] lg:w-1/2 h-[90dvh] lg:h-[100dvh]  preserve-3d transition-transform duration-700">
+          <div className="relative w-[95%] lg:w-1/2 h-[90dvh] lg:h-[95dvh]  preserve-3d transition-transform duration-700">
             {showFront && (
               <div className="absolute inset-0 flex justify-center rounded-2xl overflow-hidden backface-hidden">
                 <div className="w-full h-full flex flex-col justify-center items-center bg-pink-50 border-2 border-pink-500 gap-6 rounded-2xl">
@@ -777,7 +825,7 @@ function ScratchCard({ projectData, projectId, ui }) {
                     <img
                       src={cardFrontMap[projectData?.project_hash]?.packshot}
                       alt="Packshot"
-                      className="mx-auto mb-3 w-full h-1/2 lg:w-[45%]"
+                      className="mx-auto mb-3 w-full h-1/2 lg:w-1/2"
                     />
                   </div>
                 </div>
@@ -825,6 +873,7 @@ function ScratchCard({ projectData, projectId, ui }) {
           </div>
         </div>
       )}
+
       <style jsx>{`
         canvas {
           touch-action: none !important;
@@ -847,19 +896,19 @@ export const preloadAnimationAssets = async () => {
 
   const doctorUrls = Array.from(
     { length: 52 },
-    (_, i) => `/doctor/doctor${String(i).padStart(2, "0")}.webp`,
+    (_, i) => `/game/scratch-card/${projectId}/doctor/doctor${String(i).padStart(2, "0")}.webp`,
   );
   const patientUrls = Array.from(
     { length: 52 },
-    (_, i) => `/patient/patient${String(i).padStart(2, "0")}.webp`,
+    (_, i) => `/game/scratch-card/${projectId}/patient/patient${String(i).padStart(2, "0")}.webp`,
   );
 
   try {
     const [doctorLoaded, patientLoaded, bg, scratchImg] = await Promise.all([
       Promise.all(doctorUrls.map((url) => Assets.load(url))),
       Promise.all(patientUrls.map((url) => Assets.load(url))),
-      Assets.load("/bg.jpg"),
-      Assets.load("/scratch-card.png"),
+      Assets.load("/game/scratch-card/bg.jpg"),
+      Assets.load("/game/scratch-card/scratch-card.png"),
     ]);
 
     assetCache.doctorFrames = doctorLoaded;

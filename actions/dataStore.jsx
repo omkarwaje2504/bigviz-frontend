@@ -1,8 +1,8 @@
 let dataCache = null;
 
 export async function getDataSingleton() {
-  // if (dataCache) return dataCache;
-
+  console.log("Datachache true")
+  if (dataCache) return dataCache;
   const response = await fetch(
     `${process.env.NEXT_PUBLIC_PROJECT_URL}/all-projects`,
     {
@@ -14,6 +14,7 @@ export async function getDataSingleton() {
       // cache: "no-cache",
     },
   );
-  const dataCache = await response.json();
+  console.log("Datachache false")
+  dataCache = await response.json();
   return dataCache;
 }
