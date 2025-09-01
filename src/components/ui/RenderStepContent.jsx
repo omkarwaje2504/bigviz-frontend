@@ -23,12 +23,12 @@ const cleanName = (name) => {
 };
 
 const getMaxLengthFromRegex = (str) => {
-  const quantifierMatch = str.match(/\{(\d+)\}/);
-  const prefixMatch = str.match(/\((?:\d{2}\|?)+\)/);
+  const quantifierMatch = str?.match(/\{(\d+)\}/);
+  const prefixMatch = str?.match(/\((?:\d{2}\|?)+\)/);
 
   let total = 0;
   if (prefixMatch) {
-    total += prefixMatch[0].match(/\d{2}/)?.[0].length || 0;
+    total += prefixMatch[0]?.match(/\d{2}/)?.[0].length || 0;
   }
   if (quantifierMatch) {
     total += parseInt(quantifierMatch[1], 10);
