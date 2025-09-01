@@ -205,7 +205,7 @@ function ScratchCard({ projectData, projectId, ui }) {
         audioFile: `/game/scratch-card/${projectId}/sounds/doctor2.m4a`,
       },
     ],
-     "scratch-card-ghana": [
+    "scratch-card-ghana": [
       {
         id: 1,
         sender: "patient",
@@ -322,16 +322,20 @@ function ScratchCard({ projectData, projectId, ui }) {
 
         setBgTexture(bgTexture);
 
-        const scratchImg = await Assets.load("/game/scratch-card/scratch-card.png");
+        const scratchImg = await Assets.load(
+          "/game/scratch-card/scratch-card.png",
+        );
         setScratchImage(scratchImg);
 
         const doctorUrls = Array.from(
           { length: 52 },
-          (_, i) => `/game/scratch-card/${projectId}/doctor/doctor${String(i).padStart(2, "0")}.webp`,
+          (_, i) =>
+            `/game/scratch-card/${projectId}/doctor/doctor${String(i).padStart(2, "0")}.webp`,
         );
         const patientUrls = Array.from(
           { length: 52 },
-          (_, i) => `/game/scratch-card/${projectId}/patient/patient${String(i).padStart(2, "0")}.webp`,
+          (_, i) =>
+            `/game/scratch-card/${projectId}/patient/patient${String(i).padStart(2, "0")}.webp`,
         );
 
         const [doctorLoaded, patientLoaded] = await Promise.all([
@@ -363,33 +367,46 @@ function ScratchCard({ projectData, projectId, ui }) {
     loadAssets();
   }, []);
 
+  const [maxAnimationLoops] = useState(5);
+
   const playConversationSequence = useCallback(async () => {
     const conversations = conversationMap[projectData?.project_hash] || [];
 
-    if (!conversations.length) {
-      console.log("No conversations found");
-      return;
-    }
+    if (!conversations.length) return;
 
     await new Promise((resolve) => setTimeout(resolve, 1000));
+
+    const timeoutIds = [];
 
     for (let i = 0; i < conversations.length; i++) {
       const conv = conversations[i];
       setMessages((prev) => [conv]);
 
       const audio = audioRefs.current[i];
+      let animationLoops = 0;
+
+      timeoutIds.forEach((id) => clearTimeout(id));
+      timeoutIds.length = 0;
 
       if (conv.sender === "patient") {
         setIsPatientPlaying(true);
+        setIsDoctorPlaying(false);
         if (patientRef.current) {
           patientRef.current.gotoAndStop(0);
           patientRef.current.gotoAndPlay(0);
         }
+        if (doctorRef.current) {
+          doctorRef.current.gotoAndStop(0);
+        }
       } else {
         setIsDoctorPlaying(true);
+        setIsPatientPlaying(false);
         if (doctorRef.current) {
           doctorRef.current.gotoAndStop(0);
           doctorRef.current.gotoAndPlay(0);
+        }
+        if (patientRef.current) {
+          patientRef.current.gotoAndStop(0);
         }
       }
 
@@ -397,34 +414,56 @@ function ScratchCard({ projectData, projectId, ui }) {
         try {
           audio.currentTime = 0;
           await audio.play();
+
+          const audioDuration = await getAudioDuration(conv.audioFile);
+
+          const restartAnimationIfNeeded = () => {
+            if (animationLoops < maxAnimationLoops) {
+              animationLoops++;
+              if (conv.sender === "patient" && patientRef.current) {
+                patientRef.current.gotoAndPlay(0);
+              } else if (doctorRef.current) {
+                doctorRef.current.gotoAndPlay(0);
+              }
+
+              if (animationLoops < maxAnimationLoops) {
+                const id = setTimeout(restartAnimationIfNeeded, 2600);
+                timeoutIds.push(id);
+              }
+            }
+          };
+
+          if (audioDuration > 2600) {
+            const id = setTimeout(restartAnimationIfNeeded, 2600);
+            timeoutIds.push(id);
+          }
+
+          await new Promise((resolve) => setTimeout(resolve, audioDuration));
         } catch (err) {
           console.log("Audio play failed:", err);
+          await new Promise((resolve) => setTimeout(resolve, 2600));
         }
+      } else {
+        await new Promise((resolve) => setTimeout(resolve, 2600));
       }
-
-      const duration = await getAudioDuration(conv.audioFile);
-      await new Promise((res) => setTimeout(res, duration));
 
       if (conv.sender === "patient") {
         setIsPatientPlaying(false);
         if (patientRef.current) patientRef.current.gotoAndStop(0);
       } else {
-        if (conv.id === 4) {
-          setIsDoctorPlaying(false);
-          if (doctorRef.current) doctorRef.current.gotoAndStop(0);
-        } else {
-          setIsDoctorPlaying(true);
-        }
+        setIsDoctorPlaying(false);
+        if (doctorRef.current) doctorRef.current.gotoAndStop(0);
       }
 
-      if (audio) audio.pause();
+      timeoutIds.forEach((id) => clearTimeout(id));
+      timeoutIds.length = 0;
 
       await new Promise((res) => setTimeout(res, 500));
     }
 
     setConversationComplete(true);
     setTimeout(() => setShowScratchCard(true), 1000);
-  }, [projectData?.project_hash]);
+  }, [projectData?.project_hash, maxAnimationLoops]);
 
   useEffect(() => {
     if (
@@ -717,7 +756,8 @@ function ScratchCard({ projectData, projectId, ui }) {
                 anchor={{ x: 0.5, y: 1 }}
                 scale={{
                   x:
-                    (patientScaleConfig[breakpoint] ?? patientScaleConfig.md) * -1,
+                    (patientScaleConfig[breakpoint] ?? patientScaleConfig.md) *
+                    -1,
                   y: patientScaleConfig[breakpoint] ?? patientScaleConfig.md,
                 }}
                 animationSpeed={0.2}
@@ -760,17 +800,16 @@ function ScratchCard({ projectData, projectId, ui }) {
               }`}
             >
               <img
-                  src={
-                    msg.sender === "patient"
-                      ? `/game/scratch-card/${projectId}/chat-bubble/patient.webp`
-                      : msg.id === 2
-                        ? `/game/scratch-card/${projectId}/chat-bubble/doctor-1.webp` 
-                        : `/game/scratch-card/${projectId}/chat-bubble/doctor-2.webp`
-                  }
-                  alt={`${msg.sender} bubble`}
-                  className="w-full h-auto"
-                />
-
+                src={
+                  msg.sender === "patient"
+                    ? `/game/scratch-card/${projectId}/chat-bubble/patient.webp`
+                    : msg.id === 2
+                      ? `/game/scratch-card/${projectId}/chat-bubble/doctor-1.webp`
+                      : `/game/scratch-card/${projectId}/chat-bubble/doctor-2.webp`
+                }
+                alt={`${msg.sender} bubble`}
+                className="w-full h-auto"
+              />
             </div>
           ))}
           <div ref={chatEndRef} />
@@ -892,11 +931,13 @@ export const preloadAnimationAssets = async () => {
 
   const doctorUrls = Array.from(
     { length: 52 },
-    (_, i) => `/game/scratch-card/${projectId}/doctor/doctor${String(i).padStart(2, "0")}.webp`,
+    (_, i) =>
+      `/game/scratch-card/${projectId}/doctor/doctor${String(i).padStart(2, "0")}.webp`,
   );
   const patientUrls = Array.from(
     { length: 52 },
-    (_, i) => `/game/scratch-card/${projectId}/patient/patient${String(i).padStart(2, "0")}.webp`,
+    (_, i) =>
+      `/game/scratch-card/${projectId}/patient/patient${String(i).padStart(2, "0")}.webp`,
   );
 
   try {
