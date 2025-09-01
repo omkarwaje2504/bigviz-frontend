@@ -165,7 +165,7 @@ const LoginForm = ({ ui, loginType, projectData }) => {
               <FaUser className="text-red-300 group-hover:text-red-200" />
             }
           >
-            {ui.loginPage.loginButtomLabel}
+            {ui.loginPage.loginButtonLabel}
           </Button>
         </div>
       </form>

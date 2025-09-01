@@ -39,11 +39,16 @@ const Config = async (projectData) => {
       secondaryColor: projectData?.Theme?.secondaryColor || "#f5ba01",
       secondaryText: projectData?.Theme?.secondaryTextColor || "#ffffff",
     },
+    loaderPage: {
+      loaderTitle:  projectData?.config?.theme?.loading_title || projectData?.name,
+      loaderSubTitle:projectData?.config?.theme?.loading_subtitle || "Your jouney is starting from here",
+      assetLoader: projectData?.config?.theme?.loading_assets_label || "Loading project assests.."
+    },
     loginPage: {
-      heading: "Welcome Back",
-      subHeading: "Sign in",
-      loginLabel: "Enter your Employee Code",
-      loginButtomLabel: "Sign In",
+      heading: projectData?.config?.theme?.emp_login_title || "Welcome Back",
+      subHeading: projectData?.config?.theme?.emp_login_subtitle || "Sign in",
+      loginLabel: projectData?.config?.theme?.emp_code_label || "Enter your Employee Code",
+      loginButtonLabel: projectData?.config?.theme?.emp_login_button_text || "Sign In",
       passwordLabel: "Password",
       mobileLabel: "Mobile Number",
     },
@@ -51,6 +56,15 @@ const Config = async (projectData) => {
       FormHeading:projectData?.config?.theme?.heading?  projectData?.config?.theme?.heading : "Add New Doctor Registration",
       FormSubHeading:projectData?.config?.theme?.subheading?  projectData?.config?.theme?.subheading : "Complete the form below to create a new E-video for medical professionals",
       FormTitle:projectData?.config?.theme?.title?  projectData?.config?.theme?.title : " Doctor Information",
+      SubmitButtonLable:projectData?.config?.theme?.doctor_submit_button_label || "Submit",
+      MobileInputLable:projectData?.config?.theme?.doctor_mobile_number_label || "Mobile Number",
+    },
+    HomePageLables:{
+      prevButtonLable:projectData?.config?.theme?.home_prev_btn_label || "prev",
+      nextButtonLable: projectData?.config?.theme?.home_next_btn_label || "next",
+      gridButtonLable: projectData?.config?.theme?.home_grid_label || "Grid",
+      listButtonLable: projectData?.config?.theme?.home_list_label || "List",
+      serachHereLable: projectData?.config?.theme?.home_search_here_label ||"Search Here...",
     },
     Dashboard: {
       HomePageTitle: projectData?.config?.theme?.home_title?  projectData?.config?.theme?.home_title : "Doctor Management",

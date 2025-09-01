@@ -38,7 +38,7 @@ const Header = ({ userInfo, projectData, projectHash }) => {
 
             <div>
               <h1 className="text-xl font-bold text-red-600 dark:text-red-500">
-                {projectData?.name || "Platform Partner"}
+                {projectData?.config?.theme?.loading_title || projectData?.name ||"Platform Partner"}
               </h1>
               <p className="text-[10px] text-gray-500 dark:text-gray-400 md:text-[13px]">
                 {projectData?.company?.name || "Achieve your goals with us"}

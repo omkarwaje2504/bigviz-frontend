@@ -77,7 +77,7 @@ const RenderStepContent = ({
               <div>
                 <InputField
                   id="mobile"
-                  label="Mobile Number*"
+                  label={`${ui?.DoctorRegistrationForm?.MobileInputLable}*`}
                   type="tel"
                   value={formData.mobile}
                   onChange={(e) => {

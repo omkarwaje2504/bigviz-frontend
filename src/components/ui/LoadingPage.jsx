@@ -35,9 +35,9 @@ const LoadingPage = ({ ui, loadingTitle, loadingtext }) => {
 
       {/* Branding Text */}
       <h1 className="text-4xl text-center font-bold text-red-600 dark:text-red-500 mb-2">
-        {loadingTitle}
+        {ui?.loaderPage?.loaderTitle}
       </h1>
-      <p className="mb-8 text-gray-600 dark:text-gray-300">{loadingtext}</p>
+      <p className="mb-8 text-gray-600 dark:text-gray-300">{ui?.loaderPage?.loaderSubTitle}</p>
 
       {/* Progress Bar */}
       <div className="w-64 bg-gray-300 dark:bg-gray-700 rounded-full h-3 mb-4">
@@ -52,7 +52,7 @@ const LoadingPage = ({ ui, loadingTitle, loadingtext }) => {
 
       {/* Progress Label */}
       <p className="text-sm text-gray-600 dark:text-gray-400">
-        Loading assets... {progress}%
+        {ui?.loaderPage?.assetLoader} {progress}%
       </p>
     </div>
   );

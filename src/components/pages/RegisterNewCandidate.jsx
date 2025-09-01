@@ -132,6 +132,7 @@ export default function RegisterNewCandidate({ projectData, projectId, ui }) {
               setValidationStatus={setValidationStatus}
             />
             <FormNavigationButtons
+              ui={ui}
               projectData={projectData}
               currentStep={currentStep}
               setCurrentStep={setCurrentStep}

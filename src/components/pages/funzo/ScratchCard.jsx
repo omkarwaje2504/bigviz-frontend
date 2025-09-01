@@ -195,6 +195,29 @@ function ScratchCard({ projectData, projectId, ui }) {
     },
   };
 
+  const congratsConfig = {
+    "scratch-card-zambia": {
+      congratulationstext:"Congratulations",
+      message:"You have contributed to Women's health!",
+      gobackButtonlabel:"Go back"
+    },
+    "scratch-card-ghana": {
+      congratulationstext:"Congratulations",
+      message:"You have contributed to Women's health!",
+      gobackButtonlabel:"Go back"
+    },
+    "scratch-card-french": {
+      congratulationstext:"Félicitations",
+      message:"Vous avez contribué à la santé des femmes !",
+      gobackButtonlabel:"revenir"
+    },
+    "scratch-card-portuguese": {
+      congratulationstext:"Parabéns",
+      message:"Você contribuiu para a saúde da mulher!",
+      gobackButtonlabel:"volte"
+    },
+  };
+
   const conversationMap = {
     "scratch-card-zambia": [
       {
@@ -334,7 +357,7 @@ function ScratchCard({ projectData, projectId, ui }) {
         setBgTexture(bgTexture);
 
         const scratchImg = await Assets.load(
-          "/game/scratch-card/scratch-card.png",
+          `/game/scratch-card/${projectId}/scratch-card.png`,
         );
         setScratchImage(scratchImg);
 
@@ -630,7 +653,7 @@ function ScratchCard({ projectData, projectId, ui }) {
       if (scratchImage.source?.resource?.src) {
         img.src = scratchImage.source.resource.src;
       } else {
-        img.src = "/game/scratch-card/scratch-card.png";
+        img.src = `/game/scratch-card/${projectId}/scratch-card.png`;
       }
 
       const addTouchListeners = () => {
@@ -903,17 +926,17 @@ function ScratchCard({ projectData, projectId, ui }) {
         <div className="absolute px-4 inset-0 flex items-center justify-center z-50 bg-black/60">
           <div className="bg-white p-8 rounded-2xl shadow-2xl text-center max-w-lg animate-fadeIn">
             <h2 className="text-3xl font-bold text-[#ec008c] mb-4">
-              🎉 Congratulations!
+              🎉{congratsConfig?.[projectId]?.congratulationstext}
             </h2>
             <p className="text-gray-700 text-lg md:text-xl mb-6">
-              You have contributed to Women's health!
+              {congratsConfig?.[projectId]?.message}
             </p>
             <div>
               <button
                 className="w-fit px-3 py-2 mx-auto text-white bg-blue-700 text-lg border rounded"
                 onClick={handleGoBack}
               >
-                Go back
+                {congratsConfig?.[projectId]?.gobackButtonlabel} 
               </button>
             </div>
           </div>
@@ -956,7 +979,7 @@ export const preloadAnimationAssets = async () => {
       Promise.all(doctorUrls.map((url) => Assets.load(url))),
       Promise.all(patientUrls.map((url) => Assets.load(url))),
       Assets.load("/game/scratch-card/bg.jpg"),
-      Assets.load("/game/scratch-card/scratch-card.png"),
+      Assets.load(`/game/scratch-card/${projectId}/scratch-card.png`),
     ]);
 
     assetCache.doctorFrames = doctorLoaded;

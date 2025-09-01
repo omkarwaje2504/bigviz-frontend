@@ -751,7 +751,7 @@ const MemberTable: React.FC<MemberTableProps> = ({
             type="text"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="Search Here"
+            placeholder={ui?.HomePageLables?.serachHereLable}
             icon={<FaSearch className="text-gray-400" />}
           />
         </div>
@@ -764,7 +764,7 @@ const MemberTable: React.FC<MemberTableProps> = ({
             }`}
             onClick={() => setViewMode("grid")}
           >
-            Grid
+            {ui?.HomePageLables?.gridButtonLable}
           </button>
           <button
             className={`px-3 py-0.5 rounded ${
@@ -774,7 +774,7 @@ const MemberTable: React.FC<MemberTableProps> = ({
             }`}
             onClick={() => setViewMode("list")}
           >
-            List
+            {ui?.HomePageLables?.listButtonLable}
           </button>
         </div>
       </div>
@@ -1086,7 +1086,7 @@ const MemberTable: React.FC<MemberTableProps> = ({
             onClick={() => handlePageChange(currentPage - 1)}
             disabled={currentPage === 1}
           >
-            Prev
+            {ui?.HomePageLables?.prevButtonLable}
           </button>
           {[...Array(totalPages)].map((_, idx) => {
             const page = idx + 1;
@@ -1115,7 +1115,7 @@ const MemberTable: React.FC<MemberTableProps> = ({
             onClick={() => handlePageChange(currentPage + 1)}
             disabled={currentPage === totalPages}
           >
-            Next
+            {ui?.HomePageLables?.nextButtonLable}
           </button>
         </div>
       )}

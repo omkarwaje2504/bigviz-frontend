@@ -3,6 +3,7 @@
 import { FaChevronLeft, FaChevronRight, FaSpinner } from "react-icons/fa";
 
 const FormNavigationButtons = ({
+  ui,
   currentStep,
   setCurrentStep,
   formData,
@@ -80,7 +81,7 @@ const FormNavigationButtons = ({
           className="flex items-center ml-auto bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded"
           disabled={isSubmitLoading}
         >
-          Submit
+          {ui?.DoctorRegistrationForm?.SubmitButtonLable}
           {isSubmitLoading ? (
             <FaSpinner className="gap-2 w-4 h-4 animate-spin fill-white" />
           ) : (
