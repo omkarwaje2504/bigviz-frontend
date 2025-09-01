@@ -60,6 +60,15 @@ function ScratchCard({ projectData, projectId, ui }) {
 
   const [breakpoint, setBreakpoint] = useState("md");
 
+  useEffect(()=>{
+    let empData = localStorage.getItem("empData")
+    if(!empData){
+      router.push(`/${projectId}`)
+    }else{
+      router.push(`/${projectId}/homepage`)
+    }
+  },[])
+
   useEffect(() => {
     const updateDimensions = () => {
       if (typeof window !== "undefined") {
@@ -330,12 +339,12 @@ function ScratchCard({ projectData, projectId, ui }) {
         const doctorUrls = Array.from(
           { length: 52 },
           (_, i) =>
-            `/game/scratch-card/${projectId}/doctor/doctor${String(i).padStart(2, "0")}.webp`,
+            `/game/scratch-card/doctor/doctor${String(i).padStart(2, "0")}.webp`,
         );
         const patientUrls = Array.from(
           { length: 52 },
           (_, i) =>
-            `/game/scratch-card/${projectId}/patient/patient${String(i).padStart(2, "0")}.webp`,
+            `/game/scratch-card/patient/patient${String(i).padStart(2, "0")}.webp`,
         );
 
         const [doctorLoaded, patientLoaded] = await Promise.all([
@@ -932,12 +941,12 @@ export const preloadAnimationAssets = async () => {
   const doctorUrls = Array.from(
     { length: 52 },
     (_, i) =>
-      `/game/scratch-card/${projectId}/doctor/doctor${String(i).padStart(2, "0")}.webp`,
+      `/game/scratch-card/doctor/doctor${String(i).padStart(2, "0")}.webp`,
   );
   const patientUrls = Array.from(
     { length: 52 },
     (_, i) =>
-      `/game/scratch-card/${projectId}/patient/patient${String(i).padStart(2, "0")}.webp`,
+      `/game/scratch-card/patient/patient${String(i).padStart(2, "0")}.webp`,
   );
 
   try {
