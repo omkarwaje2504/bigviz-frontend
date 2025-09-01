@@ -60,12 +60,16 @@ function ScratchCard({ projectData, projectId, ui }) {
 
   const [breakpoint, setBreakpoint] = useState("md");
 
-  useEffect(()=>{
-    let empData = localStorage.getItem("empData")
-    if(!empData){
-      router.push(`/${projectId}`)
+  useEffect(() => {
+    let empData = localStorage.getItem("empData");
+    let formData = localStorage.getItem("formData");
+    if (!empData) {
+      router.push(`/${projectId}`);
     }
-  },[])
+    if(!formData){
+      router.push(`/${projectId}/homepage`);
+    }
+  }, []);
 
   useEffect(() => {
     const updateDimensions = () => {
@@ -570,7 +574,7 @@ function ScratchCard({ projectData, projectId, ui }) {
     const progress = transparent / (pixels.length / 4);
     setScratchProgress(progress);
 
-    if (progress > 0.8 && !autoRevealed) {
+    if (progress > 0.6 && !autoRevealed) {
       setAutoRevealed(true);
       setScratchProgress(1);
       ctx.globalCompositeOperation = "destination-out";
@@ -652,7 +656,7 @@ function ScratchCard({ projectData, projectId, ui }) {
     let formData = DecryptData("formData");
     const endTime = Date.now();
     const durationMs = endTime - startTime;
-    const durationMinutes = Math.floor(durationMs / 60000);
+    const durationMinutes = Number((durationMs / 60000).toFixed(2));
 
     let updatedformData = {
       ...formData,
