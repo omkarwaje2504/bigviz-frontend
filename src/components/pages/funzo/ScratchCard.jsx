@@ -712,11 +712,7 @@ function ScratchCard({ projectData, projectId, ui }) {
               <animatedSprite
                 ref={patientRef}
                 textures={patientFrames}
-                x={
-                  (projectId === "scratch-card-zambia" || projectId === "scratch-card-ghana" )
-                    ? canvasDimensions.width * 0.17 
-                    : canvasDimensions.width * 0.32 
-                }
+                x={canvasDimensions.width * 0.17}
                 y={canvasDimensions.height * 1.0}
                 anchor={{ x: 0.5, y: 1 }}
                 scale={{
