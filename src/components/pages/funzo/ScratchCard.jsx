@@ -64,8 +64,6 @@ function ScratchCard({ projectData, projectId, ui }) {
     let empData = localStorage.getItem("empData")
     if(!empData){
       router.push(`/${projectId}`)
-    }else{
-      router.push(`/${projectId}/homepage`)
     }
   },[])
 
