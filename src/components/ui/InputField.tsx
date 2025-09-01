@@ -34,6 +34,7 @@ type InputFieldProps = {
     | "dropdown"
     | "date";
   value: string;
+  countryCode: string;
   onChange: (
     e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>,
   ) => void;
@@ -73,6 +74,7 @@ const InputField: React.FC<InputFieldProps> = ({
   icon,
   type,
   value,
+  countryCode,
   onChange,
   validation = {},
   placeholder = "",
@@ -455,6 +457,14 @@ const InputField: React.FC<InputFieldProps> = ({
               ))}
             </select>
           )}
+          {id === "mobile" && validation?.regex && (
+            <div
+              className={`$bg-white dark:bg-gray-700 text-black dark:text-white block w-fit rounded-md border-0 py-2 px-1`}
+            >
+              {countryCode}
+            </div>
+          )}
+
           <input
             id={id}
             name={name || id}

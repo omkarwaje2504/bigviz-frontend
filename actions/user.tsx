@@ -125,7 +125,7 @@ export const SaveDoctors = async (
   }
 
   const fields = mapFormDataToFields(formData, projectData);
-
+  const countryCode = projectData?.config?.doctor?.country_codes?.[0] || +91;
   try {
     const response = await fetch(`${apiUrl}/doctor/save`, {
       method: "POST",
@@ -137,7 +137,7 @@ export const SaveDoctors = async (
         project_hash: projectData.project_hash,
         employee_hash: employeeCode,
         name: `${formData?.prefix}. ` + formData?.name,
-        mobile: formData?.mobile,
+        mobile: countryCode + formData?.mobile,
         fields,
       }),
     });

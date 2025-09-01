@@ -22,6 +22,20 @@ const cleanName = (name) => {
   return newName;
 };
 
+const getMaxLengthFromRegex = (str) => {
+  const quantifierMatch = str.match(/\{(\d+)\}/);
+  const prefixMatch = str.match(/\((?:\d{2}\|?)+\)/);
+
+  let total = 0;
+  if (prefixMatch) {
+    total += prefixMatch[0].match(/\d{2}/)?.[0].length || 0;
+  }
+  if (quantifierMatch) {
+    total += parseInt(quantifierMatch[1], 10);
+  }
+  return total > 0 ? total : undefined;
+};
+
 const RenderStepContent = ({
   ui,
   formData,
@@ -46,7 +60,6 @@ const RenderStepContent = ({
   const handleValidationChange = (key) => (isValid) => {
     setValidationStatus((prev) => ({ ...prev, [key]: isValid }));
   };
-
   switch (currentStep) {
     case 1:
       return (
@@ -80,9 +93,9 @@ const RenderStepContent = ({
                   label={`${ui?.DoctorRegistrationForm?.MobileInputLable}*`}
                   type="tel"
                   value={formData.mobile}
+                  countryCode={countryCode}
                   onChange={(e) => {
                     let val = e.target.value;
-
                     try {
                       const regex = new RegExp(
                         projectData?.config?.doctor?.regex?.replace(
@@ -90,17 +103,10 @@ const RenderStepContent = ({
                           "",
                         ),
                       );
-
-                      if (regex.test(val)) {
-                        if (!val.startsWith(countryCode)) {
-                          val = `${countryCode}${val}`;
-                        }
-                      }
                     } catch (err) {
                       console.warn("Invalid regex from backend:", err);
                       MyError(err);
                     }
-
                     setFormData({ ...formData, mobile: val });
                   }}
                   required
@@ -112,53 +118,55 @@ const RenderStepContent = ({
                         "",
                       ),
                     ),
-                    message: `Enter a valid mobile number with ${countryCode} prefix`,
+                    message: `Enter a valid mobile number`,
                     trim: true,
-                    maxLength: 13,
+                    maxLength: getMaxLengthFromRegex(
+                      projectData?.config?.doctor?.regex,
+                    ),
                   }}
                   onValidationChange={handleValidationChange("mobile_number")}
                 />
               </div>
             )}
           </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              {/* {console.log(dynamicFields)} */}
-              {dynamicFields.map((field) =>
-                field?.additional_config?.includes("backstage_only") ? null : (
-                  <InputField
-                    key={field.id}
-                    id={field.name}
-                    label={
-                      field.display_name +
-                      (field.validations?.required ? " *" : "")
-                    }
-                    type={field.type}
-                    value={String(formData[field.name] ?? "")}
-                    onChange={(e) =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        [field.name]: e.target.value,
-                      }))
-                    }
-                    required={field?.additional_config?.includes("is_required")}
-                    placeholder={field.placeholder}
-                    options={field.options || []}
-                    validation={{
-                      regex:
-                        field.validations?.min || field.validations?.max
-                          ? new RegExp(
-                              `^.{${field.validations.min || 0},${
-                                field.validations.max || 100
-                              }}$`,
-                            )
-                          : undefined,
-                      message: `Enter valid ${field.label}`,
-                    }}
-                    onValidationChange={handleValidationChange(field.name)}
-                  />
-                ),
-              )}
-            </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {/* {console.log(dynamicFields)} */}
+            {dynamicFields.map((field) =>
+              field?.additional_config?.includes("backstage_only") ? null : (
+                <InputField
+                  key={field.id}
+                  id={field.name}
+                  label={
+                    field.display_name +
+                    (field.validations?.required ? " *" : "")
+                  }
+                  type={field.type}
+                  value={String(formData[field.name] ?? "")}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      [field.name]: e.target.value,
+                    }))
+                  }
+                  required={field?.additional_config?.includes("is_required")}
+                  placeholder={field.placeholder}
+                  options={field.options || []}
+                  validation={{
+                    regex:
+                      field.validations?.min || field.validations?.max
+                        ? new RegExp(
+                            `^.{${field.validations.min || 0},${
+                              field.validations.max || 100
+                            }}$`,
+                          )
+                        : undefined,
+                    message: `Enter valid ${field.label}`,
+                  }}
+                  onValidationChange={handleValidationChange(field.name)}
+                />
+              ),
+            )}
+          </div>
         </div>
       );
     case 2:

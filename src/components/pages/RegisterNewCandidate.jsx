@@ -38,7 +38,7 @@ export default function RegisterNewCandidate({ projectData, projectId, ui }) {
   const [formData, setFormData] = useState({
     name: "",
     prefix: "Dr",
-    mobile: projectData?.config?.doctor?.country_codes?.[0] || "+91",
+    mobile: 0,
     photo: null,
   });
 
