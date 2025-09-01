@@ -174,7 +174,6 @@ export default HomePage;
 
 const stats = (members, ui, projectData) => {
   const total = (members && members.length) || 1;
-
   const activeMembers =
     members && members.length > 0
       ? projectData?.config?.employee?.approval_required
@@ -185,7 +184,7 @@ const stats = (members, ui, projectData) => {
   const pendingMembers =
     members && members.length > 0
       ? projectData?.config?.employee?.approval_required
-        ? members.filter((member) => member?.approval_history.length == 0)
+        ? members.filter((member) => member?.photo_approval_status == 0)
         : members.filter((member) => member?.approval_history.length == 0)
       : 0;
 
