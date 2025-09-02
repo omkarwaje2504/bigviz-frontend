@@ -58,6 +58,7 @@ const Config = async (projectData) => {
       FormTitle:projectData?.config?.theme?.title?  projectData?.config?.theme?.title : " Doctor Information",
       SubmitButtonLable:projectData?.config?.theme?.doctor_submit_button_label || "Submit",
       MobileInputLable:projectData?.config?.theme?.doctor_mobile_number_label || "Mobile Number",
+      MobileValidation: projectData?.config?.theme?.enable_mobile_validation ?? true,
     },
     ErroMessageConfig:{
       isErrorMessageEnable: projectData?.config?.theme?.show_error_message ?? true,

@@ -922,7 +922,7 @@ function ScratchCard({ projectData, projectId, ui }) {
         </div>
       )}
 
-      {/* {showCertificate && (
+      {showCertificate && (
         <div className="absolute px-4 inset-0 flex items-center justify-center z-50 bg-black/60">
           <div className="bg-white p-8 rounded-2xl shadow-2xl text-center max-w-lg animate-fadeIn">
             <h2 className="text-3xl font-bold text-[#ec008c] mb-4">
@@ -941,7 +941,7 @@ function ScratchCard({ projectData, projectId, ui }) {
             </div>
           </div>
         </div>
-      )} */}
+      )}
       
       <style jsx>{`
         canvas {

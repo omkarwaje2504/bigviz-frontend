@@ -94,16 +94,7 @@ const RenderStepContent = ({
                 }
               />
             </div>
-            {
-              console.log(
-                new RegExp(
-                        projectData?.config?.doctor?.regex?.replace(
-                          /^\/|\/$/g,
-                          "",
-                        ),
-                      )
-              )
-            }
+           
             {!projectData?.features?.includes("disable_mobile_number") && (
               <div>
                 <InputField
@@ -112,41 +103,48 @@ const RenderStepContent = ({
                   label={`${ui?.DoctorRegistrationForm?.MobileInputLable}*`}
                   type="tel"
                   value={formData.mobile}
-                  countryCode={countryCode}
+                  countryCode={ui?.DoctorRegistrationForm?.MobileValidation ? countryCode : undefined}
                   onChange={(e) => {
                     let val = e.target.value;
-                    try {
-                      const regex = new RegExp(
-                        projectData?.config?.doctor?.regex?.replace(
-                          /^\/|\/$/g,
-                          "",
-                        ),
-                      );
-                    } catch (err) {
-                      console.warn("Invalid regex from backend:", err);
-                      MyError(err);
+
+                    if (ui?.DoctorRegistrationForm?.MobileValidation) {
+                      try {
+                        const regex = new RegExp(
+                          projectData?.config?.doctor?.regex?.replace(/^\/|\/$/g, "")
+                        );
+                      } catch (err) {
+                        console.warn("Invalid regex from backend:", err);
+                        MyError(err);
+                      }
                     }
+
                     setFormData({ ...formData, mobile: val });
                   }}
                   required
-                  placeholder={`e.g. ${countryCode}9876543210`}
-                  validation={{
-                    regex: new RegExp(
-                      projectData?.config?.doctor?.regex?.replace(
-                        /^\/|\/$/g,
-                        "",
-                      ),
-                    ),
-                    message: `Enter a valid mobile number`,
-                    trim: true,
-                    maxLength: getMaxLengthFromRegex(
-                      projectData?.config?.doctor?.regex,
-                    ),
-                  }}
-                  onValidationChange={handleValidationChange("mobile_number")}
+                  placeholder={`e.g. ${ui?.DoctorRegistrationForm?.MobileValidation ? countryCode : ""}9876543210`}
+                  validation={
+                    ui?.DoctorRegistrationForm?.MobileValidation
+                      ? {
+                          regex: new RegExp(
+                            projectData?.config?.doctor?.regex?.replace(/^\/|\/$/g, "")
+                          ),
+                          message: `Enter a valid mobile number`,
+                          trim: true,
+                          maxLength: getMaxLengthFromRegex(
+                            projectData?.config?.doctor?.regex
+                          ),
+                        }
+                      : undefined
+                  }
+                  onValidationChange={
+                    ui?.DoctorRegistrationForm?.MobileValidation
+                      ? handleValidationChange("mobile_number")
+                      : undefined
+                  }
                 />
               </div>
             )}
+
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {/* {console.log(dynamicFields)} */}
