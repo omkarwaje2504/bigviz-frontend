@@ -23,7 +23,6 @@ export const preloadAssetsBase64 = () => {
 
   const bgTexture = loadImageAsBase64("/bg.jpg");
   const scratchImage = loadImageAsBase64("/scratch-card.png");
-  console.log("assests loaded")
   return {
     doctorFrames,
     patientFrames,
