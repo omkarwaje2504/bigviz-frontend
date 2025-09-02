@@ -823,11 +823,11 @@ function ScratchCard({ projectData, projectId, ui }) {
       )}
 
       {!showScratchCard && (
-        <div className="absolute bottom-[45%] md:bottom-[55%] lg:top-[10%] w-full max-h-[40%] overflow-y-auto flex flex-col px-5 lg:px-20 py-2 space-y-2 z-20">
+        <div className="absolute bottom-[45%] md:bottom-[55%] lg:top-[12%] w-full max-h-[40%] overflow-y-auto flex flex-col px-5 lg:px-32 py-2 space-y-2 z-20">
           {messages.map((msg, idx) => (
             <div
               key={msg.id}
-              className={`w-[50%] md:w-[40%] h-[80%] md:h-[85%] lg:w-[25%] lg:h-[80%] ${
+              className={`w-[50%] md:w-[40%] h-[80%] md:h-[85%] lg:w-[35%] lg:h-[80%] ${
                 msg.sender === "patient"
                   ? "self-start rounded-bl-none relative "
                   : "self-end rounded-br-none relative"
@@ -922,7 +922,7 @@ function ScratchCard({ projectData, projectId, ui }) {
         </div>
       )}
 
-      {showCertificate && (
+      {/* {showCertificate && (
         <div className="absolute px-4 inset-0 flex items-center justify-center z-50 bg-black/60">
           <div className="bg-white p-8 rounded-2xl shadow-2xl text-center max-w-lg animate-fadeIn">
             <h2 className="text-3xl font-bold text-[#ec008c] mb-4">
@@ -941,8 +941,8 @@ function ScratchCard({ projectData, projectId, ui }) {
             </div>
           </div>
         </div>
-      )}
-
+      )} */}
+      
       <style jsx>{`
         canvas {
           touch-action: none !important;

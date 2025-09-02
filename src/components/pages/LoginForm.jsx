@@ -92,6 +92,7 @@ const LoginForm = ({ ui, loginType, projectData }) => {
       <form onSubmit={handleSubmit} className="space-y-4">
         {loginType === "code" && (
           <InputField
+            ui={ui}
             id="code"
             label={ui.loginPage.loginLabel}
             icon={<FaTicketAlt className="text-gray-400" />}
@@ -108,6 +109,7 @@ const LoginForm = ({ ui, loginType, projectData }) => {
         {loginType === "code-password" && (
           <>
             <InputField
+              ui={ui}
               id="code"
               label={ui.loginPage.loginLabel}
               icon={<FaTicketAlt className="text-gray-400" />}
@@ -120,6 +122,7 @@ const LoginForm = ({ ui, loginType, projectData }) => {
               disabled={isSubmitting}
             />
             <InputField
+              ui={ui}
               id="password"
               label={ui.loginPage.passwordLabel}
               icon={<FaLock className="text-gray-400" />}
@@ -136,6 +139,7 @@ const LoginForm = ({ ui, loginType, projectData }) => {
 
         {loginType === "mobile" && (
           <InputField
+            ui={ui}
             id="mobile"
             label={ui.loginPage.mobileLabel}
             icon={<FaMobileAlt className="text-gray-400" />}
@@ -149,7 +153,7 @@ const LoginForm = ({ ui, loginType, projectData }) => {
           />
         )}
 
-        {errors.form && (
+        {(errors.form && ui?.ErroMessageConfig?.isErrorMessageEnable) && (
           <p className="text-red-600 dark:text-red-400 text-sm">
             {errors.form}
           </p>

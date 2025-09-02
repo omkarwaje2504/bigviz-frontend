@@ -59,6 +59,9 @@ const Config = async (projectData) => {
       SubmitButtonLable:projectData?.config?.theme?.doctor_submit_button_label || "Submit",
       MobileInputLable:projectData?.config?.theme?.doctor_mobile_number_label || "Mobile Number",
     },
+    ErroMessageConfig:{
+      isErrorMessageEnable: projectData?.config?.theme?.show_error_message ?? true,
+    },
     HomePageLables:{
       prevButtonLable:projectData?.config?.theme?.home_prev_btn_label || "prev",
       nextButtonLable: projectData?.config?.theme?.home_next_btn_label || "next",

@@ -73,6 +73,7 @@ const RenderStepContent = ({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
               <InputField
+                ui={ui}
                 id="name"
                 label={`${projectData?.config?.doctor?.label || "Doctor Name"} *`}
                 type="text"
@@ -92,6 +93,7 @@ const RenderStepContent = ({
             {!projectData?.features?.includes("disable_mobile_number") && (
               <div>
                 <InputField
+                  ui={ui}
                   id="mobile"
                   label={`${ui?.DoctorRegistrationForm?.MobileInputLable}*`}
                   type="tel"
@@ -138,6 +140,7 @@ const RenderStepContent = ({
               field?.additional_config?.includes("backstage_only") ? null : (
                 <InputField
                   key={field.id}
+                  ui={ui}
                   id={field.name}
                   label={
                     field.display_name +
@@ -217,6 +220,7 @@ const RenderStepContent = ({
           {/* Theater Preferences */}
           <div>
             <InputField
+              ui={ui}
               id="theaterPreference"
               label="Select Cinema Locations*"
               type="select"
@@ -245,6 +249,7 @@ const RenderStepContent = ({
           <div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <InputField
+                ui={ui}
                 id="showDates"
                 label="Advertisement Start Date*"
                 type="date"
@@ -256,6 +261,7 @@ const RenderStepContent = ({
               />
 
               <InputField
+                ui={ui}
                 id="showTimes"
                 label="Select Run Duration*"
                 type="select"

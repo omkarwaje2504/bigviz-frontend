@@ -83,7 +83,7 @@ export default function RegisterNewCandidate({ projectData, projectId, ui }) {
       router.push(`game`);
       setIsSubmitLoading(false);
     } else {
-      router.push(`render-magic-moment`);
+      router.push(`homepage`);
       setIsSubmitLoading(false);
     }
   };

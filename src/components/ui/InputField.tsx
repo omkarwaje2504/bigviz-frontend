@@ -491,7 +491,8 @@ const InputField: React.FC<InputFieldProps> = ({
             {value.length}/{maxLength}
           </p>
         )}
-      {errorMessage && <p className={inputStyles.errorText}>{errorMessage}</p>}
+        
+      {(errorMessage && ui?.ErroMessageConfig?.isErrorMessageEnable) && <p className={inputStyles.errorText}>{errorMessage}</p>}
     </div>
   );
 };
