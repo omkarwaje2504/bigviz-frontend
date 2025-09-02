@@ -23,16 +23,19 @@ const cleanName = (name) => {
 };
 
 const getMaxLengthFromRegex = (str) => {
-  const quantifierMatch = str?.match(/\{(\d+)\}/);
-  const prefixMatch = str?.match(/\((?:\d{2}\|?)+\)/);
+  if (!str) return undefined;
 
-  let total = 0;
+  const quantifierMatch = str.match(/\{(\d+)\}/);
+  const digitsCount = quantifierMatch ? parseInt(quantifierMatch[1], 10) : 0;
+
+  const prefixMatch = str.match(/\(([^)]+)\)/);
+  let prefixLength = 0;
   if (prefixMatch) {
-    total += prefixMatch[0]?.match(/\d{2}/)?.[0].length || 0;
+    const options = prefixMatch[1].split("|");
+    prefixLength = Math.max(...options.map((opt) => opt.length));
   }
-  if (quantifierMatch) {
-    total += parseInt(quantifierMatch[1], 10);
-  }
+
+  const total = prefixLength + digitsCount;
   return total > 0 ? total : undefined;
 };
 
@@ -85,12 +88,11 @@ const RenderStepContent = ({
                 }
               />
             </div>
-            {console.log(new RegExp(
-                      projectData?.config?.doctor?.regex?.replace(
-                        /^\/|\/$/g,
-                        "",
-                      ),
-                    ))}
+            {console.log(
+              new RegExp(
+                projectData?.config?.doctor?.regex?.replace(/^\/|\/$/g, ""),
+              ),
+            )}
 
             {!projectData?.features?.includes("disable_mobile_number") && (
               <div>
@@ -126,7 +128,9 @@ const RenderStepContent = ({
                     ),
                     message: `Enter a valid mobile number`,
                     trim: true,
-                  
+                    maxLength: getMaxLengthFromRegex(
+                      projectData?.config?.doctor?.regex,
+                    ),
                   }}
                   onValidationChange={handleValidationChange("mobile_number")}
                 />
