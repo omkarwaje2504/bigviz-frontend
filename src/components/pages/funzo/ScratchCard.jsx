@@ -66,7 +66,7 @@ function ScratchCard({ projectData, projectId, ui }) {
     if (!empData) {
       router.push(`/${projectId}`);
     }
-    if(!formData){
+    if (!formData) {
       router.push(`/${projectId}/homepage`);
     }
   }, []);
@@ -172,17 +172,16 @@ function ScratchCard({ projectData, projectId, ui }) {
     "scratch-card-french": {
       title: (
         <>
-         Décoder les soins vaginaux avec Gogynax
+          Décoder les soins vaginaux avec Gogynax
           <br />
           {/* <span className="text-yellow-200">with Gogynax</span> */}
         </>
       ),
-      tagline:
-        "Redonne confort et confiance​",
+      tagline: "Redonne confort et confiance​",
       info: (
         <>
           <span className="font-medium text-[#ec008c] text-2xl lg:text-sm xl:text-xl">
-           Clotrimazole-
+            Clotrimazole-
           </span>{" "}
           Un antifongique de confiance, offre un soulagement,
           <br />
@@ -197,24 +196,24 @@ function ScratchCard({ projectData, projectId, ui }) {
 
   const congratsConfig = {
     "scratch-card-zambia": {
-      congratulationstext:"Congratulations",
-      message:"You have contributed to Women's health!",
-      gobackButtonlabel:"Go back"
+      congratulationstext: "Congratulations",
+      message: "You have contributed to Women's health!",
+      gobackButtonlabel: "Go back",
     },
     "scratch-card-ghana": {
-      congratulationstext:"Congratulations",
-      message:"You have contributed to Women's health!",
-      gobackButtonlabel:"Go back"
+      congratulationstext: "Congratulations",
+      message: "You have contributed to Women's health!",
+      gobackButtonlabel: "Go back",
     },
     "scratch-card-french": {
-      congratulationstext:"Félicitations",
-      message:"Vous avez contribué à la santé des femmes !",
-      gobackButtonlabel:"revenir"
+      congratulationstext: "Félicitations",
+      message: "Vous avez contribué à la santé des femmes !",
+      gobackButtonlabel: "revenir",
     },
     "scratch-card-portuguese": {
-      congratulationstext:"Parabéns",
-      message:"Você contribuiu para a saúde da mulher!",
-      gobackButtonlabel:"volte"
+      congratulationstext: "Parabéns",
+      message: "Você contribuiu para a saúde da mulher!",
+      gobackButtonlabel: "volte",
     },
   };
 
@@ -860,7 +859,7 @@ function ScratchCard({ projectData, projectId, ui }) {
             {showFront && (
               <div className="absolute inset-0 flex justify-center rounded-2xl overflow-hidden backface-hidden">
                 <div className="w-full h-full flex flex-col justify-center items-center bg-pink-50 border-2 border-pink-500 gap-6 rounded-2xl">
-                  <div className="text-center px-5 w-full h-full flex flex-col gap-10 justify-center items-center text-white p-1 mt-2">
+                  <div className="text-center px-5 w-full h-full flex flex-col gap-10 justify-center items-center text-white p-1 mt-2 relative">
                     <div className="w-full bg-white shadow-2xl overflow-hidden mb-2 rounded-xl">
                       <div className="h-full flex flex-col">
                         <div
@@ -891,11 +890,13 @@ function ScratchCard({ projectData, projectId, ui }) {
                         />
                       </div>
                     </div>
-                    <img
-                      src={cardFrontMap[projectData?.project_hash]?.packshot}
-                      alt="Packshot"
-                      className="mx-auto mb-3 w-full h-1/2 lg:w-1/2"
-                    />
+                
+                      <img
+                        src={cardFrontMap[projectData?.project_hash]?.packshot}
+                        alt="Packshot"
+                        className="mx-auto  mb-3 w-full"
+                      />
+                  
                   </div>
                 </div>
               </div>
@@ -936,13 +937,13 @@ function ScratchCard({ projectData, projectId, ui }) {
                 className="w-fit px-3 py-2 mx-auto text-white bg-blue-700 text-lg border rounded"
                 onClick={handleGoBack}
               >
-                {congratsConfig?.[projectId]?.gobackButtonlabel} 
+                {congratsConfig?.[projectId]?.gobackButtonlabel}
               </button>
             </div>
           </div>
         </div>
       )}
-      
+
       <style jsx>{`
         canvas {
           touch-action: none !important;
