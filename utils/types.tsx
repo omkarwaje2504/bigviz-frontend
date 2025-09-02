@@ -102,6 +102,8 @@ export interface ProjectInfo {
       country_codes: string[];
       prefix: string;
       regex: string;
+      preview_enabled: boolean;
+      download_enabled: boolean;
     };
     employee: {
       approval_roles: string[];

@@ -65,6 +65,7 @@ const Config = async (projectData) => {
       gridButtonLable: projectData?.config?.theme?.home_grid_label || "Grid",
       listButtonLable: projectData?.config?.theme?.home_list_label || "List",
       serachHereLable: projectData?.config?.theme?.home_search_here_label ||"Search Here...",
+      addedonLabel: projectData?.config?.theme?.added_on_label ||"Added On"
     },
     Dashboard: {
       HomePageTitle: projectData?.config?.theme?.home_title?  projectData?.config?.theme?.home_title : "Doctor Management",

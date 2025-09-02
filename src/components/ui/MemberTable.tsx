@@ -72,7 +72,7 @@ const MemberTable: React.FC<MemberTableProps> = ({
     setCurrentPage(1);
   }, [searchTerm, members]);
 
-  const totalPages = Math.ceil(filteredMembers.length / ITEMS_PER_PAGE);
+  const totalPages = Math.ceil(filteredMembers?.length / ITEMS_PER_PAGE);
   const paginatedMembers = filteredMembers.slice(
     (currentPage - 1) * ITEMS_PER_PAGE,
     currentPage * ITEMS_PER_PAGE,
@@ -839,7 +839,7 @@ const MemberTable: React.FC<MemberTableProps> = ({
                       {member.mobile}
                     </p>
                     <p className="text-xs text-gray-500 dark:text-gray-400">
-                      Added on{" "}
+                      {ui?.HomePageLables?.addedonLabel}{" "}
                       {new Date(
                         member.updated_at ?? member.created_at,
                       ).toLocaleDateString()}
@@ -1121,7 +1121,7 @@ const MemberTable: React.FC<MemberTableProps> = ({
       )}
 
       {/* Empty state */}
-      {filteredMembers.length === 0 && (
+      {filteredMembers?.length === 0 && (
         <div className="mt-6 text-center text-gray-400">
           <FaFilm className="text-4xl mx-auto mb-2" />
           <p>No members match your search.</p>

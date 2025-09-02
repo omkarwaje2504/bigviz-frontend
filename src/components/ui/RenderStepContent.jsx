@@ -85,6 +85,12 @@ const RenderStepContent = ({
                 }
               />
             </div>
+            {console.log(new RegExp(
+                      projectData?.config?.doctor?.regex?.replace(
+                        /^\/|\/$/g,
+                        "",
+                      ),
+                    ))}
 
             {!projectData?.features?.includes("disable_mobile_number") && (
               <div>
@@ -120,9 +126,7 @@ const RenderStepContent = ({
                     ),
                     message: `Enter a valid mobile number`,
                     trim: true,
-                    maxLength: getMaxLengthFromRegex(
-                      projectData?.config?.doctor?.regex,
-                    ),
+                  
                   }}
                   onValidationChange={handleValidationChange("mobile_number")}
                 />
