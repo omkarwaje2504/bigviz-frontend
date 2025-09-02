@@ -172,21 +172,21 @@ function ScratchCard({ projectData, projectId, ui }) {
     "scratch-card-french": {
       title: (
         <>
-          Décoder les soins vaginaux avec Azimyn FS kit
+         Décoder les soins vaginaux avec Gogynax
           <br />
           {/* <span className="text-yellow-200">with Gogynax</span> */}
         </>
       ),
       tagline:
-        "Traitez les deux, prévenez les récidives - rapide, simple et sans dérangement",
+        "Redonne confort et confiance​",
       info: (
         <>
           <span className="font-medium text-[#ec008c] text-2xl lg:text-sm xl:text-xl">
-            La trithérapie:
+           Clotrimazole-
           </span>{" "}
-          Azithromycine + Secnidazole + Fluconazole -
+          Un antifongique de confiance, offre un soulagement,
           <br />
-          offre une couverture complète en une seule dose.
+          là où il est nécessaire​
         </>
       ),
       packshot: `/game/scratch-card/${projectId}/packet.webp`,
@@ -292,12 +292,12 @@ function ScratchCard({ projectData, projectId, ui }) {
         text: "A terapia para um único agente patogénico pode não ser suficiente... O meu tratamento abrange fungos, bactérias e protozoários? ",
         audioFile: `/game/scratch-card/${projectId}/sounds/doctor1.m4a`,
       },
-      {
-        id: 3,
-        sender: "doctor",
-        text: "I'll prescribe an antifungal treatment for you. Guess which",
-        audioFile: `/game/scratch-card/${projectId}/sounds/doctor2.m4a`,
-      },
+      // {
+      //   id: 3,
+      //   sender: "doctor",
+      //   text: "I'll prescribe an antifungal treatment for you. Guess which",
+      //   audioFile: `/game/scratch-card/${projectId}/sounds/doctor2.m4a`,
+      // },
     ],
   };
 

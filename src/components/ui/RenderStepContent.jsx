@@ -88,12 +88,7 @@ const RenderStepContent = ({
                 }
               />
             </div>
-            {console.log(
-              new RegExp(
-                projectData?.config?.doctor?.regex?.replace(/^\/|\/$/g, ""),
-              ),
-            )}
-
+            
             {!projectData?.features?.includes("disable_mobile_number") && (
               <div>
                 <InputField
