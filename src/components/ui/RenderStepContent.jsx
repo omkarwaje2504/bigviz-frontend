@@ -25,19 +25,24 @@ const cleanName = (name) => {
 const getMaxLengthFromRegex = (str) => {
   if (!str) return undefined;
 
-  const quantifierMatch = str.match(/\{(\d+)\}/);
-  const digitsCount = quantifierMatch ? parseInt(quantifierMatch[1], 10) : 0;
+  let total = 0;
 
-  const prefixMatch = str.match(/\(([^)]+)\)/);
-  let prefixLength = 0;
-  if (prefixMatch) {
-    const options = prefixMatch[1].split("|");
-    prefixLength = Math.max(...options.map((opt) => opt.length));
+  const quantifiers = [...str.matchAll(/\{(\d+)\}/g)];
+  total += quantifiers.reduce((sum, m) => sum + parseInt(m[1], 10), 0);
+
+  const charClasses = [...str.matchAll(/\[[^\]]+\](?!\{)/g)];
+  total += charClasses.length; 
+
+  const groups = [...str.matchAll(/\(([^)]+)\)/g)];
+  for (const g of groups) {
+    const options = g[1].split("|");
+    const allSingleChar = options.every((opt) => opt.length === 1);
+    total += allSingleChar ? 1 : Math.max(...options.map((opt) => opt.length));
   }
 
-  const total = prefixLength + digitsCount;
   return total > 0 ? total : undefined;
 };
+
 
 const RenderStepContent = ({
   ui,
@@ -89,7 +94,16 @@ const RenderStepContent = ({
                 }
               />
             </div>
-            
+            {
+              console.log(
+                new RegExp(
+                        projectData?.config?.doctor?.regex?.replace(
+                          /^\/|\/$/g,
+                          "",
+                        ),
+                      )
+              )
+            }
             {!projectData?.features?.includes("disable_mobile_number") && (
               <div>
                 <InputField
