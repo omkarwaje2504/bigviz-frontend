@@ -1,5 +1,13 @@
 /** @type {import('next').NextConfig} */
-const nextConfig = {
+const withPWA = require("next-pwa")({
+  dest: "public", // service worker files will be generated in public/
+  disable: process.env.NODE_ENV === "development",
+  register: true,
+  skipWaiting: true,
+});
+
+/** @type {import('next').NextConfig} */
+const nextConfig = withPWA({
   async headers() {
     return [
       {
@@ -63,6 +71,6 @@ const nextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
-};
+});
 
 module.exports = nextConfig;

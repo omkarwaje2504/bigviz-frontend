@@ -34,7 +34,7 @@ function ScratchCard({ projectData, projectId, ui }) {
   const [isPatientPlaying, setIsPatientPlaying] = useState(false);
   const [isDoctorPlaying, setIsDoctorPlaying] = useState(false);
 
-  const [showScratchCard, setShowScratchCard] = useState(false);
+  const [showScratchCard, setShowScratchCard] = useState(true);
   const [scratchProgress, setScratchProgress] = useState(0);
   const [isDisappearing, setIsDisappearing] = useState(false);
   const [conversationComplete, setConversationComplete] = useState(false);
@@ -116,7 +116,7 @@ function ScratchCard({ projectData, projectId, ui }) {
             Clotrimazole
           </span>{" "}
           — A trusted antifungal,
-          <br />
+       
           offers relief, right where it's needed
         </>
       ),
@@ -139,7 +139,7 @@ function ScratchCard({ projectData, projectId, ui }) {
             Clotrimazole
           </span>{" "}
           — A trusted antifungal,
-          <br />
+         
           offers relief, right where it's needed
         </>
       ),
@@ -860,7 +860,7 @@ function ScratchCard({ projectData, projectId, ui }) {
               <div className="absolute inset-0 flex justify-center rounded-2xl overflow-hidden backface-hidden">
                 <div className="w-full h-full flex flex-col justify-center items-center bg-pink-50 border-2 border-pink-500 gap-6 rounded-2xl">
                   <div className="text-center px-5 w-full h-full flex flex-col gap-10 justify-center items-center text-white p-1 mt-2 relative">
-                    <div className="w-full bg-white shadow-2xl overflow-hidden mb-2 rounded-xl">
+                    <div className="w-full bg-white shadow-2xl mb-2 rounded-xl">
                       <div className="h-full flex flex-col">
                         <div
                           className="px-1 py-5 xl:py-3 text-white text-center"
@@ -868,7 +868,7 @@ function ScratchCard({ projectData, projectId, ui }) {
                             background: `linear-gradient(to right, ${cardFrontMap[projectData?.project_hash]?.gradientFrom}, ${cardFrontMap[projectData?.project_hash]?.gradientTo})`,
                           }}
                         >
-                          <h2 className="text-lg  md:text-2xl lg:text-sm xl:text-xl font-bold leading-tight">
+                          <h2 className="text-lg md:text-2xl lg:text-sm xl:text-2xl font-bold leading-tight">
                             {cardFrontMap[projectData?.project_hash]?.title}
                           </h2>
                         </div>
@@ -876,8 +876,8 @@ function ScratchCard({ projectData, projectId, ui }) {
                           <p className="text-[#ec008c] font-semibold text-lg md:text-2xl lg:text-sm xl:text-xl mb-4">
                             {cardFrontMap[projectData?.project_hash]?.tagline}
                           </p>
-                          <div className="bg-white rounded-xl px-4 py-2 border-l-8 mb-2 border-[#ec008c] shadow-lg max-w-xl mx-auto">
-                            <p className="text-lg md:text-2xl lg:text-sm xl:text-lg text-gray-700 leading-relaxed">
+                          <div className="bg-white rounded-xl px-4 py-2 border-l-8 mb-2 border-[#ec008c] shadow-lg w-full mx-auto">
+                            <p className="text-lg md:text-2xl lg:text-sm xl:text-lg text-gray-700 leading-relaxed w-full ">
                               {cardFrontMap[projectData?.project_hash]?.info}
                             </p>
                           </div>
@@ -923,7 +923,7 @@ function ScratchCard({ projectData, projectId, ui }) {
         </div>
       )}
 
-      {showCertificate && (
+      {/* {showCertificate && (
         <div className="absolute px-4 inset-0 flex items-center justify-center z-50 bg-black/60">
           <div className="bg-white p-8 rounded-2xl shadow-2xl text-center max-w-lg animate-fadeIn">
             <h2 className="text-3xl font-bold text-[#ec008c] mb-4">
@@ -942,7 +942,7 @@ function ScratchCard({ projectData, projectId, ui }) {
             </div>
           </div>
         </div>
-      )}
+      )} */}
 
       <style jsx>{`
         canvas {

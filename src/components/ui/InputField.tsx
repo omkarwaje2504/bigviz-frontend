@@ -34,7 +34,7 @@ type InputFieldProps = {
     | "dropdown"
     | "date";
   value: string;
-  countryCode: string;
+  countryCode?: string;
   onChange: (
     e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>,
   ) => void;
@@ -51,7 +51,7 @@ type InputFieldProps = {
   onValidationChange?: (isValid: boolean) => void;
   prefix?: string;
   prefixOptions?: string[];
-  onPrefixChange: (
+  onPrefixChange?: (
     e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>,
   ) => void;
 };
