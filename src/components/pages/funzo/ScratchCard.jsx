@@ -180,11 +180,11 @@ function ScratchCard({ projectData, projectId, ui }) {
       tagline: "Redonne confort et confiance​",
       info: (
         <>
-          <span className="font-medium text-[#ec008c] text-2xl lg:text-sm xl:text-xl">
+          <span className="font-medium text-[#ec008c] text-2xl lg:text-xl xl:text-xl">
             Clotrimazole-
           </span>{" "}
           Un antifongique de confiance, offre un soulagement,
-          <br />
+       
           là où il est nécessaire​
         </>
       ),
@@ -860,7 +860,7 @@ function ScratchCard({ projectData, projectId, ui }) {
               <div className="absolute inset-0 flex justify-center rounded-2xl overflow-hidden backface-hidden">
                 <div className="w-full h-full flex flex-col justify-center items-center bg-pink-50 border-2 border-pink-500 gap-6 rounded-2xl">
                   <div className="text-center px-5 w-full h-full flex flex-col gap-10 justify-center items-center text-white p-1 mt-2 relative">
-                    <div className="w-full bg-white shadow-2xl mb-2 rounded-xl">
+                    <div className="w-full mb-2 rounded-xl">
                       <div className="h-full flex flex-col">
                         <div
                           className="px-1 py-5 xl:py-3 text-white text-center"
@@ -868,16 +868,16 @@ function ScratchCard({ projectData, projectId, ui }) {
                             background: `linear-gradient(to right, ${cardFrontMap[projectData?.project_hash]?.gradientFrom}, ${cardFrontMap[projectData?.project_hash]?.gradientTo})`,
                           }}
                         >
-                          <h2 className="text-lg md:text-2xl lg:text-sm xl:text-2xl font-bold leading-tight">
+                          <h2 className="text-lg md:text-2xl lg:text-xl xl:text-2xl font-bold leading-tight">
                             {cardFrontMap[projectData?.project_hash]?.title}
                           </h2>
                         </div>
-                        <div className="flex-1 px-1 py-2 flex flex-col justify-center text-center bg-gradient-to-b from-pink-50 to-purple-50">
-                          <p className="text-[#ec008c] font-semibold text-lg md:text-2xl lg:text-sm xl:text-xl mb-4">
+                        <div className="flex-1 px-1 py-2 flex flex-col justify-center text-center ">
+                          <p className="text-[#ec008c] font-semibold text-lg md:text-2xl lg:text-2xl xl:text-2xl mb-4 pt-2">
                             {cardFrontMap[projectData?.project_hash]?.tagline}
                           </p>
                           <div className="bg-white rounded-xl px-4 py-2 border-l-8 mb-2 border-[#ec008c] shadow-lg w-full mx-auto">
-                            <p className="text-lg md:text-2xl lg:text-sm xl:text-lg text-gray-700 leading-relaxed w-full ">
+                            <p className="text-lg md:text-2xl lg:text-xl xl:text-lg text-gray-700 leading-relaxed w-full pt-1">
                               {cardFrontMap[projectData?.project_hash]?.info}
                             </p>
                           </div>
@@ -922,8 +922,8 @@ function ScratchCard({ projectData, projectId, ui }) {
           </div>
         </div>
       )}
-
-      {/* {showCertificate && (
+{/* 
+      {showCertificate && (
         <div className="absolute px-4 inset-0 flex items-center justify-center z-50 bg-black/60">
           <div className="bg-white p-8 rounded-2xl shadow-2xl text-center max-w-lg animate-fadeIn">
             <h2 className="text-3xl font-bold text-[#ec008c] mb-4">
