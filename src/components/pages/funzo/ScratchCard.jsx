@@ -877,12 +877,7 @@ function ScratchCard({ projectData, projectId, ui }) {
                             </p>
                           </div>
                         </div>
-                        <div
-                          className="h-2 sm:h-3"
-                          style={{
-                            background: `linear-gradient(to right, ${cardFrontMap[projectData?.project_hash]?.gradientFrom}, ${cardFrontMap[projectData?.project_hash]?.gradientTo})`,
-                          }}
-                        />
+                      
                       </div>
                     </div>
 
