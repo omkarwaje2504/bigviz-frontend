@@ -34,7 +34,7 @@ function ScratchCard({ projectData, projectId, ui }) {
   const [isPatientPlaying, setIsPatientPlaying] = useState(false);
   const [isDoctorPlaying, setIsDoctorPlaying] = useState(false);
 
-  const [showScratchCard, setShowScratchCard] = useState(true);
+  const [showScratchCard, setShowScratchCard] = useState(false);
   const [scratchProgress, setScratchProgress] = useState(0);
   const [isDisappearing, setIsDisappearing] = useState(false);
   const [conversationComplete, setConversationComplete] = useState(false);
@@ -115,9 +115,7 @@ function ScratchCard({ projectData, projectId, ui }) {
           <span className="font-medium text-[#ec008c] text-2xl lg:text-sm xl:text-xl">
             Clotrimazole
           </span>{" "}
-          — A trusted antifungal,
-       
-          offers relief, right where it's needed
+          — A trusted antifungal, offers relief, right where it's needed
         </>
       ),
       packshot: `/game/scratch-card/${projectId}/packet.webp`,
@@ -138,9 +136,7 @@ function ScratchCard({ projectData, projectId, ui }) {
           <span className="font-medium text-[#ec008c] text-2xl lg:text-sm xl:text-xl">
             Clotrimazole
           </span>{" "}
-          — A trusted antifungal,
-         
-          offers relief, right where it's needed
+          — A trusted antifungal, offers relief, right where it's needed
         </>
       ),
       packshot: `/game/scratch-card/${projectId}/packet.webp`,
@@ -183,9 +179,8 @@ function ScratchCard({ projectData, projectId, ui }) {
           <span className="font-medium text-[#ec008c] text-2xl lg:text-xl xl:text-xl">
             Clotrimazole-
           </span>{" "}
-          Un antifongique de confiance, offre un soulagement,
-       
-          là où il est nécessaire​
+          Un antifongique de confiance, offre un soulagement, là où il est
+          nécessaire​
         </>
       ),
       packshot: `/game/scratch-card/${projectId}/packet.webp`,
@@ -890,13 +885,12 @@ function ScratchCard({ projectData, projectId, ui }) {
                         />
                       </div>
                     </div>
-                
-                      <img
-                        src={cardFrontMap[projectData?.project_hash]?.packshot}
-                        alt="Packshot"
-                        className="mx-auto  mb-3 w-full"
-                      />
-                  
+
+                    <img
+                      src={cardFrontMap[projectData?.project_hash]?.packshot}
+                      alt="Packshot"
+                      className="mx-auto  mb-3 w-full"
+                    />
                   </div>
                 </div>
               </div>
@@ -922,7 +916,7 @@ function ScratchCard({ projectData, projectId, ui }) {
           </div>
         </div>
       )}
-{/* 
+
       {showCertificate && (
         <div className="absolute px-4 inset-0 flex items-center justify-center z-50 bg-black/60">
           <div className="bg-white p-8 rounded-2xl shadow-2xl text-center max-w-lg animate-fadeIn">
@@ -942,7 +936,7 @@ function ScratchCard({ projectData, projectId, ui }) {
             </div>
           </div>
         </div>
-      )} */}
+      )}
 
       <style jsx>{`
         canvas {
