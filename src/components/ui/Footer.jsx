@@ -16,12 +16,12 @@ const Footer = ({ projectData }) => {
             </span>
           </div>
           {projectData?.bottom_banner && (
-            <div className="flex space-x-6">
+            <div className="flex space-x-6 p-2 bg-white">
               <Image
                 src={`https://pub-0b6394cfeda24bf196c98e1746afe09b.r2.dev/${projectData?.bottom_banner}`}
                 alt="Sai Logo"
-                width={150}
-                height={50}
+                width={250}
+                height={70}
                 className=""
               />
             </div>
@@ -32,7 +32,7 @@ const Footer = ({ projectData }) => {
             <Image
               src={projectData?.company?.logo || "/sai-logo.png"}
               alt="Sai Logo"
-              width={150}
+              width={120}
               height={50}
               className=""
             />
