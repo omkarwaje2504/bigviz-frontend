@@ -38,7 +38,6 @@ export default function RegisterNewCandidate({ projectData, projectId, ui }) {
   const [formData, setFormData] = useState({
     name: "",
     prefix: "Dr",
-    mobile: 0,
     photo: null,
   });
 
