@@ -105,7 +105,6 @@ function ScratchCard({ projectData, projectId, ui }) {
       title: (
         <>
           Decode the vaginal care
-          <br />
           <span className="text-yellow-200">with Gogynax</span>
         </>
       ),
@@ -126,7 +125,6 @@ function ScratchCard({ projectData, projectId, ui }) {
       title: (
         <>
           Decode the vaginal care
-          <br />
           <span className="text-yellow-200">with Gogynax</span>
         </>
       ),
@@ -817,11 +815,11 @@ function ScratchCard({ projectData, projectId, ui }) {
       )}
 
       {!showScratchCard && (
-        <div className="absolute bottom-[45%] md:bottom-[55%] lg:top-[10%] w-full max-h-[40%] overflow-y-auto flex flex-col px-5 lg:px-32 py-2 space-y-2 z-20">
+        <div className="absolute bottom-[45%] md:bottom-[55%] lg:top-[8%] w-full max-h-[40%] overflow-y-auto flex flex-col px-5 lg:px-32 py-2 space-y-2 z-20">
           {messages.map((msg, idx) => (
             <div
               key={msg.id}
-              className={`w-[50%] md:w-[50%] h-[80%] md:h-[85%] lg:w-[40%] lg:h-[80%] ${
+              className={`w-[50%] md:w-[45%] h-[80%] md:h-[85%] lg:w-[35%] lg:h-[80%] ${
                 msg.sender === "patient"
                   ? "self-start rounded-bl-none relative "
                   : "self-end rounded-br-none relative"
@@ -855,7 +853,7 @@ function ScratchCard({ projectData, projectId, ui }) {
               <div className="absolute inset-0 flex justify-center rounded-2xl overflow-hidden backface-hidden">
                 <div className="w-full h-full flex flex-col justify-center items-center bg-pink-50 border-2 border-pink-500 gap-6 rounded-2xl">
                   <div className="text-center px-5 w-full h-full flex flex-col gap-10 justify-center items-center text-white p-1 mt-2 relative">
-                    <div className="w-full mb-2 rounded-xl">
+                    <div className="w-full mb-1 rounded-xl">
                       <div className="h-full flex flex-col">
                         <div
                           className="px-1 py-5 xl:py-3 text-white text-center"
