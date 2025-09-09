@@ -104,14 +104,13 @@ function ScratchCard({ projectData, projectId, ui }) {
     "scratch-card-zambia": {
       title: (
         <>
-          Decode the vaginal care
-          <span className="text-yellow-200">with Gogynax</span>
+          Decode the vaginal care {" "}<span className="text-yellow-200">with Gogynax</span>
         </>
       ),
       tagline: "Restores comfort and confidence",
       info: (
         <>
-          <span className="font-medium text-[#ec008c] text-2xl lg:text-sm xl:text-xl">
+          <span className="font-medium text-[#ec008c] text-2xl lg:text-xl xl:text-xl">
             Clotrimazole
           </span>{" "}
           — A trusted antifungal, offers relief, right where it's needed
@@ -124,14 +123,13 @@ function ScratchCard({ projectData, projectId, ui }) {
     "scratch-card-ghana": {
       title: (
         <>
-          Decode the vaginal care
-          <span className="text-yellow-200">with Gogynax</span>
+          Decode the vaginal care {" "}<span className="text-yellow-200">with Gogynax</span>
         </>
       ),
       tagline: "Restores comfort and confidence",
       info: (
         <>
-          <span className="font-medium text-[#ec008c] text-2xl lg:text-sm xl:text-xl">
+          <span className="font-medium text-[#ec008c] text-2xl lg:text-xl xl:text-xl">
             Clotrimazole
           </span>{" "}
           — A trusted antifungal, offers relief, right where it's needed
@@ -816,10 +814,11 @@ function ScratchCard({ projectData, projectId, ui }) {
 
       {!showScratchCard && (
         <div className="absolute bottom-[45%] md:bottom-[55%] lg:top-[8%] w-full max-h-[40%] overflow-y-auto flex flex-col px-5 lg:px-32 py-2 space-y-2 z-20">
+          {/* w-[50%] md:w-[45%] h-[80%] md:h-[85%] lg:w-[35%] lg:h-[80%] */}
           {messages.map((msg, idx) => (
             <div
               key={msg.id}
-              className={`w-[50%] md:w-[45%] h-[80%] md:h-[85%] lg:w-[35%] lg:h-[80%] ${
+              className={`w-[50%] md:w-[45%] h-[80%] md:h-[85%] lg:w-[30%] lg:h-[80%] ${
                 msg.sender === "patient"
                   ? "self-start rounded-bl-none relative "
                   : "self-end rounded-br-none relative"
@@ -852,11 +851,11 @@ function ScratchCard({ projectData, projectId, ui }) {
             {showFront && (
               <div className="absolute inset-0 flex justify-center rounded-2xl overflow-hidden backface-hidden">
                 <div className="w-full h-full flex flex-col justify-center items-center bg-pink-50 border-2 border-pink-500 gap-6 rounded-2xl">
-                  <div className="text-center px-5 w-full h-full flex flex-col gap-10 justify-center items-center text-white p-1 mt-2 relative">
-                    <div className="w-full mb-1 rounded-xl">
+                  <div className="text-center px-5 w-full h-full flex flex-col gap-1 justify-center items-center text-white p-1 mt-2 relative">
+                    <div className="w-full mb-1 mt-5 lg:mt-10 rounded-xl">
                       <div className="h-full flex flex-col">
                         <div
-                          className="px-1 py-5 xl:py-3 text-white text-center"
+                          className="px-1 py-1 xl:py-3 text-white text-center"
                           style={{
                             background: `linear-gradient(to right, ${cardFrontMap[projectData?.project_hash]?.gradientFrom}, ${cardFrontMap[projectData?.project_hash]?.gradientTo})`,
                           }}
