@@ -28,17 +28,17 @@ const FormNavigationButtons = ({
       formData.calendarData.every((item) => !!item.images[0]?.croppedImage));
 
   const isLastStepForProject =
-    projectType === "E-Video" ||
+    (projectType === "Evideo" &&  currentStep === 2 ) ||
     (disablePhotoUpload && currentStep === 1 && isPage1Valid) ||
     (projectType === "DeskCalendar" && currentStep === 2 && isPage2Valid) ||
     (projectType === "PhotoFrame" && currentStep === 2 && isPage2Valid) ||
-    (projectType !== "E-Video" && currentStep === 4);
+    (projectType !== "Evideo" && currentStep === 4);
 
   const canProceed =
     (currentStep === 1 && isPage1Valid) ||
     (currentStep === 2 && isPage2Valid) ||
-    (currentStep === 3 && projectType !== "E-Video");
-
+    (currentStep === 3 && projectType !== "Evideo");
+  console.log(isLastStepForProject,disablePhotoUpload,currentStep)
   const handleNext = () => {
     if (disablePhotoUpload && currentStep === 1) {
       setCurrentStep(99);

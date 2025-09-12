@@ -94,6 +94,9 @@ const Config = async (projectData) => {
     ApprovalPageTitle: {
       HomePageTitle: `${projectData?.name} Approvals`,
     },
+    EVideoConfigs: {
+      VideoID: projectData?.artworks?.[0]?.name
+    }
   };
 };
 
