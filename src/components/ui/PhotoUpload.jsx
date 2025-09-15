@@ -193,7 +193,7 @@ export default function PhotoUploadEditor({
     }));
   };
   const saveCroppedImage = async () => {
-    console.log("Saving cropped image...");
+    
     let canvas = null;
 
     if (editMode === "crop" && cropperRef.current) {
