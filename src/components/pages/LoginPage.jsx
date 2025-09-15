@@ -11,7 +11,6 @@ import { useRouter } from "next/navigation";
 import { GenerateCardImage } from "@services/GenerateCardImage";
 
 export default function LoginPage({ projectData, projectId, ui }) {
-  console.log(projectData)
   const [loading, setLoading] = useState(true);
   const [loginType, setLoginType] = useState("code");
   const router = useRouter();
@@ -54,6 +53,7 @@ export default function LoginPage({ projectData, projectId, ui }) {
       />
 
       <div className="flex-grow flex flex-col items-center justify-center px-4">
+         
         <div className="max-w-md w-full space-y-8 p-8 rounded-lg shadow-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 transition-all">
           <div className="text-center">
             <h2
@@ -68,6 +68,7 @@ export default function LoginPage({ projectData, projectId, ui }) {
               {ui.loginPage.subHeading}
             </p>
           </div>
+
           <LoginForm ui={ui} loginType={loginType} projectData={projectData} />
         </div>
       </div>
