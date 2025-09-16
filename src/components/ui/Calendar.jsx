@@ -1,865 +1,400 @@
 "use client";
 
-import { useEffect, useRef, useState, useCallback, useMemo } from "react";
-import {
-  FaCalendarAlt,
-  FaUpload,
-  FaCheck,
-  FaTimes,
-  FaImage,
-  FaSyncAlt,
-  FaCamera,
-  FaChevronLeft,
-  FaChevronRight,
-  FaPlay,
-  FaEye,
-  FaPlus,
-  FaEdit,
-  FaGripVertical,
-  FaSearchMinus,
-  FaSearchPlus,
-  FaRedo,
-  FaSlidersH,
-} from "react-icons/fa";
-import { Cropper, RectangleStencil } from "react-advanced-cropper";
-import "react-advanced-cropper/dist/style.css";
-import Button from "@components/ui/Button";
-import { DecryptData } from "@utils/cryptoUtils";
-import { useRouter } from "next/navigation";
-import UploadFile from "@services/uploadFile";
-import { getMimeType } from "advanced-cropper/extensions/mimes";
-import MyError from "@services/MyError";
-import { v4 as uuidv4 } from "uuid";
+import React, { useState, useRef, useCallback } from "react";
+import { MdDelete, MdFindReplace, MdDragIndicator } from "react-icons/md";
 
-const months = [
-  { name: "January", short: "Jan", emoji: "❄️", season: "winter" },
-  { name: "February", short: "Feb", emoji: "💖", season: "winter" },
-  { name: "March", short: "Mar", emoji: "🌸", season: "spring" },
-  { name: "April", short: "Apr", emoji: "🌷", season: "spring" },
-  { name: "May", short: "May", emoji: "🌺", season: "spring" },
-  { name: "June", short: "Jun", emoji: "☀️", season: "summer" },
-  { name: "July", short: "Jul", emoji: "🏖️", season: "summer" },
-  { name: "August", short: "Aug", emoji: "🌻", season: "summer" },
-  { name: "September", short: "Sep", emoji: "🍂", season: "autumn" },
-  { name: "October", short: "Oct", emoji: "🎃", season: "autumn" },
-  { name: "November", short: "Nov", emoji: "🦃", season: "autumn" },
-  { name: "December", short: "Dec", emoji: "🎄", season: "winter" },
+const CONFIG = {
+  maxImages: 12,
+  acceptedFormats: "image/*",
+  maxFileSize: 5 * 1024 * 1024,
+};
+
+const MONTH_NAMES = [
+  "Jan",
+  "Feb",
+  "Mar",
+  "Apr",
+  "May",
+  "Jun",
+  "Jul",
+  "Aug",
+  "Sep",
+  "Oct",
+  "Nov",
+  "Dec",
 ];
 
-// Mobile-optimized constants
-const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
-const SUPPORTED_FORMATS = [
-  "image/jpeg",
-  "image/jpg",
-  "image/png",
-  "image/webp",
-];
+const ImageCaptureComponent = () => {
+  const [selectedImages, setSelectedImages] = useState([]);
+  const [error, setError] = useState("");
+  const [draggedItem, setDraggedItem] = useState(null);
+  const [dragOverIndex, setDragOverIndex] = useState(null);
 
-// Mobile utility functions
-const getPhotoDims = (projectData) => {
-  try {
-    const firstArtwork = projectData?.artworks?.[0];
-    const settings = firstArtwork?.settings || {};
-    const w = Number(settings.photo_width) || 700;
-    const h = Number(settings.photo_height) || 700;
-    return { w, h };
-  } catch (error) {
-    return { w: 700, h: 700 };
-  }
-};
-
-const getImagesPerPage = (projectData) => {
-  try {
-    const firstArtwork = projectData?.artworks?.[0];
-    const settings = firstArtwork?.settings || {};
-    return Number(settings.images_per_page) || 1;
-  } catch (error) {
-    return 1;
-  }
-};
-
-const getMultiplePhotoSelection = (projectData) => {
-  try {
-    const firstArtwork = projectData?.artworks?.[0];
-    const settings = firstArtwork?.settings || {};
-    return Boolean(settings.multiplePhotoSelection);
-  } catch (error) {
-    return false;
-  }
-};
-
-const dataURLToBlob = (dataURL) => {
-  try {
-    const arr = dataURL.split(",");
-    if (arr.length !== 2) {
-      throw new Error("Invalid data URL format");
-    }
-
-    const mimeMatch = arr[0].match(/:([^;]+)/);
-    if (!mimeMatch) {
-      throw new Error("Invalid MIME type in data URL");
-    }
-
-    const mime = mimeMatch[1];
-    const bstr = atob(arr[1]);
-    let n = bstr.length;
-    const u8arr = new Uint8Array(n);
-
-    while (n--) {
-      u8arr[n] = bstr.charCodeAt(n);
-    }
-
-    return new Blob([u8arr], { type: mime });
-  } catch (error) {
-    MyError(error);
-    console.error("Error converting data URL to Blob:", error);
-    throw new Error("Failed to process image data");
-  }
-};
-
-const validateImageFile = (file) => {
-  if (!file) return { isValid: false, errors: ["No file selected"] };
-
-  const errors = [];
-  if (file.size > MAX_FILE_SIZE) {
-    errors.push(
-      `File too large (max ${Math.round(MAX_FILE_SIZE / (1024 * 1024))}MB)`,
-    );
-  }
-  if (!SUPPORTED_FORMATS.includes(file.type)) {
-    errors.push("Unsupported format");
-  }
-
-  return { isValid: errors.length === 0, errors };
-};
-
-// Linear distribution function - fills months sequentially
-const linearDistribute = (photos, imagesPerPage) => {
-  const result = new Array(12).fill(null).map(() => ({ images: [] }));
-
-  if (photos.length === 0) return result;
-
-  // Calculate how many photos each month should get
-  const totalSlots = 12 * imagesPerPage;
-  const photosToDistribute = Math.min(photos.length, totalSlots);
-
-  // Fill months linearly
-  let currentMonth = 0;
-  let currentSlotInMonth = 0;
-
-  for (let i = 0; i < photosToDistribute; i++) {
-    result[currentMonth].images.push(photos[i]);
-    currentSlotInMonth++;
-
-    // Move to next month if current month is full
-    if (currentSlotInMonth >= imagesPerPage) {
-      currentMonth++;
-      currentSlotInMonth = 0;
-
-      // Wrap around to beginning if we've filled all months
-      if (currentMonth >= 12) {
-        currentMonth = 0;
-      }
-    }
-  }
-
-  return result;
-};
-
-export default function MobileCalendarPage({
-  projectData,
-  formData,
-  setFormData,
-  projectId,
-  ui,
-}) {
-  // Get project settings
-  const imagesPerPage = useMemo(
-    () => getImagesPerPage(projectData),
-    [projectData],
-  );
-  const multiplePhotoSelection = useMemo(
-    () => getMultiplePhotoSelection(projectData),
-    [projectData],
-  );
-  const maxPhotos = useMemo(
-    () => (multiplePhotoSelection ? 12 * imagesPerPage : 12),
-    [multiplePhotoSelection, imagesPerPage],
-  );
-
-  // Mobile-optimized states
-  const [photos, setPhotos] = useState([]);
-  const [processingQueue, setProcessingQueue] = useState([]);
-  const [currentProcessingIndex, setCurrentProcessingIndex] = useState(0);
-
-  const [calendarData, setCalendarData] = useState(() => {
-    try {
-      const existingData = formData?.calendarData || [];
-      if (Array.isArray(existingData) && existingData.length === 12) {
-        return existingData;
-      }
-      return new Array(12).fill(null).map(() => ({ images: [] }));
-    } catch {
-      return new Array(12).fill(null).map(() => ({ images: [] }));
-    }
-  });
-
-  // Upload states
-  const [error, setError] = useState(null);
-  const [showCropper, setShowCropper] = useState(false);
-  const [currentCropImage, setCurrentCropImage] = useState(null);
-  const [editingImageId, setEditingImageId] = useState(null);
-
-  // Mobile-specific states
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [showSuccess, setShowSuccess] = useState(false);
-
-  // Refs
   const fileInputRef = useRef(null);
   const cameraInputRef = useRef(null);
-  const cropperRef = useRef(null);
 
-  const router = useRouter();
-  const { w: cropWidth, h: cropHeight } = useMemo(
-    () => getPhotoDims(projectData),
-    [projectData],
-  );
+  const handleImageSelection = useCallback(
+    (event, source = "gallery", replaceId = null) => {
+      const files = Array.from(event.target.files);
 
-  // Mobile calculations
-  const totalPhotos = useMemo(
-    () =>
-      photos.length +
-      calendarData.reduce(
-        (sum, month) => sum + (month?.images?.length || 0),
-        0,
-      ),
-    [photos, calendarData],
-  );
-useEffect(() => {
-  if (
-    calendarData.some((m) => m.images.length > 0) &&
-    JSON.stringify(calendarData) !== JSON.stringify(formData?.calendarData)
-  ) {
-    setFormData((prev) => ({ ...prev, calendarData }));
-  }
-}, [calendarData, formData?.calendarData, setFormData]);
+      if (files.length === 0) return;
 
-  // Auto-generate calendar when photos are processed
-  useEffect(() => {
-    const processedImages = photos
-      .filter((p) => p.processed)
-      .map((p) => p.data);
-    if (processedImages.length > 0) {
-      const distributedData = linearDistribute(processedImages, imagesPerPage);
-      setCalendarData(distributedData);
-    }
-  }, [photos, imagesPerPage]);
+      const currentCount = selectedImages.length;
+      const remainingSlots = CONFIG.maxImages - currentCount;
 
-
-  useEffect(() => {
-  // Only hydrate if formData has calendarData
-  if (formData?.calendarData?.length === 12) {
-    const restoredPhotos = formData.calendarData.flatMap((month) =>
-      (month.images || []).map((img) => ({
-        id: uuidv4(),
-        processed: true,
-        data: img,
-        preview: img.croppedImage, // fallback for preview grid
-      }))
-    );
-
-    if (restoredPhotos.length > 0) {
-      setPhotos(restoredPhotos);
-    }
-  }
-}, [formData]);
-
-
-  // File selection handler with limit enforcement
-  const handleFileSelect = useCallback(
-    (files) => {
-      const fileArray = Array.from(files);
-      const currentPhotoCount = photos.length;
-      const availableSlots = maxPhotos - currentPhotoCount;
-
-      if (availableSlots <= 0) {
-        setError(`Maximum ${maxPhotos} photos allowed`);
+      if (replaceId && files.length > 1) {
+        setError("You can only replace with one image at a time");
         return;
       }
 
-      // Limit files to available slots
-      const filesToProcess = fileArray.slice(0, availableSlots);
-      const skippedFiles = fileArray.length - filesToProcess.length;
+      let filesToProcess = files;
+      let warningMessage = "";
+
+      if (!replaceId) {
+        if (remainingSlots === 0) {
+          setError(
+            `Maximum limit of ${CONFIG.maxImages} images reached. Remove some images first.`,
+          );
+          return;
+        }
+
+        if (files.length > remainingSlots) {
+          filesToProcess = files.slice(0, remainingSlots);
+          warningMessage = `Only ${remainingSlots} images were added. You selected ${files.length} files but only ${remainingSlots} slots are available.`;
+        }
+      }
 
       const validFiles = [];
-      const errors = [];
+      const invalidFiles = [];
 
       filesToProcess.forEach((file) => {
-        const validation = validateImageFile(file);
-        if (validation.isValid) {
-          validFiles.push({
-            file,
-            id: uuidv4(),
-            preview: URL.createObjectURL(file),
-            processed: false,
-          });
+        if (file.size > CONFIG.maxFileSize) {
+          invalidFiles.push(
+            `${file.name} is too large (max ${CONFIG.maxFileSize / (1024 * 1024)}MB)`,
+          );
+        } else if (!file.type.startsWith("image/")) {
+          invalidFiles.push(`${file.name} is not a valid image format`);
         } else {
-          errors.push(`${file.name}: ${validation.errors.join(", ")}`);
+          validFiles.push(file);
         }
       });
 
-      if (errors.length > 0) {
-        setError(errors.join("; "));
-      }
-
-      if (skippedFiles > 0) {
+      if (invalidFiles.length > 0) {
+        const errorMsg = `Invalid files: ${invalidFiles.join(", ")}`;
         setError(
-          `${skippedFiles} files skipped (max ${maxPhotos} photos allowed)`,
+          warningMessage ? `${warningMessage}\n\nAlso, ${errorMsg}` : errorMsg,
         );
-      }
-
-      if (validFiles.length > 0) {
-        setPhotos((prev) => [...prev, ...validFiles]);
-
-        // Auto-crop first unprocessed photo
-        const firstUnprocessed =
-          validFiles.find((f) => !f.processed) || validFiles[0];
-        if (firstUnprocessed) {
-          setTimeout(() => {
-            setCurrentCropImage(firstUnprocessed);
-            setShowCropper(true);
-          }, 300);
-        }
-      }
-    },
-    [photos.length, maxPhotos],
-  );
-
-  // Camera and gallery handlers
-  const handleCameraCapture = useCallback(
-    (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-
-      if (photos.length >= maxPhotos) {
-        setError(`Maximum ${maxPhotos} photos allowed`);
         return;
       }
 
-      cameraInputRef.current?.click();
+      const processFiles = async () => {
+        const newImages = [];
+
+        for (const file of validFiles) {
+          const reader = new FileReader();
+          const base64Promise = new Promise((resolve) => {
+            reader.onload = () => resolve(reader.result);
+            reader.readAsDataURL(file);
+          });
+
+          const base64 = await base64Promise;
+          newImages.push({
+            id: replaceId || Date.now() + Math.random(),
+            src: base64,
+            name: file.name,
+            type: source,
+            file: file,
+          });
+        }
+
+        if (replaceId) {
+          setSelectedImages((prev) =>
+            prev.map((img) => (img.id === replaceId ? newImages[0] : img)),
+          );
+        } else {
+          setSelectedImages((prev) => [...prev, ...newImages]);
+        }
+
+        if (warningMessage) {
+          setError(warningMessage);
+        } else {
+          setError("");
+        }
+      };
+
+      processFiles();
+
+      if (event.target) {
+        event.target.value = "";
+      }
     },
-    [photos.length, maxPhotos],
+    [selectedImages.length],
   );
 
-  const handleGallerySelect = useCallback(
-    (e) => {
-      e.preventDefault();
-      e.stopPropagation();
+  const handleReplaceImage = useCallback(
+    (imageId, cameraType = "gallery") => {
+      const tempInput = document.createElement("input");
+      tempInput.type = "file";
+      tempInput.accept = CONFIG.acceptedFormats;
 
-      if (photos.length >= maxPhotos) {
-        setError(`Maximum ${maxPhotos} photos allowed`);
+      if (cameraType === "camera") {
+        tempInput.capture = "environment";
+      }
+
+      tempInput.onchange = (e) => handleImageSelection(e, cameraType, imageId);
+      tempInput.click();
+    },
+    [handleImageSelection],
+  );
+
+  const removeImage = useCallback((imageId, event) => {
+    if (event) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+    setSelectedImages((prev) => prev.filter((img) => img.id !== imageId));
+    setError("");
+  }, []);
+
+  const clearAllImages = useCallback((event) => {
+    if (event) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+    setSelectedImages([]);
+    setError("");
+  }, []);
+
+  const toggleMenu = useCallback((imageId, event) => {
+    event.preventDefault();
+    event.stopPropagation();
+
+    const menu = document.getElementById(`menu-${imageId}`);
+
+    document.querySelectorAll('[id^="menu-"]').forEach((m) => {
+      if (m.id !== `menu-${imageId}`) {
+        m.style.display = "none";
+      }
+    });
+
+    menu.style.display = menu.style.display === "block" ? "none" : "block";
+  }, []);
+
+  const handleReplaceClick = useCallback(
+    (imageId, cameraType, event) => {
+      event.preventDefault();
+      event.stopPropagation();
+
+      handleReplaceImage(imageId, cameraType);
+      document.getElementById(`menu-${imageId}`).style.display = "none";
+    },
+    [handleReplaceImage],
+  );
+
+  const handleDragStart = useCallback((e, index) => {
+    setDraggedItem(index);
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("text/html", e.target.parentNode);
+    e.dataTransfer.setDragImage(e.target.parentNode, 60, 40);
+  }, []);
+
+  const handleDragOver = useCallback((e, index) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    setDragOverIndex(index);
+  }, []);
+
+  const handleDragLeave = useCallback(() => {
+    setDragOverIndex(null);
+  }, []);
+
+  const handleDrop = useCallback(
+    (e, dropIndex) => {
+      e.preventDefault();
+
+      if (draggedItem === null || draggedItem === dropIndex) {
+        setDraggedItem(null);
+        setDragOverIndex(null);
         return;
       }
 
-      fileInputRef.current?.click();
+      const updatedImages = [...selectedImages];
+      const draggedImage = updatedImages[draggedItem];
+
+      updatedImages.splice(draggedItem, 1);
+
+      const actualDropIndex =
+        draggedItem < dropIndex ? dropIndex - 1 : dropIndex;
+      updatedImages.splice(actualDropIndex, 0, draggedImage);
+
+      setSelectedImages(updatedImages);
+      setDraggedItem(null);
+      setDragOverIndex(null);
     },
-    [photos.length, maxPhotos],
+    [draggedItem, selectedImages],
   );
 
-  // Process cropped photo
-  const processSinglePhoto = useCallback(
-    async (e, photoData) => {
-      if (e) {
-        e.preventDefault();
-        e.stopPropagation();
-      }
-
-      if (!cropperRef.current) return;
-
-      setIsProcessing(true);
-
-      try {
-        const canvas = cropperRef.current.getCanvas({
-          width: cropWidth,
-          height: cropHeight,
-        });
-
-        const dataUrl = canvas.toDataURL("image/png", 0.9);
-        const croppedBlob = dataURLToBlob(dataUrl);
-
-        const timestamp = Date.now();
-        const croppedName = `calendar-crop-${timestamp}.png`;
-        const originalName = `calendar-orig-${timestamp}.${photoData.file.name.split(".").pop()}`;
-
-        const [croppedUrl, originalUrl] = await Promise.all([
-          UploadFile(projectData, croppedBlob, croppedName, "image"),
-          UploadFile(projectData, photoData.file, originalName, "image"),
-        ]);
-
-        const processedImage = {
-          id: photoData.id,
-          croppedImage: croppedUrl,
-          originalImage: originalUrl,
-          uploadedAt: new Date().toISOString(),
-        };
-
-        // Update photos and get the next unprocessed photo in the same operation
-        setPhotos((prevPhotos) => {
-          const updatedPhotos = prevPhotos.map((p) =>
-            p.id === photoData.id
-              ? { ...p, processed: true, data: processedImage }
-              : p,
-          );
-
-          // Find next unprocessed photo from the updated array
-          const nextUnprocessed = updatedPhotos.find(
-            (p) => !p.processed && p.id !== photoData.id,
-          );
-
-          // Schedule the next cropping session
-          if (nextUnprocessed) {
-            setTimeout(() => {
-              setCurrentCropImage(nextUnprocessed);
-              setShowCropper(true);
-            }, 500);
-          }
-
-          return updatedPhotos;
-        });
-
-        setShowCropper(false);
-        setCurrentCropImage(null);
-        setEditingImageId(null);
-
-        setShowSuccess(true);
-        setTimeout(() => setShowSuccess(false), 1500);
-      } catch (error) {
-        MyError(error);
-        setError("Failed to process image. Please try again.");
-      } finally {
-        setIsProcessing(false);
-      }
-    },
-    [cropWidth, cropHeight, projectData], // Removed 'photos' from dependencies
-  );
-
-  // Edit image handler
-  const handleEditImage = useCallback((e, photoData) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setEditingImageId(photoData.id);
-    setCurrentCropImage(photoData);
-    setShowCropper(true);
+  const handleDragEnd = useCallback(() => {
+    setDraggedItem(null);
+    setDragOverIndex(null);
   }, []);
 
-  // Remove photo handler
-  const handleRemovePhoto = useCallback((e, photoId) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setPhotos((prev) => prev.filter((p) => p.id !== photoId));
-  }, []);
+  const remainingSlots = CONFIG.maxImages - selectedImages.length;
 
-  // Close handlers
-  const handleCloseCropper = useCallback((e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setShowCropper(false);
-    setEditingImageId(null);
-  }, []);
-
-  const handleCloseError = useCallback(() => {
-    setError(null);
-  }, []);
-
-  // Components
-  const MobileError = ({ message }) => (
-    <div className="fixed top-4 left-4 right-4 z-50 p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg shadow-lg">
-      <div className="flex items-center justify-between">
-        <span className="text-sm">{message}</span>
-        <button onClick={handleCloseError} className="text-red-500">
-          <FaTimes />
-        </button>
-      </div>
-    </div>
-  );
-
-  const MobileCropper = () => {
-    const [zoom, setZoom] = useState(1);
-    const [rotation, setRotation] = useState(0);
-    const [contrast, setContrast] = useState(100);
-    const [brightness, setBrightness] = useState(100);
-    const [saturate, setSaturate] = useState(100);
-    const [showAdvancedControls, setShowAdvancedControls] = useState(false);
-
-    const currentFilterStyle = {
-      filter: `contrast(${contrast}%) brightness(${brightness}%) saturate(${saturate}%)`,
-    };
-
-    const handleZoom = (delta) => {
-      setZoom((prev) => Math.max(0.5, Math.min(prev + delta * 0.1, 3)));
-    };
-
-    const rotateImage = (direction) => {
-      setRotation((prev) => prev + 90 * direction);
-    };
-
-    const resetControls = () => {
-      setZoom(1);
-      setRotation(0);
-      setContrast(100);
-      setBrightness(100);
-      setSaturate(100);
-    };
-
-    const handleProcessWithFilters = async () => {
-      if (!cropperRef.current) return;
-
-      setIsProcessing(true);
-
-      try {
-        // Get the cropped canvas
-        let canvas = cropperRef.current.getCanvas({
-          width: cropWidth,
-          height: cropHeight,
-        });
-
-        // Apply filters if they've been modified
-        if (
-          contrast !== 100 ||
-          brightness !== 100 ||
-          saturate !== 100 ||
-          rotation !== 0 ||
-          zoom !== 1
-        ) {
-          const tempCanvas = document.createElement("canvas");
-          const ctx = tempCanvas.getContext("2d");
-
-          tempCanvas.width = canvas.width;
-          tempCanvas.height = canvas.height;
-
-          ctx.save();
-
-          // Apply transformations
-          if (rotation !== 0) {
-            ctx.translate(canvas.width / 2, canvas.height / 2);
-            ctx.rotate((rotation * Math.PI) / 180);
-            ctx.translate(-canvas.width / 2, -canvas.height / 2);
-          }
-
-          // Apply filters
-          ctx.filter = `contrast(${contrast}%) brightness(${brightness}%) saturate(${saturate}%)`;
-
-          ctx.drawImage(canvas, 0, 0);
-          ctx.restore();
-
-          canvas = tempCanvas;
-        }
-
-        const dataUrl = canvas.toDataURL("image/png", 0.9);
-        const croppedBlob = dataURLToBlob(dataUrl);
-
-        const timestamp = Date.now();
-        const croppedName = `calendar-crop-${timestamp}.png`;
-        const originalName = `calendar-orig-${timestamp}.${currentCropImage.file.name.split(".").pop()}`;
-
-        const [croppedUrl, originalUrl] = await Promise.all([
-          UploadFile(projectData, croppedBlob, croppedName, "image"),
-          UploadFile(projectData, currentCropImage.file, originalName, "image"),
-        ]);
-
-        const processedImage = {
-          id: currentCropImage.id,
-          croppedImage: croppedUrl,
-          originalImage: originalUrl,
-          uploadedAt: new Date().toISOString(),
-        };
-
-        // Update photos and get the next unprocessed photo
-        setPhotos((prevPhotos) => {
-          const updatedPhotos = prevPhotos.map((p) =>
-            p.id === currentCropImage.id
-              ? { ...p, processed: true, data: processedImage }
-              : p,
-          );
-
-          // Find next unprocessed photo
-          const nextUnprocessed = updatedPhotos.find(
-            (p) => !p.processed && p.id !== currentCropImage.id,
-          );
-
-          // Schedule next cropping session
-          if (nextUnprocessed) {
-            setTimeout(() => {
-              setCurrentCropImage(nextUnprocessed);
-              // Reset controls for next image
-              resetControls();
-            }, 300);
-          } else {
-            setShowCropper(false);
-            setCurrentCropImage(null);
-          }
-
-          return updatedPhotos;
-        });
-
-        setEditingImageId(null);
-        setShowSuccess(true);
-        setTimeout(() => setShowSuccess(false), 1500);
-      } catch (error) {
-        MyError(error);
-        setError("Failed to process image. Please try again.");
-      } finally {
-        setIsProcessing(false);
-      }
-    };
-
-    return (
-      <div className="fixed inset-0 bg-black z-50">
-        <div className="h-full flex flex-col">
-          {/* Header */}
-          <div className="bg-gray-900 text-white p-4 pt-8 flex items-center justify-between">
-            <button onClick={handleCloseCropper} disabled={isProcessing}>
-              <FaTimes className="text-lg" />
-            </button>
-            <span className="font-semibold">
-              Crop Photo {editingImageId ? "(Editing)" : ""}
-            </span>
-            <button
-              onClick={handleProcessWithFilters}
-              disabled={isProcessing}
-              className="text-blue-400 font-semibold px-3 py-1 rounded"
-            >
-              {isProcessing ? (
-                <div className="flex items-center gap-2">
-                  <FaSyncAlt className="animate-spin" />
-                  Processing...
-                </div>
-              ) : (
-                "Done"
-              )}
-            </button>
-          </div>
-
-          {/* Cropper Area */}
-          <div className="flex-1 p-4 relative">
-            {currentCropImage && (
-              <div style={currentFilterStyle}>
-                <Cropper
-                  ref={cropperRef}
-                  src={currentCropImage.preview}
-                  stencilComponent={RectangleStencil}
-                  aspectRatio={cropWidth / cropHeight}
-                  className="w-full h-full"
-                  backgroundClassName="cropper-background"
-                />
-              </div>
-            )}
-
-            {/* Loading Overlay */}
-            {isProcessing && (
-              <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-                <div className="bg-white rounded-lg p-6 flex flex-col items-center">
-                  <FaSyncAlt className="text-2xl text-blue-500 animate-spin mb-2" />
-                  <span className="text-gray-700">Processing image...</span>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-    );
+  const getMonthName = (index) => {
+    return MONTH_NAMES[index] || `Month ${index + 1}`;
   };
 
-  // Main render
   return (
-    <>
-      {error && <MobileError message={error} />}
+    <div className="">
+      <h2 className="text-xl font-semibold mb-2">Calendar Images</h2>
 
-      <div>
-        <div>
-          {/* Upload Section */}
-          <div className="mb-2">
-            {/* Photo limit indicator */}
-            <div className="mb-4">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium dark:text-white text-gray-800">
-                  Photos: {photos.filter((p) => p.processed).length} /{" "}
-                  {maxPhotos}
-                </span>
-                <span className="text-xs text-gray-600 dark:text-gray-400">
-                  {imagesPerPage} per month
-                  {multiplePhotoSelection && " (multiple selection enabled)"}
-                </span>
-              </div>
-              <div className="w-full bg-gray-200 rounded-full h-2 mt-1">
-                <div
-                  className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                  style={{
-                    width: `${(photos.filter((p) => p.processed).length / maxPhotos) * 100}%`,
-                  }}
-                ></div>
-              </div>
-            </div>
+      {error && <div className="text-red-600 mb-2 text-xs">{error}</div>}
 
-            {/* Small Photo Preview Grid */}
-            {photos.length > 0 && (
-              <div className="mb-4">
-                <div className="flex flex-wrap gap-2">
-                  {photos.map((photo, index) => (
-                    <div key={photo.id} className="relative">
-                      <img
-                        src={
-                          photo.processed
-                            ? photo.data.croppedImage
-                            : photo.preview
-                        }
-                        alt="Uploaded"
-                        className="w-13 h-13 object-cover rounded border-2 border-gray-200"
-                      />
+      <div className="mb-1 flex gap-1">
+        <label
+          className={`
+          py-3 rounded-lg text-white font-medium text-base min-w-40 text-center
+          inline-block transition-all duration-200 cursor-pointer
+          ${
+            remainingSlots > 0
+              ? "bg-green-500 hover:bg-green-600 active:bg-green-700"
+              : "bg-gray-400 cursor-not-allowed opacity-60"
+          }
+        `}
+          title={
+            remainingSlots > 0
+              ? "Take a photo with your camera"
+              : "Maximum limit reached"
+          }
+        >
+          📷 Take Photo
+          <input
+            ref={cameraInputRef}
+            type="file"
+            accept={CONFIG.acceptedFormats}
+            capture="environment"
+            onChange={(e) => handleImageSelection(e, "camera")}
+            disabled={remainingSlots === 0}
+            className="hidden"
+          />
+        </label>
 
-                      {/* Edit/Remove buttons for processed photos */}
-                      {photo.processed && (
-                        <div className="absolute -bottom-1 -right-1 flex gap-1">
-                          <button
-                            onClick={(e) => handleEditImage(e, photo)}
-                            className="bg-blue-500 text-white rounded-full p-1"
-                          >
-                            <FaEdit className="text-xs" />
-                          </button>
-                          <button
-                            onClick={(e) => handleRemovePhoto(e, photo.id)}
-                            className="bg-red-500 text-white rounded-full p-1"
-                          >
-                            <FaTimes className="text-xs" />
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            <div className="flex gap-1">
-              <button
-                onClick={handleCameraCapture}
-                disabled={photos.length >= maxPhotos}
-                className="w-full text-nowrap bg-red-500 hover:bg-red-600 disabled:bg-gray-400 disabled:cursor-not-allowed text-white px-3 py-2 rounded-sm flex items-center justify-center gap-1 font-semibold"
-              >
-                <FaCamera />
-                Take Photo
-              </button>
-              <button
-                onClick={handleGallerySelect}
-                disabled={photos.length >= maxPhotos}
-                className="w-full bg-yellow-500 hover:bg-yellow-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white px-3 py-2 rounded-sm flex items-center justify-center gap-1 font-semibold"
-              >
-                <FaImage />
-                Gallery
-              </button>
-            </div>
-          </div>
-
-          {/* Monthly Calendar Preview */}
-          {calendarData.some((month) => month.images.length > 0) && (
-            <div className="space-y-4">
-              <div>
-                <h3 className="text-base font-semibold dark:text-white text-gray-800 text-center">
-                  📅 Calendar Preview
-                </h3>
-                <p className="text-xs text-gray-600 dark:text-gray-400 text-center">
-                  {totalPhotos} photos distributed linearly across 12 months
-                </p>
-              </div>
-
-              <div className="grid grid-cols-3 gap-1">
-                {months.map((month, monthIndex) => (
-                  <div
-                    key={monthIndex}
-                    className="bg-gray-800 rounded-lg shadow-md p-0.5"
-                  >
-                    {/* Month Header */}
-                    <h4 className="font-semibold text-xs text-center dark:text-white text-gray-800 mb-1">
-                      {month.short} (
-                      {calendarData[monthIndex]?.images?.length || 0})
-                    </h4>
-
-                    {/* Month Images */}
-                    {calendarData[monthIndex]?.images?.length > 0 ? (
-                      <div className="space-y-1 items-center justify-center flex flex-col">
-                        {calendarData[monthIndex].images
-                          .slice(0, 2)
-                          .map((image, imageIndex) => (
-                            <div key={image.id} className="relative mx-auto">
-                              <img
-                                src={image.croppedImage}
-                                alt={`${month.name} ${imageIndex + 1}`}
-                                className="w-16 h-16 object-cover rounded border-white border"
-                              />
-                              {imageIndex === 0 && (
-                                <div className="absolute top-1 left-1 bg-blue-500 text-white p-1 m-0 leading-none rounded text-xs">
-                                  {monthIndex * imagesPerPage + imageIndex + 1}
-                                </div>
-                              )}
-                            </div>
-                          ))}
-                        {calendarData[monthIndex].images.length > 2 && (
-                          <p className="text-xs text-gray-500 text-center">
-                            +{calendarData[monthIndex].images.length - 2} more
-                          </p>
-                        )}
-                      </div>
-                    ) : (
-                      <div className="h-16 w-16 mx-auto bg-gray-100 rounded flex items-center justify-center">
-                        <FaImage className="text-gray-400" />
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Progress indicator for empty state */}
-          {totalPhotos === 0 && (
-            <div className="text-center py-12">
-              <FaCalendarAlt className="text-4xl text-gray-300 mx-auto mb-4" />
-              <p className="text-gray-500">
-                Upload up to {maxPhotos} photos to build your calendar
-              </p>
-              <p className="text-xs text-gray-400 mt-2">
-                Photos will be distributed linearly across months
-              </p>
-            </div>
-          )}
-        </div>
-
-        {/* Hidden inputs - CORRECTED VERSION */}
-        <input
-          ref={fileInputRef}
-          type="file"
-          multiple={true}
-          accept={SUPPORTED_FORMATS.join(",")}
-          onChange={(e) => {
-            e.preventDefault();
-            handleFileSelect(e.target.files);
-          }}
-          className="hidden"
-        />
-        <input
-          ref={cameraInputRef}
-          type="file"
-          accept="image/*"
-          capture="environment"
-          onChange={(e) => {
-            e.preventDefault();
-            handleFileSelect(e.target.files);
-          }}
-          className="hidden"
-        />
+        <label
+          className={`
+          py-3 rounded-lg text-white font-medium text-base min-w-40 text-center
+          inline-block transition-all duration-200 cursor-pointer
+          ${
+            remainingSlots > 0
+              ? "bg-blue-500 hover:bg-blue-600 active:bg-blue-700"
+              : "bg-gray-400 cursor-not-allowed opacity-60"
+          }
+        `}
+          title={
+            remainingSlots > 0
+              ? `Choose up to ${remainingSlots} photos from gallery`
+              : "Maximum limit reached"
+          }
+        >
+          📁 Choose Photos
+          <input
+            ref={fileInputRef}
+            type="file"
+            multiple
+            accept={CONFIG.acceptedFormats}
+            onChange={(e) => handleImageSelection(e, "gallery")}
+            disabled={remainingSlots === 0}
+            className="hidden"
+          />
+        </label>
       </div>
 
-      {showCropper && currentCropImage && <MobileCropper />}
-    </>
+      {selectedImages.length > 0 && (
+        <div>
+          <h3 className="text-md font-medium mt-2 mb-1 text-gray-100">
+            Selected Images ({selectedImages.length}/{CONFIG.maxImages})
+          </h3>
+          <div className="grid grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-1">
+            {selectedImages.map((image, index) => (
+              <div
+                key={image.id}
+                className={`
+                  flex flex-col bg-white border-2 rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-all duration-200 cursor-move
+                  ${draggedItem === index ? "opacity-50 transform rotate-3 scale-105" : ""}
+                  ${dragOverIndex === index ? "border-blue-500 bg-blue-50" : "border-gray-200"}
+                `}
+                draggable="true"
+                onDragStart={(e) => handleDragStart(e, index)}
+                onDragOver={(e) => handleDragOver(e, index)}
+                onDragLeave={handleDragLeave}
+                onDrop={(e) => handleDrop(e, index)}
+                onDragEnd={handleDragEnd}
+              >
+                <div className="bg-gray-800 text-white text-center py-1 text-sm font-semibold flex items-center justify-center gap-1">
+                  <MdDragIndicator className="h-4 w-4 text-gray-400" />
+                  {getMonthName(index)}
+                </div>
+
+                <div className="relative w-full h-20 overflow-hidden">
+                  <img
+                    src={image.src}
+                    alt={`${getMonthName(index)} - ${image.name}`}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+
+                <div className="flex gap-0.5 justify-center bg-gray-50">
+                  <div className="relative w-full">
+                    <button
+                      type="button"
+                      className="w-full bg-blue-500 hover:bg-blue-600 active:scale-105 py-1 border-none rounded flex items-center justify-center shadow-sm transition-all duration-200"
+                      onClick={(e) => toggleMenu(image.id, e)}
+                      title={`Replace ${getMonthName(index)} image`}
+                    >
+                      <MdFindReplace className="h-4" />
+                    </button>
+
+                    <div
+                      id={`menu-${image.id}`}
+                      className="hidden absolute bottom-8 left-0 bg-white border font-medium border-gray-300 rounded-md shadow-lg z-50 min-w-28 overflow-hidden"
+                    >
+                      <button
+                        type="button"
+                        onClick={(e) =>
+                          handleReplaceClick(image.id, "camera", e)
+                        }
+                        className="block w-full bg-gray-100 border-b border-black px-3 py-2 text-left text-xs text-gray-700 hover:bg-gray-50 border-none transition-colors duration-200"
+                      >
+                        📷 Camera
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(e) =>
+                          handleReplaceClick(image.id, "gallery", e)
+                        }
+                        className="block w-full px-3 py-2 text-left text-xs text-gray-700 hover:bg-gray-50 border-none bg-white border-t border-gray-100 transition-colors duration-200"
+                      >
+                        📁 Gallery
+                      </button>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={(e) => removeImage(image.id, e)}
+                    className="w-full py-1 bg-red-500 hover:bg-red-600 active:scale-105 border-none rounded flex items-center justify-center shadow-sm transition-all duration-200"
+                    title={`Delete ${getMonthName(index)} image`}
+                  >
+                    <MdDelete className="h-4" />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
   );
-}
+};
+
+export default ImageCaptureComponent;

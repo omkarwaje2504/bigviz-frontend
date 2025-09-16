@@ -83,7 +83,7 @@ export default function RegisterNewCandidate({ projectData, projectId, ui }) {
     }else if(projectData?.product_type==="Evideo"){
       router.push(`generate-video`)
       const formData= DecryptData("formData")
-      
+
       setIsSubmitLoading(false);
     } else {
       router.push(`homepage`);

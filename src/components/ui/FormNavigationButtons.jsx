@@ -39,7 +39,7 @@ const FormNavigationButtons = ({
     (currentStep === 1 && isPage1Valid) ||
     (currentStep === 2 && isPage2Valid) ||
     (currentStep === 3 && projectType !== "Evideo");
-  // console.log(isLastStepForProject,disablePhotoUpload,currentStep)
+
   const handleNext = () => {
     if (disablePhotoUpload && currentStep === 1) {
       setCurrentStep(99);
