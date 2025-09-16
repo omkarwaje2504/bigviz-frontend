@@ -111,6 +111,7 @@ export const SaveDoctors = async (
       message: "Employee code is required. Please logout and login again.",
     };
   }
+
   if (!formData) {
     return {
       success: false,
@@ -119,13 +120,21 @@ export const SaveDoctors = async (
   }
 
   const apiUrl = process.env.NEXT_PUBLIC_PROJECT_URL;
-
   if (!apiUrl) {
-    throw new Error("API url is missing. Pleach check");
+    throw new Error("API url is missing. Please check");
   }
 
   const fields = mapFormDataToFields(formData, projectData);
   const countryCode = projectData?.config?.doctor?.country_codes?.[0] || +91;
+
+  const unwantedBase =
+    "https://pub-0b6394cfeda24bf196c98e1746afe09b.r2.dev/production";
+
+  let photo = formData?.photo?.originalImage || ""; 
+  if (photo.startsWith(unwantedBase)) {
+    photo = photo.replace(unwantedBase, ""); 
+  }
+
   try {
     const response = await fetch(`${apiUrl}/doctor/save`, {
       method: "POST",
@@ -136,7 +145,8 @@ export const SaveDoctors = async (
       body: JSON.stringify({
         project_hash: projectData.project_hash,
         employee_hash: employeeCode,
-        name: `${formData?.prefix}. ` + formData?.name,
+        photo,
+        name: `${formData?.prefix}. ${formData?.name}`,
         mobile: countryCode + formData?.mobile,
         fields,
       }),
@@ -147,16 +157,16 @@ export const SaveDoctors = async (
         `SaveDoctors error: Server responded with status ${response.status}`,
       );
       throw new Error(
-        ` Save Fail:- Server responded with status ${response.status}, Doctor Data: ${formData}`,
+        `Save Fail:- Server responded with status ${response.status}, Doctor Data: ${JSON.stringify(
+          formData,
+        )}`,
       );
     }
 
-    if (response.ok) {
-      return {
-        success: true,
-        message: "Doctor Register Successfully",
-      };
-    }
+    return {
+      success: true,
+      message: "Doctor Register Successfully",
+    };
   } catch (error: any) {
     MyError(error);
     console.error("SaveDoctors catch block error:", error?.message || error);
@@ -167,3 +177,5 @@ export const SaveDoctors = async (
     };
   }
 };
+
+

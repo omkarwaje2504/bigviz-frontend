@@ -496,10 +496,9 @@ const InputField: React.FC<InputFieldProps> = ({
               />
             </svg>
             <p className="text-gray-600 text-sm font-medium">
-              {uploading ? "Uploading..." : "Click to upload or drag & drop"}
+              {uploading ? "Uploading..." : "Click to upload"}
             </p>
-            <p className="text-gray-400 text-xs mt-1">Any file up to 50MB</p>
-
+            
             <input
               id={id}
               name={name || id}

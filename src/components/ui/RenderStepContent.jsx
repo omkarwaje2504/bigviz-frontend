@@ -43,7 +43,6 @@ const getMaxLengthFromRegex = (str) => {
   return total > 0 ? total : undefined;
 };
 
-
 const RenderStepContent = ({
   ui,
   formData,
@@ -68,6 +67,31 @@ const RenderStepContent = ({
   const handleValidationChange = (key) => (isValid) => {
     setValidationStatus((prev) => ({ ...prev, [key]: isValid }));
   };
+
+ 
+  const getFilteredFieldsForStep1 = () => {
+    if (projectData?.product_type === "RxPad") {
+      return dynamicFields.filter(field => 
+        !field?.additional_config?.includes("backstage_only") && 
+        field.type !== "file upload"
+      );
+    }
+    return dynamicFields.filter(field => 
+      !field?.additional_config?.includes("backstage_only")
+    );
+  };
+
+
+  const getFileUploadFieldsForStep2 = () => {
+    if (projectData?.product_type === "RxPad") {
+      return dynamicFields.filter(field => 
+        !field?.additional_config?.includes("backstage_only") && 
+        field.type === "file upload"
+      );
+    }
+    return [];
+  };
+
   switch (currentStep) {
     case 1:
       return (
@@ -149,44 +173,41 @@ const RenderStepContent = ({
 
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-         
-            {dynamicFields.map((field) =>
-              field?.additional_config?.includes("backstage_only") ? null : (
-                <InputField
-                  key={field.id}
-                  ui={ui}
-                  projectData={projectData}
-                  id={field.name}
-                  label={
-                    field.display_name +
-                    (field.validations?.required ? " *" : "")
-                  }
-                  type={field.type}
-                  value={String(formData[field.name] ?? "")}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      [field.name]: e.target.value,
-                    }))
-                  }
-                  required={field?.additional_config?.includes("is_required")}
-                  placeholder={field.placeholder}
-                  options={field.options || []}
-                  validation={{
-                    regex:
-                      field.validations?.min || field.validations?.max
-                        ? new RegExp(
-                            `^.{${field.validations.min || 0},${
-                              field.validations.max || 100
-                            }}$`,
-                          )
-                        : undefined,
-                    message: `Enter valid ${field.label}`,
-                  }}
-                  onValidationChange={handleValidationChange(field.name)}
-                />
-              ),
-            )}
+            {getFilteredFieldsForStep1().map((field) => (
+              <InputField
+                key={field.id}
+                ui={ui}
+                projectData={projectData}
+                id={field.name}
+                label={
+                  field.display_name +
+                  (field.validations?.required ? " *" : "")
+                }
+                type={field.type}
+                value={String(formData[field.name] ?? "")}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    [field.name]: e.target.value,
+                  }))
+                }
+                required={field?.additional_config?.includes("is_required")}
+                placeholder={field.placeholder}
+                options={field.options || []}
+                validation={{
+                  regex:
+                    field.validations?.min || field.validations?.max
+                      ? new RegExp(
+                          `^.{${field.validations.min || 0},${
+                            field.validations.max || 100
+                          }}$`,
+                        )
+                      : undefined,
+                  message: `Enter valid ${field.label}`,
+                }}
+                onValidationChange={handleValidationChange(field.name)}
+              />
+            ))}
           </div>
         </div>
       );
@@ -201,19 +222,61 @@ const RenderStepContent = ({
               ui={ui}
             />
           ) : (
-            !projectData?.config?.doctor?.disable_photo_upload && (
-              <PhotoUploadEditor
-                ui={ui}
-                projectData={projectData}
-                setPhotoUploadStatus={setPhotoUploadStatus}
-                formData={formData}
-                setFormData={setFormData}
-              />
-            )
+            <>
+              {!projectData?.config?.doctor?.disable_photo_upload && (
+                <PhotoUploadEditor
+                  ui={ui}
+                  projectData={projectData}
+                  setPhotoUploadStatus={setPhotoUploadStatus}
+                  formData={formData}
+                  setFormData={setFormData}
+                />
+              )}
+              
+              {/* Show file upload fields for RxPad in step 2 */}
+              {projectData?.product_type === "RxPad" && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {getFileUploadFieldsForStep2().map((field) => (
+                    <InputField
+                      key={field.id}
+                      ui={ui}
+                      projectData={projectData}
+                      id={field.name}
+                      label={
+                        field.display_name +
+                        (field.validations?.required ? " *" : "")
+                      }
+                      type={field.type}
+                      value={String(formData[field.name] ?? "")}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          [field.name]: e.target.value,
+                        }))
+                      }
+                      required={field?.additional_config?.includes("is_required")}
+                      placeholder={field.placeholder}
+                      options={field.options || []}
+                      validation={{
+                        regex:
+                          field.validations?.min || field.validations?.max
+                            ? new RegExp(
+                                `^.{${field.validations.min || 0},${
+                                  field.validations.max || 100
+                                }}$`,
+                              )
+                            : undefined,
+                        message: `Enter valid ${field.label}`,
+                      }}
+                      onValidationChange={handleValidationChange(field.name)}
+                    />
+                  ))}
+                </div>
+              )}
+            </>
           )}
         </div>
       );
-
     case 3:
       return (
         <div className="space-y-6">
