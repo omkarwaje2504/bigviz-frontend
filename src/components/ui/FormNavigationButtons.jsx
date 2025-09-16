@@ -29,6 +29,7 @@ const FormNavigationButtons = ({
 
   const isLastStepForProject =
     (projectType === "Evideo" &&  currentStep === 2 ) ||
+    (projectType === "RxPad" &&  currentStep === 2 ) ||
     (disablePhotoUpload && currentStep === 1 && isPage1Valid) ||
     (projectType === "DeskCalendar" && currentStep === 2 && isPage2Valid) ||
     (projectType === "PhotoFrame" && currentStep === 2 && isPage2Valid) ||

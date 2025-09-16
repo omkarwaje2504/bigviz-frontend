@@ -73,23 +73,28 @@ export default function RegisterNewCandidate({ projectData, projectId, ui }) {
       const save = await SaveDoctors(projectData, userInfo.hash, formData);
       if (!save.success) {
         console.log(save.message);
-      }
-    } catch (error) {
-      console.group(error);
-      MyError(error);
-    }
-    if (projectData?.config?.game) {
+      }else{
+        if (projectData?.config?.game) {
       router.push(`game`);
+      setIsSubmitLoading(false);
+    }else if(projectData?.product_type==="RxPad"){
+      router.push(`homepage`);
       setIsSubmitLoading(false);
     }else if(projectData?.product_type==="Evideo"){
       router.push(`generate-video`)
       const formData= DecryptData("formData")
-      // console.log(formData)
+
       setIsSubmitLoading(false);
     } else {
       router.push(`homepage`);
       setIsSubmitLoading(false);
     }
+      }
+    } catch (error) {
+      console.group(error);
+      MyError(error);
+    }
+    
   };
 
   return (

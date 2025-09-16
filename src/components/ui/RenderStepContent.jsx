@@ -92,6 +92,7 @@ const RenderStepContent = ({
                 onPrefixChange={(e) =>
                   setFormData({ ...formData, prefix: e.target.value })
                 }
+                projectData={projectData}
               />
             </div>
            
@@ -141,18 +142,20 @@ const RenderStepContent = ({
                       ? handleValidationChange("mobile_number")
                       : undefined
                   }
+                  projectData={projectData}
                 />
               </div>
             )}
 
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {/* {console.log(dynamicFields)} */}
+         
             {dynamicFields.map((field) =>
               field?.additional_config?.includes("backstage_only") ? null : (
                 <InputField
                   key={field.id}
                   ui={ui}
+                  projectData={projectData}
                   id={field.name}
                   label={
                     field.display_name +
@@ -232,6 +235,7 @@ const RenderStepContent = ({
           {/* Theater Preferences */}
           <div>
             <InputField
+            projectData={projectData}
               ui={ui}
               id="theaterPreference"
               label="Select Cinema Locations*"
@@ -262,6 +266,7 @@ const RenderStepContent = ({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <InputField
                 ui={ui}
+                projectData={projectData}
                 id="showDates"
                 label="Advertisement Start Date*"
                 type="date"
@@ -274,6 +279,7 @@ const RenderStepContent = ({
 
               <InputField
                 ui={ui}
+                projectData={projectData}
                 id="showTimes"
                 label="Select Run Duration*"
                 type="select"

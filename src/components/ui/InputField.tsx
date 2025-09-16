@@ -8,6 +8,7 @@ import React, {
   useRef,
 } from "react";
 import inputStyles from "styles/inputStyles";
+import UploadFile from "../../../services/uploadFile";
 
 type ValidationRule = {
   regex?: RegExp;
@@ -32,7 +33,8 @@ type InputFieldProps = {
     | "textarea"
     | "tel"
     | "dropdown"
-    | "date";
+    | "date"
+    | "file";
   value: string;
   countryCode?: string;
   onChange: (
@@ -54,6 +56,7 @@ type InputFieldProps = {
   onPrefixChange?: (
     e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>,
   ) => void;
+  projectData: any;
 };
 
 const parseDateString = (dateStr: string): DateValue => {
@@ -63,7 +66,6 @@ const parseDateString = (dateStr: string): DateValue => {
 
 const formatDateObject = (date: DateValue): string => {
   if (!date.day && !date.month && !date.year) return "";
-
   return `${date.day}/${date.month}/${date.year}`;
 };
 
@@ -90,36 +92,42 @@ const InputField: React.FC<InputFieldProps> = ({
   prefixOptions,
   onPrefixChange,
   onValidationChange,
+  projectData,
 }) => {
   const [error, setError] = useState<string>("");
   const [isOpen, setIsOpen] = useState(false);
   const onValidationChangeRef = useRef(onValidationChange);
   const [detectChange, setDetectChange] = useState<number>();
 
+  // --- File upload states ---
+  const [uploading, setUploading] = useState(false);
+  const [uploadedUrl, setUploadedUrl] = useState<string | null>(null);
+  const [uploadError, setUploadError] = useState<string>("");
+
   const normalizedOptions = options.map((o) =>
     typeof o === "string" ? { label: o, value: o } : o,
   );
 
-  // Keep the latest function
+  // Keep latest validation callback
   useEffect(() => {
     onValidationChangeRef.current = onValidationChange;
   }, [onValidationChange]);
 
+  // Validation
   useEffect(() => {
     let safeValue: string;
     let isValid = true;
     let errorMessage = "";
+
     if (type === "date") {
       const dateValue = getDateValue();
       safeValue = `${dateValue.day}-${dateValue.month}-${dateValue.year}`;
-
       if (required && (!dateValue.day || !dateValue.month || !dateValue.year)) {
         errorMessage = "This field is required";
         isValid = false;
       }
     } else {
       safeValue = typeof value === "string" ? value : String(value ?? "");
-
       if (required && !safeValue.trim()) {
         errorMessage = "This field is required";
         isValid = false;
@@ -133,16 +141,13 @@ const InputField: React.FC<InputFieldProps> = ({
       }
     }
 
-    setError((prev) => {
-      if (prev !== errorMessage) return errorMessage;
-      return prev;
-    });
-
+    setError((prev) => (prev !== errorMessage ? errorMessage : prev));
     if (onValidationChangeRef.current) {
       onValidationChangeRef.current(isValid);
     }
   }, [value, detectChange]);
 
+  // Handle normal text/select/textarea change
   const handleChange = (
     e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>,
   ) => {
@@ -156,6 +161,44 @@ const InputField: React.FC<InputFieldProps> = ({
     }
     const syntheticEvent = { ...e, target: { ...e.target, value: val } };
     onChange(syntheticEvent);
+  };
+
+  // Handle file upload
+  const handleFileChange = async (
+    e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>,
+  ) => {
+    const target = e.target as HTMLInputElement;
+    if (!target.files?.length) return;
+
+    const file = target.files[0];
+    setUploadError("");
+    setUploading(true);
+    setUploadedUrl(null);
+
+    try {
+      const mimeType = file.type;
+      let type: string = "other";
+      if (mimeType.startsWith("image/")) type = "image";
+      else if (mimeType.startsWith("video/")) type = "video";
+      else if (mimeType.startsWith("audio/")) type = "audio";
+      else if (mimeType === "application/pdf") type = "pdf";
+
+      const uploadedUrl = await UploadFile(projectData, file, file.name, type);
+
+      setUploadedUrl(uploadedUrl);
+
+      // Fire parent onChange with uploaded URL
+      const synthetic = {
+        target: { value: uploadedUrl, name: id },
+      } as unknown as ChangeEvent<
+        HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+      >;
+      onChange(synthetic);
+    } catch (err: any) {
+      setUploadError(err.message || "Upload failed");
+    } finally {
+      setUploading(false);
+    }
   };
 
   const handleDateChange = (field: keyof DateValue, newValue: string) => {
@@ -193,6 +236,7 @@ const InputField: React.FC<InputFieldProps> = ({
         {required && <span className="text-red-500">*</span>} {label}
       </label>
 
+      {/* SELECT */}
       {type === "select" ? (
         <select
           id={id}
@@ -217,9 +261,9 @@ const InputField: React.FC<InputFieldProps> = ({
             </option>
           ))}
         </select>
-      ) : type === "date" ? (
+      ) : // DATE
+      type === "date" ? (
         <div className="grid grid-cols-3 gap-2">
-          {/* Day Dropdown */}
           <select
             name={`${name || id}_day`}
             value={dateValue.day}
@@ -242,7 +286,6 @@ const InputField: React.FC<InputFieldProps> = ({
             ))}
           </select>
 
-          {/* Month Dropdown */}
           <select
             name={`${name || id}_month`}
             value={dateValue.month}
@@ -278,7 +321,6 @@ const InputField: React.FC<InputFieldProps> = ({
             ))}
           </select>
 
-          {/* Year Dropdown */}
           <select
             name={`${name || id}_year`}
             value={dateValue.year}
@@ -301,9 +343,9 @@ const InputField: React.FC<InputFieldProps> = ({
             ))}
           </select>
         </div>
-      ) : type === "dropdown" ? (
+      ) : // DROPDOWN
+      type === "dropdown" ? (
         <div className="relative">
-          {/* clickable “button” */}
           <button
             type="button"
             id={id}
@@ -323,7 +365,6 @@ const InputField: React.FC<InputFieldProps> = ({
                   value
                 : placeholder || "-- Select --"}
             </span>
-            {/* a tiny caret from react-icons or your own SVG */}
             <svg
               className="w-4 h-4 ml-2 shrink-0"
               viewBox="0 0 20 20"
@@ -332,8 +373,6 @@ const InputField: React.FC<InputFieldProps> = ({
               <path d="M6 8l4 4 4-4" />
             </svg>
           </button>
-
-          {/* option list */}
           {isOpen && (
             <ul
               role="listbox"
@@ -346,7 +385,6 @@ const InputField: React.FC<InputFieldProps> = ({
                   aria-selected={value === opt.value}
                   tabIndex={0}
                   onClick={(e) => {
-                    // build synthetic event so the parent keeps same onChange signature
                     const synthetic = {
                       ...e,
                       target: { ...e.target, value: opt.value },
@@ -374,7 +412,8 @@ const InputField: React.FC<InputFieldProps> = ({
             </ul>
           )}
         </div>
-      ) : type === "textarea" ? (
+      ) : // TEXTAREA
+      type === "textarea" ? (
         <textarea
           id={id}
           name={name || id}
@@ -390,12 +429,12 @@ const InputField: React.FC<InputFieldProps> = ({
             icon ? inputStyles.inputWithIcon : inputStyles.inputNoIcon
           } ${errorMessage ? inputStyles.ringError : inputStyles.ringDefault}`}
         />
-      ) : type === "radio" ? (
+      ) : // RADIO
+      type === "radio" ? (
         <div className={inputStyles.radioGroup}>
           {options.map((option) => {
             const isSelected = value === option.value;
             const theme = ui.theme;
-
             return (
               <label
                 key={option.value}
@@ -431,6 +470,62 @@ const InputField: React.FC<InputFieldProps> = ({
             );
           })}
         </div>
+      ) : // FILE UPLOAD
+      type === "file upload" ? (
+        <div className="w-full">
+          <label
+            htmlFor={id}
+            className={`
+  flex flex-col items-center justify-center w-full p-6 border-2 border-dashed rounded-2xl cursor-pointer transition-colors
+  hover:border-indigo-500 hover:bg-indigo-50
+  ${uploading ? "opacity-50 cursor-wait" : "opacity-100"}
+`}
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="w-10 h-10 text-gray-400 mb-2"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={1.5}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M3 15.75h17.25M3 15.75l6.75-6.75m-6.75 6.75L9.75 21"
+              />
+            </svg>
+            <p className="text-gray-600 text-sm font-medium">
+              {uploading ? "Uploading..." : "Click to upload or drag & drop"}
+            </p>
+            <p className="text-gray-400 text-xs mt-1">Any file up to 50MB</p>
+
+            <input
+              id={id}
+              name={name || id}
+              type="file"
+              disabled={disabled || uploading}
+              required={required}
+              onChange={handleFileChange}
+              className="hidden"
+            />
+          </label>
+
+          {uploading && (
+            <div className="flex items-center gap-2 mt-3">
+              <div className="w-5 h-5 border-2 border-gray-300 border-t-indigo-600 rounded-full animate-spin"></div>
+              <span className="text-sm text-gray-600">Uploading...</span>
+            </div>
+          )}
+
+          {uploadedUrl && (
+            <p className="text-green-600 text-sm mt-3">File uploaded</p>
+          )}
+
+          {uploadError && (
+            <p className="text-red-600 text-sm mt-3">{uploadError}</p>
+          )}
+        </div>
       ) : (
         <div className="relative flex gap-0.5">
           {icon && (
@@ -457,13 +552,6 @@ const InputField: React.FC<InputFieldProps> = ({
               ))}
             </select>
           )}
-          {/* {id === "mobile" && validation?.regex && (
-            <div
-              className={`$bg-white dark:bg-gray-700 text-black dark:text-white block w-fit rounded-md border-0 py-2 px-1`}
-            >
-              {countryCode}
-            </div>
-          )} */}
 
           <input
             id={id}
@@ -491,8 +579,10 @@ const InputField: React.FC<InputFieldProps> = ({
             {value.length}/{maxLength}
           </p>
         )}
-        
-      {(errorMessage && ui?.ErroMessageConfig?.isErrorMessageEnable) && <p className={inputStyles.errorText}>{errorMessage}</p>}
+
+      {errorMessage && ui?.ErroMessageConfig?.isErrorMessageEnable && (
+        <p className={inputStyles.errorText}>{errorMessage}</p>
+      )}
     </div>
   );
 };

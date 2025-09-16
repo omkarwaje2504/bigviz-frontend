@@ -1,20 +1,16 @@
-"use client";
+"use client"
 
-import { useState, useEffect } from "react";
 import Banner from "@components/ui/Banner";
-import LoadingPage from "@components/ui/LoadingPage";
-import LoginForm from "./LoginForm";
-import config from "@utils/Config";
-import MyError from "@services/MyError";
-import { DecryptData, EncryptData } from "@utils/cryptoUtils";
+import React, { useEffect, useState } from "react";
+import EmployeeRegisterForm from "./EmployeeRegisterForm";
 import { useRouter } from "next/navigation";
-import { GenerateCardImage } from "@services/GenerateCardImage";
+import { DecryptData, EncryptData } from "@utils/cryptoUtils";
 
-export default function LoginPage({ projectData, projectId, ui }) {
+function RegisterEmployeePage({ projectData, projectId, ui }) {
+  // console.log(projectData)
 
-  const [loading, setLoading] = useState(true);
-  const [loginType, setLoginType] = useState("code");
   const router = useRouter();
+  const [loading,setLoading]= useState()
 
   useEffect(() => {
     let getUserData = DecryptData("empData");
@@ -36,25 +32,13 @@ export default function LoginPage({ projectData, projectId, ui }) {
 
     return () => clearTimeout(timer);
   }, []);
-
-  if (loading) {
-    return (
-      <LoadingPage
-        ui={ui}
-        loadingtext="Your jouney is starting from here"
-        loadingTitle={projectData?.name}
-      />
-    );
-  }
-
+  
   return (
     <div className="flex flex-col lg:flex-row min-h-screen bg-gray-50 text-gray-800 dark:bg-gray-900 dark:text-white transition-colors duration-300">
       <Banner
         bannerImage={`${process.env.NEXT_PUBLIC_R2_PUBLIC_URL}/${projectData?.top_banner}`}
       />
-
-      <div className="flex-grow flex flex-col items-center justify-center px-4">
-         
+    <div className="flex-grow flex flex-col items-center justify-center px-4">
         <div className="max-w-md w-full space-y-8 p-8 rounded-lg shadow-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 transition-all">
           <div className="text-center">
             <h2
@@ -69,10 +53,11 @@ export default function LoginPage({ projectData, projectId, ui }) {
               {ui.loginPage.subHeading}
             </p>
           </div>
-
-          <LoginForm ui={ui} loginType={loginType} projectData={projectData} />
+          <EmployeeRegisterForm projectData={projectData} projectId={projectId} ui={ui}/>
         </div>
-      </div>
+    </div> 
     </div>
   );
 }
+
+export default RegisterEmployeePage;

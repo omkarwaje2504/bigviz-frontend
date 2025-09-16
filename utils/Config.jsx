@@ -96,6 +96,17 @@ const Config = async (projectData) => {
     },
     EVideoConfigs: {
       VideoID: projectData?.artworks?.[0]?.name
+    },
+    EmployeeConfig:{
+      EmployeeCodeLabel:"Employee Code",
+      EmployeeNameLabel:"Employee Name",
+      EmployeeHQLabel:"Employee HQ",
+      EmployeeRegionLabel:"Employee Region",
+      EmployeeMobileLabel:"Employee Mobile",
+      EmployeeEmailLabel:"Employee Email",
+      EmployeeStateLabel:"Employee State",
+      EmployeePinCodeLabel:"Employee PinCode",
+      EmployeeAddressLabel:"Employee Address"
     }
   };
 };

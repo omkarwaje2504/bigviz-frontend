@@ -2,6 +2,7 @@ import LoginPage from "@components/pages/LoginPage";
 import { getAllProjectsCached } from "../../../utils/projectCache";
 import Config from "../../../utils/Config";
 import NotFoundPage from "./NotFoundPage";
+import RegisterEmployeePage from "@components/pages/RegisterEmployeePage";
 
 export async function generateStaticParams() {
   const projects = await getAllProjectsCached();
@@ -44,7 +45,11 @@ export default async function Home({ params }) {
     );
 
     const ui = await Config(projectInfo);
-    if (projectInfo) {
+    if (projectInfo && projectInfo?.config?.employee?.enable_employee_registration) {
+      return (
+        <RegisterEmployeePage projectData={projectInfo} projectId={pathname} ui={ui} />
+      );
+    }else if(projectInfo && !projectInfo?.config?.employee?.enable_employee_registration){
       return (
         <LoginPage projectData={projectInfo} projectId={pathname} ui={ui} />
       );
