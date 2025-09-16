@@ -103,6 +103,7 @@ const LoginForm = ({ ui, loginType, projectData }) => {
             onValidationChange={handleValidationChange("code")}
             required
             disabled={isSubmitting}
+            projectData={projectData}
           />
         )}
 
@@ -120,6 +121,7 @@ const LoginForm = ({ ui, loginType, projectData }) => {
               onValidationChange={handleValidationChange("code")}
               required
               disabled={isSubmitting}
+              projectData={projectData}
             />
             <InputField
               ui={ui}
@@ -133,6 +135,7 @@ const LoginForm = ({ ui, loginType, projectData }) => {
               onValidationChange={handleValidationChange("password")}
               required
               disabled={isSubmitting}
+              projectData={projectData}
             />
           </>
         )}
@@ -150,6 +153,7 @@ const LoginForm = ({ ui, loginType, projectData }) => {
             onValidationChange={handleValidationChange("mobile")}
             required
             disabled={isSubmitting}
+            projectData={projectData}
           />
         )}
 

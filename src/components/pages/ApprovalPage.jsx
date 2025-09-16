@@ -180,15 +180,15 @@ const stats = (members, ui, projectData) => {
   const activeMembers =
     members && members.length > 0
       ? !projectData?.config?.employee.approval_required
-        ? members.filter((member) => member?.download !== null)
-        : members.filter((member) => member?.approved_status == 1)
+        ? members?.filter((member) => member?.download !== null)
+        : members?.filter((member) => member?.approved_status == 1)
       : 0;
 
   const pendingMembers =
     members && members.length > 0
       ? !projectData?.config?.employee.approval_required
-        ? members.filter((member) => member?.download == null)
-        : members.filter((member) => member?.approved_status == 0)
+        ? members?.filter((member) => member?.download == null)
+        : members?.filter((member) => member?.approved_status == 0)
       : 0;
 
   const getPercentage = (count) => `${((count / total) * 100).toFixed(1)}%`;

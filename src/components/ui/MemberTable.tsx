@@ -64,7 +64,7 @@ const MemberTable: React.FC<MemberTableProps> = ({
 
   useEffect(() => {
     const term = searchTerm.toLowerCase();
-    const result = members.filter(
+    const result = members?.filter(
       (m) =>
         m.name.toLowerCase().includes(term) || (m.mobile || "").includes(term),
     );
@@ -73,7 +73,7 @@ const MemberTable: React.FC<MemberTableProps> = ({
   }, [searchTerm, members]);
 
   const totalPages = Math.ceil(filteredMembers?.length / ITEMS_PER_PAGE);
-  const paginatedMembers = filteredMembers.slice(
+  const paginatedMembers = filteredMembers?.slice(
     (currentPage - 1) * ITEMS_PER_PAGE,
     currentPage * ITEMS_PER_PAGE,
   );
@@ -752,7 +752,8 @@ const MemberTable: React.FC<MemberTableProps> = ({
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder={ui?.HomePageLables?.serachHereLable}
-            icon={<FaSearch className="text-gray-400" />}
+            icon={<FaSearch className="text-gray-400"
+              projectData={projectData} />}
           />
         </div>
         <div className="bg-gray-200 dark:bg-gray-800 rounded-lg inline-flex text-sm h-10 mb-3">
@@ -785,7 +786,7 @@ const MemberTable: React.FC<MemberTableProps> = ({
           className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
           key={currentPage}
         >
-          {paginatedMembers.map((member) => (
+          {paginatedMembers?.map((member) => (
             <div
               key={member.doctor_hash}
               className="bg-white dark:bg-gray-800 rounded-lg overflow-hidden border border-gray-300 dark:border-gray-700 shadow-lg hover:border-red-500 transition-all"
@@ -929,7 +930,7 @@ const MemberTable: React.FC<MemberTableProps> = ({
             </thead>
 
             <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-300 dark:divide-gray-800">
-              {paginatedMembers.map((member) => {
+              {paginatedMembers?.map((member) => {
                 const approval = getApprovalLogic(member);
 
                 return (

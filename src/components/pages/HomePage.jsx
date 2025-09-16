@@ -57,6 +57,7 @@ const HomePage = ({ projectData, projectId, ui }) => {
       });
     }
     if (!getUserInfo) {
+      // console.log("hjbhjrdn")
       router.push(`/${projectId}`);
     }
 
@@ -177,15 +178,15 @@ const stats = (members, ui, projectData) => {
   const activeMembers =
     members && members.length > 0
       ? projectData?.config?.employee?.approval_required
-        ? members.filter((member) => member?.download_url !== null)
-        : members.filter((member) => member?.approval_history.length >= 1)
+        ? members?.filter((member) => member?.download_url !== null)
+        : members?.filter((member) => member?.approval_history.length >= 1)
       : 0;
 
   const pendingMembers =
     members && members.length > 0
       ? projectData?.config?.employee?.approval_required
-        ? members.filter((member) => member?.photo_approval_status == 0)
-        : members.filter((member) => member?.approval_history.length == 0)
+        ? members?.filter((member) => member?.photo_approval_status == 0)
+        : members?.filter((member) => member?.approval_history.length == 0)
       : 0;
 
   const getPercentage = (count) => `${((count / total) * 100).toFixed(1)}%`;

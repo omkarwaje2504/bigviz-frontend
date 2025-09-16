@@ -61,23 +61,11 @@ async function GenerateFilePath(fileName: string, projectInfo: any) {
 
 const UploadFile = async (
   projectData: any,
-  imageData: Blob | Uint8Array,
+  file: Blob | Uint8Array,
   fileName: string,
-  type: string,
+  type?: string,
 ) => {
-  const contentType =
-    type === "image"
-      ? "image/png"
-      : type === "video"
-        ? "video/mp4"
-        : type === "audio"
-          ? "audio/wav"
-          : type === "pdf"
-            ? "application/pdf"
-            : null;
-  if (contentType == null) {
-    throw new Error("Unsupported file type");
-  }
+  const contentType = (file as File).type || "application/octet-stream"; 
 
   if (!accessKeyId || !secretAccessKey) {
     throw new Error("AWS credentials are not defined");
@@ -86,28 +74,21 @@ const UploadFile = async (
   const filePath = await GenerateFilePath(fileName, projectData);
 
   let buffer: Buffer;
-
-  if (imageData instanceof Blob) {
-    const arrayBuffer = await imageData.arrayBuffer();
+  if (file instanceof Blob) {
+    const arrayBuffer = await file.arrayBuffer();
     buffer = Buffer.from(arrayBuffer);
-  } else if (imageData instanceof Uint8Array) {
-    buffer = Buffer.from(
-      imageData.buffer,
-      imageData.byteOffset,
-      imageData.byteLength,
-    );
+  } else if (file instanceof Uint8Array) {
+    buffer = Buffer.from(file.buffer, file.byteOffset, file.byteLength);
   } else {
-    throw new Error("Unsupported image data type", imageData);
+    throw new Error("Unsupported file type");
   }
+
   const command = new PutObjectCommand({
     Bucket: bucketName,
     Key: filePath,
     Body: buffer,
     ACL: "public-read",
     ContentType: contentType,
-    ...(contentType === "application/pdf" && {
-      ContentDisposition: "inline",
-    }),
     CacheControl: "public, max-age=31536000",
     Metadata: {
       "Access-Control-Allow-Origin": "*",
@@ -117,6 +98,7 @@ const UploadFile = async (
   await s3.send(command);
   return createS3Url({ name: filePath });
 };
+
 
 export const createS3Url = ({ name }: { name: string }) => {
   const provider = process.env.NEXT_PUBLIC_STORAGE_PROVIDER;

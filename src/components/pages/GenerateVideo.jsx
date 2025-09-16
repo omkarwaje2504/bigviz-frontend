@@ -56,9 +56,9 @@ function GenerateVideo({ ui }) {
 
     const interval = setInterval(async () => {
       try {
-        console.log(renderId)
+        // console.log(renderId)
         const check = await GetRenderStatus(renderId);
-        console.log(check)
+        // console.log(check)
 
         if (check.success && check.data?.url && check.data.status === "OK") {
           clearInterval(interval);

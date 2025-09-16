@@ -5,6 +5,9 @@ import InputField from "@components/ui/InputField";
 import React, { useState } from "react";
 import { IoMdPerson } from "react-icons/io";
 import { FaTicketAlt, FaLock, FaMobileAlt, FaUser } from "react-icons/fa";
+import { useRouter } from "next/navigation";
+import { EncryptData } from "@utils/cryptoUtils";
+import { RegisterEmployee } from "@actions/loginApis";
 
 const validations = {
   name: {
@@ -34,7 +37,10 @@ const validations = {
 };
 
 function EmployeeRegisterForm({ ui, projectData, projectId }) {
-  console.log("projectData", projectData);
+  // console.log("projectData", projectData);
+
+  const router = useRouter()
+
   const [formData, setFormData] = useState({
     name:"",
     code:"",
@@ -87,10 +93,22 @@ function EmployeeRegisterForm({ ui, projectData, projectId }) {
     return false
   };
 
+
+  const handleRegister = async(e)=> {
+    e.preventDefault()
+    let registerResponse = await RegisterEmployee(formData,projectData)
+    if(registerResponse){
+      // console.log(registerResponse)
+      // console.log(registerResponse?.data?.employee)
+      EncryptData("empData",registerResponse?.data?.employee)
+      router.push(`/${projectData.project_hash}/homepage`)
+    }
+  }
+
   return (
     <div>
       <div>
-        <form>
+        <form onSubmit={handleRegister}>
           {projectData?.config?.employee?.employee_name && (
             <InputField
               ui={ui}
@@ -104,6 +122,7 @@ function EmployeeRegisterForm({ ui, projectData, projectId }) {
               onValidationChange={handleValidationChange("name")}
               required
               disabled={isSubmitting}
+              projectData={projectData}
             />
           )}
           {projectData?.config?.employee?.employee_code && (
@@ -119,6 +138,7 @@ function EmployeeRegisterForm({ ui, projectData, projectId }) {
               onValidationChange={handleValidationChange("code")}
               required
               disabled={isSubmitting}
+              projectData={projectData}
             />
           )}
           {projectData?.config?.employee?.employee_Hq && (
@@ -134,6 +154,7 @@ function EmployeeRegisterForm({ ui, projectData, projectId }) {
               onValidationChange={handleValidationChange("hq")}
               required
               disabled={isSubmitting}
+              projectData={projectData}
             />
           )}
           {projectData?.config?.employee?.employee_region && (
@@ -149,6 +170,7 @@ function EmployeeRegisterForm({ ui, projectData, projectId }) {
               onValidationChange={handleValidationChange("region")}
               required
               disabled={isSubmitting}
+              projectData={projectData}
             />
           )}
           <div>

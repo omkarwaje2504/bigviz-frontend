@@ -1,15 +1,16 @@
 "use client"
 
 import Banner from "@components/ui/Banner";
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import EmployeeRegisterForm from "./EmployeeRegisterForm";
 import { useRouter } from "next/navigation";
 import { DecryptData, EncryptData } from "@utils/cryptoUtils";
 
 function RegisterEmployeePage({ projectData, projectId, ui }) {
-//   console.log(projectData)
+  // console.log(projectData)
 
   const router = useRouter();
+  const [loading,setLoading]= useState()
 
   useEffect(() => {
     let getUserData = DecryptData("empData");
@@ -31,6 +32,7 @@ function RegisterEmployeePage({ projectData, projectId, ui }) {
 
     return () => clearTimeout(timer);
   }, []);
+  
   return (
     <div className="flex flex-col lg:flex-row min-h-screen bg-gray-50 text-gray-800 dark:bg-gray-900 dark:text-white transition-colors duration-300">
       <Banner
