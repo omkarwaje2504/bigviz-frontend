@@ -8,6 +8,9 @@ import { FaTicketAlt, FaLock, FaMobileAlt, FaUser } from "react-icons/fa";
 import { useRouter } from "next/navigation";
 import { EncryptData } from "@utils/cryptoUtils";
 import { RegisterEmployee } from "@actions/loginApis";
+import { MdHighQuality } from "react-icons/md";
+import { FaRegIdCard } from "react-icons/fa";
+import { FaRegistered } from "react-icons/fa6";
 
 const validations = {
   name: {
@@ -37,24 +40,22 @@ const validations = {
 };
 
 function EmployeeRegisterForm({ ui, projectData, projectId }) {
-  // console.log("projectData", projectData);
-
-  const router = useRouter()
+  const router = useRouter();
 
   const [formData, setFormData] = useState({
-    name:"",
-    code:"",
-    email:"",
-    hq:"",
-    region:"",
+    name: "",
+    code: "",
+    email: "",
+    hq: "",
+    region: "",
     mobile: "",
   });
   const [validationStatus, setValidationStatus] = useState({
     name: false,
     code: false,
     email: false,
-    hq:false,
-    region:false,
+    hq: false,
+    region: false,
     mobile: false,
   });
   const [errors, setErrors] = useState({});
@@ -78,32 +79,41 @@ function EmployeeRegisterForm({ ui, projectData, projectId }) {
   };
 
   const isFormValid = () => {
-    if(projectData?.config?.employee?.employee_name ){
-        return validationStatus.name
+    let isValid = true;
+
+    if (projectData?.config?.employee?.employee_name) {
+      isValid = isValid && validationStatus.name;
     }
-    if(projectData?.config?.employee?.employee_code ){
-        return validationStatus.code
+    if (projectData?.config?.employee?.employee_code) {
+      isValid = isValid && validationStatus.code;
     }
-    if(projectData?.config?.employee?.employee_Hq ){
-        return validationStatus.hq
+    if (projectData?.config?.employee?.employee_Hq) {
+      isValid = isValid && validationStatus.hq;
     }
-    if(projectData?.config?.employee?.employee_region ){
-        return validationStatus.region
+    if (projectData?.config?.employee?.employee_region) {
+      isValid = isValid && validationStatus.region;
     }
-    return false
+
+    return isValid;
   };
 
+  const handleRegister = async (e) => {
+    e.preventDefault();
+    setIsSubmitting(true); 
 
-  const handleRegister = async(e)=> {
-    e.preventDefault()
-    let registerResponse = await RegisterEmployee(formData,projectData)
-    if(registerResponse){
-      // console.log(registerResponse)
-      // console.log(registerResponse?.data?.employee)
-      EncryptData("empData",registerResponse?.data?.employee)
-      router.push(`/${projectData.project_hash}/homepage`)
+    try {
+      let registerResponse = await RegisterEmployee(formData, projectData);
+
+      if (registerResponse) {
+        EncryptData("empData", registerResponse?.data?.employee);
+        router.push(`/${projectData.project_hash}/homepage`);
+      }
+    } catch (error) {
+      console.error("Registration failed", error);
+    } finally {
+      setIsSubmitting(false); 
     }
-  }
+  };
 
   return (
     <div className="">
@@ -130,7 +140,7 @@ function EmployeeRegisterForm({ ui, projectData, projectId }) {
               ui={ui}
               id="code"
               label={ui.EmployeeConfig.EmployeeCodeLabel}
-              icon={<IoMdPerson className="text-gray-400" />}
+              icon={<FaRegIdCard className="text-gray-400" />}
               type="text"
               value={formData.code}
               onChange={handleChange("code")}
@@ -146,7 +156,7 @@ function EmployeeRegisterForm({ ui, projectData, projectId }) {
               ui={ui}
               id="hq"
               label={ui.EmployeeConfig.EmployeeHQLabel}
-              icon={<IoMdPerson className="text-gray-400" />}
+              icon={<MdHighQuality className="text-gray-400" />}
               type="text"
               value={formData.hq}
               onChange={handleChange("hq")}
@@ -162,7 +172,7 @@ function EmployeeRegisterForm({ ui, projectData, projectId }) {
               ui={ui}
               id="region"
               label={ui.EmployeeConfig.EmployeeRegionLabel}
-              icon={<IoMdPerson className="text-gray-400" />}
+              icon={<FaRegistered className="text-gray-400" />}
               type="text"
               value={formData.region}
               onChange={handleChange("region")}
@@ -174,18 +184,18 @@ function EmployeeRegisterForm({ ui, projectData, projectId }) {
             />
           )}
           <div>
-          <Button
-            ui={ui}
-            type="submit"
-            isLoading={isSubmitting}
-            disabled={!isFormValid() || isSubmitting}
-            leftIcon={
-              <FaUser className="text-red-300 group-hover:text-red-200" />
-            }
-          >
-            {ui.loginPage.loginButtonLabel}
-          </Button>
-        </div>
+            <Button
+              ui={ui}
+              type="submit"
+              isLoading={isSubmitting}
+              disabled={!isFormValid() || isSubmitting}
+              leftIcon={
+                <FaUser className="text-red-300 group-hover:text-red-200" />
+              }
+            >
+              {ui.loginPage.loginButtonLabel}
+            </Button>
+          </div>
         </form>
       </div>
     </div>
