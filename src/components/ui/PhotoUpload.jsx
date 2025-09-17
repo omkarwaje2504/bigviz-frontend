@@ -531,17 +531,17 @@ export default function PhotoUploadEditor({
         </div>
       )}
 
-      <div className="mt-8 text-gray-400 text-sm">
-        <h3 className="text-white text-lg font-medium mb-2">
-          Photo Requirements
-        </h3>
-        <ul className="list-disc pl-5 space-y-1">
-          <li>Upload a professional, high-quality headshot</li>
-          <li>Make sure your face is clearly visible with good lighting</li>
-          <li>Professional attire recommended</li>
-          <li>Neutral background works best for cinema advertisements</li>
-          <li>Minimum resolution: 1000x1000 pixels</li>
-        </ul>
+      <div className="mt-8">
+        {
+          projectData?.product_type=== "RxPad" ? (<div className="flex gap-2 mx-auto justify-center items-center  w-full">
+            <img className="rounded-lg h-20 w-20" src="/right-1.jpg"/>
+            <img className="rounded-lg h-20 w-20" src="/wrong-1.jpg"/>
+          </div>) : (<div  className="flex gap-2 mx-auto justify-center items-center  w-full">
+            <img className="rounded-lg h-20 w-20" src="/right-2.jpg"/>
+            <img className="rounded-lg h-20 w-20" src="/wrong-3.jpg"/>
+          </div>)
+        }
+        {/* {console.log(projectData)} */}
       </div>
     </div>
   );
