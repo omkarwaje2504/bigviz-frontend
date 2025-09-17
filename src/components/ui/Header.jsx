@@ -1,15 +1,23 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { FaFilm, FaSignOutAlt, FaLocationArrow, FaVideo } from "react-icons/fa";
+import {
+  FaFilm,
+  FaSignOutAlt,
+  FaVideo,
+  FaUserMd,
+} from "react-icons/fa";
 import { useEffect, useState } from "react";
 import { IoGameControllerSharp } from "react-icons/io5";
+import { FaFilePrescription } from "react-icons/fa";
+import { FaUserDoctor } from "react-icons/fa6";
 
 function useHeaderData() {
   const pathname = usePathname();
   const pathnamesArray = pathname?.split("/") || [];
   return { pathname, pathnamesArray };
 }
+
 const getProjectIcon = (name) => {
   switch (name) {
     case "PVR":
@@ -20,14 +28,38 @@ const getProjectIcon = (name) => {
       return <IoGameControllerSharp className="text-red-600 text-2xl mr-3" />;
     case "Doctor":
       return <FaUserMd className="text-purple-600 text-2xl mr-3" />;
+    case "RxPad Ajanata":
+      return <FaFilePrescription className="text-gray-600 text-2xl mr-3" />;
     default:
-      return <FaVideo className="text-gray-600 text-2xl mr-3" />; // fallback
+      return <FaUserDoctor className="text-gray-600 text-2xl mr-3" />; // fallback
   }
 };
-
-const Header = ({ userInfo, projectData, projectHash }) => {
+  
+const Header = ({ ui, userInfo, projectData, projectHash }) => {
   const { pathnamesArray } = useHeaderData();
-  let hedaerLogo;
+
+  const [isDark, setIsDark] = useState(false);
+
+  // detect system dark/light
+  useEffect(() => {
+    const media = window.matchMedia("(prefers-color-scheme: dark)");
+    setIsDark(media.matches);
+
+    const listener = (e) => setIsDark(e.matches);
+    media.addEventListener("change", listener);
+
+    return () => media.removeEventListener("change", listener);
+  }, []);
+
+  // pick colors based on theme
+  const bgColor = isDark
+    ? ui?.basic?.secondaryColor || "#f5ba01"
+    : ui?.basic?.primaryColor || "#fb2c36";
+
+  const textColor = isDark
+    ? ui?.basic?.secondaryText || "#000000"
+    : ui?.basic?.primaryColor || "#ffffff";
+
   return (
     <header className="bg-white dark:bg-black shadow-lg border-b border-gray-200 dark:border-gray-800 transition-colors duration-300">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2">
@@ -37,10 +69,18 @@ const Header = ({ userInfo, projectData, projectHash }) => {
             {getProjectIcon(projectData?.name)}
 
             <div>
-              <h1 className="text-xl font-bold text-red-600 dark:text-red-500">
-                {projectData?.config?.theme?.loading_title || projectData?.name ||"Platform Partner"}
+              <h1
+                className="text-xl font-bold"
+                style={{ color: textColor }}
+              >
+                {projectData?.config?.theme?.loading_title ||
+                  projectData?.name ||
+                  "Platform Partner"}
               </h1>
-              <p className="text-[10px] text-gray-500 dark:text-gray-400 md:text-[13px]">
+              <p
+                className="text-[15px] md:text-[13px]"
+                style={{ color: textColor }}
+              >
                 {projectData?.company?.name || "Achieve your goals with us"}
               </p>
             </div>
@@ -57,9 +97,19 @@ const Header = ({ userInfo, projectData, projectHash }) => {
                   {userInfo.designation}
                 </p>
               </div>
-              <div className="w-8 h-8 rounded-full bg-gradient-to-r from-red-600 to-red-800 text-white flex items-center justify-center text-sm font-bold uppercase">
+
+              {/* Avatar Circle */}
+              <div
+                className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold uppercase"
+                style={{
+                  backgroundColor: bgColor,
+                  color: ui?.basic?.primaryText,
+                }}
+              >
                 {userInfo.name.charAt(0)}
               </div>
+
+              {/* Logout */}
               <FaSignOutAlt
                 className="text-gray-500 hover:text-red-500 dark:text-gray-400 dark:hover:text-red-400 cursor-pointer"
                 onClick={() => {

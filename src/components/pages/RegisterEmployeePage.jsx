@@ -1,4 +1,4 @@
-"use client"
+"use client";
 
 import Banner from "@components/ui/Banner";
 import React, { useEffect, useState } from "react";
@@ -8,9 +8,20 @@ import { DecryptData, EncryptData } from "@utils/cryptoUtils";
 
 function RegisterEmployeePage({ projectData, projectId, ui }) {
   // console.log(projectData)
-
   const router = useRouter();
-  const [loading,setLoading]= useState()
+  const [loading, setLoading] = useState();
+
+  const [isDark, setIsDark] = useState(false);
+
+  useEffect(() => {
+    const media = window.matchMedia("(prefers-color-scheme: dark)");
+    setIsDark(media.matches);
+
+    const listener = (e) => setIsDark(e.matches);
+    media.addEventListener("change", listener);
+
+    return () => media.removeEventListener("change", listener);
+  }, []);
 
   useEffect(() => {
     let getUserData = DecryptData("empData");
@@ -32,19 +43,21 @@ function RegisterEmployeePage({ projectData, projectId, ui }) {
 
     return () => clearTimeout(timer);
   }, []);
-  
+
   return (
     <div className="flex flex-col lg:flex-row min-h-screen bg-gray-50 text-gray-800 dark:bg-gray-900 dark:text-white transition-colors duration-300">
       <Banner
         bannerImage={`${process.env.NEXT_PUBLIC_R2_PUBLIC_URL}/${projectData?.top_banner}`}
       />
-    <div className="flex-grow flex flex-col items-center justify-center px-4 py-4 lg:py-0">
+      <div className="flex-grow flex flex-col items-center justify-center px-4 py-4 lg:py-0">
         <div className="max-w-md w-full space-y-8 p-8 rounded-lg shadow-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 transition-all">
           <div className="text-center">
             <h2
               className={`text-3xl font-extrabold mb-2`}
               style={{
-                color: ui.basic.primaryColor,
+                color: isDark
+                  ? ui?.basic?.secondaryColor || "#f5ba01"
+                  : ui?.basic?.primaryColor || "#fb2c36",
               }}
             >
               {ui.loginPage.heading}
@@ -53,9 +66,13 @@ function RegisterEmployeePage({ projectData, projectId, ui }) {
               {ui.loginPage.subHeading}
             </p>
           </div>
-          <EmployeeRegisterForm projectData={projectData} projectId={projectId} ui={ui}/>
+          <EmployeeRegisterForm
+            projectData={projectData}
+            projectId={projectId}
+            ui={ui}
+          />
         </div>
-    </div> 
+      </div>
     </div>
   );
 }

@@ -102,6 +102,7 @@ const HomePage = ({ projectData, projectId, ui }) => {
   if (isLoading) {
     return (
       <LoadingPage
+        projectData={projectData}
         ui={ui}
         loadingtext={"Loading the Dashboard..."}
         loadingTitle={projectData?.name}
@@ -112,6 +113,7 @@ const HomePage = ({ projectData, projectId, ui }) => {
   return (
     <div className="min-h-screen bg-white text-gray-800 dark:bg-gray-900 dark:text-white transition-colors duration-300">
       <Header
+      ui={ui}
         userInfo={userInfo}
         projectData={projectData}
         projectHash={projectId}

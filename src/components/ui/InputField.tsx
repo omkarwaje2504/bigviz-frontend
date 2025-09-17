@@ -9,6 +9,7 @@ import React, {
 } from "react";
 import inputStyles from "styles/inputStyles";
 import UploadFile from "../../../services/uploadFile";
+import { CiFileOn } from "react-icons/ci";
 
 type ValidationRule = {
   regex?: RegExp;
@@ -226,7 +227,13 @@ const InputField: React.FC<InputFieldProps> = ({
 
   return (
     <div className="mb-4">
-      <label htmlFor={id} className={inputStyles.label}>
+      <label
+        htmlFor={id}
+        className={`
+          ${inputStyles.label}
+          ${label === "RxPad Upload" ? "text-xl font-bold text-white px-4" : ""}
+        `}
+      >
         {required && <span className="text-red-500">*</span>} {label}
       </label>
 
@@ -466,30 +473,18 @@ const InputField: React.FC<InputFieldProps> = ({
         </div>
       ) : // FILE UPLOAD
       type === "file upload" ? (
-        <div className="w-full">
+        <div className="w-full mt-5 px-4">
           <label
             htmlFor={id}
             className={`
-              flex flex-col items-center justify-center w-full p-6 border-black dark:border-white border-2 border-dashed rounded-2xl cursor-pointer transition-colors
-              hover:border-indigo-500 hover:bg-indigo-50
+              relative border-2 border-dashed border-gray-600 rounded-lg py-8 text-center h-80 flex flex-col items-center justify-center cursor-pointer
               ${uploading ? "opacity-50 cursor-wait" : "opacity-100"}
             `}
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="w-10 h-10 text-gray-400 mb-2"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={1.5}
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M3 15.75h17.25M3 15.75l6.75-6.75m-6.75 6.75L9.75 21"
-              />
-            </svg>
-            <p className="text-gray-600 text-sm font-medium">
+            <div className="text-gray-400 mb-4 bg-gray-800 p-4 rounded-full">
+              <CiFileOn size={40} />
+            </div>
+            <p className="text-gray-400 mt-2 text-xl font-medium">
               {uploading ? "Uploading..." : "Click to upload"}
             </p>
 

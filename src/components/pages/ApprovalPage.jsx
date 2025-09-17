@@ -113,6 +113,7 @@ const ApprovalPage = ({ projectData, projectId, ui }) => {
   if (loading) {
     return (
       <LoadingPage
+        projectData={projectData}
         ui={ui}
         loadingtext="Loading approval system..."
         loadingTitle={projectData.name}
@@ -122,6 +123,7 @@ const ApprovalPage = ({ projectData, projectId, ui }) => {
   return (
     <div className="min-h-screen bg-white dark:bg-gray-900 text-gray-900 dark:text-white">
       <Header
+      ui={ui}
         userInfo={userInfo}
         projectData={projectData}
         projectHash={projectId}

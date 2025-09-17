@@ -40,6 +40,7 @@ export default function LoginPage({ projectData, projectId, ui }) {
   if (loading) {
     return (
       <LoadingPage
+      projectData={projectData}
         ui={ui}
         loadingtext="Your jouney is starting from here"
         loadingTitle={projectData?.name}

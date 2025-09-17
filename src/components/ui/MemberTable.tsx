@@ -26,6 +26,7 @@ import {
   RoleNames,
   MemberTableProps,
 } from "utils/types";
+import { FaFilePrescription } from "react-icons/fa";
 
 const ITEMS_PER_PAGE = 4;
 
@@ -40,7 +41,6 @@ const MemberTable: React.FC<MemberTableProps> = ({
   onApprove,
   onDisapprove,
 }) => {
-
   const [searchTerm, setSearchTerm] = useState("");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [currentPage, setCurrentPage] = useState(1);
@@ -61,6 +61,26 @@ const MemberTable: React.FC<MemberTableProps> = ({
   const [memberToDisapprove, setMemberToDisapprove] = useState<Doctor | null>(
     null,
   );
+
+  const [isDark, setIsDark] = useState(false);
+
+  useEffect(() => {
+    const media = window.matchMedia("(prefers-color-scheme: dark)");
+    setIsDark(media.matches);
+
+    const listener = (e: MediaQueryListEvent) => setIsDark(e.matches);
+    media.addEventListener("change", listener);
+
+    return () => media.removeEventListener("change", listener);
+  }, []);
+
+  const activeBgColor = isDark
+    ? ui?.basic?.secondaryColor || "#f5ba01"
+    : ui?.basic?.primaryColor || "#fb2c36";
+
+  const activeTextColor = isDark
+    ? ui?.basic?.secondaryText || "#000000"
+    : ui?.basic?.primaryText || "#ffffff";
 
   useEffect(() => {
     const term = searchTerm.toLowerCase();
@@ -574,7 +594,6 @@ const MemberTable: React.FC<MemberTableProps> = ({
           </div>
         </button>
 
-        {/* Collapsible Content - Only shows for the specific member when isOpen is true */}
         {isOpen && (
           <div className="px-3 pb-1 space-y-2">
             {/* Show the complete approval flow */}
@@ -675,6 +694,9 @@ const MemberTable: React.FC<MemberTableProps> = ({
     }
   };
 
+  const bgColor = ui?.basic?.primaryColor || "#fb2c36";
+  const textColor = ui?.basic?.primaryText || "#ffffff";
+
   return (
     <div className="mt-6 text-gray-900 dark:text-white">
       {previewMode && (
@@ -752,25 +774,43 @@ const MemberTable: React.FC<MemberTableProps> = ({
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder={ui?.HomePageLables?.serachHereLable}
-            icon={<FaSearch className="text-gray-400"
-              projectData={projectData} />}
+            icon={
+              <FaSearch className="text-gray-400" projectData={projectData} />
+            }
           />
         </div>
         <div className="bg-gray-200 dark:bg-gray-800 rounded-lg inline-flex text-sm h-10 mb-3">
           <button
+            style={
+              viewMode === "grid"
+                ? {
+                    backgroundColor: activeBgColor,
+                    color: activeTextColor,
+                  }
+                : {}
+            }
             className={`px-3 py-0.5 rounded ${
               viewMode === "grid"
-                ? "bg-red-600 text-white"
+                ? "text-white"
                 : "text-gray-700 dark:text-gray-400"
             }`}
             onClick={() => setViewMode("grid")}
           >
             {ui?.HomePageLables?.gridButtonLable}
           </button>
+
           <button
+            style={
+              viewMode === "list"
+                ? {
+                    backgroundColor: activeBgColor,
+                    color: activeTextColor,
+                  }
+                : {}
+            }
             className={`px-3 py-0.5 rounded ${
               viewMode === "list"
-                ? "bg-red-600 text-white"
+                ? "text-white"
                 : "text-gray-700 dark:text-gray-400"
             }`}
             onClick={() => setViewMode("list")}
@@ -793,34 +833,32 @@ const MemberTable: React.FC<MemberTableProps> = ({
             >
               <div className="p-2">
                 <div className="flex items-center gap-3">
-                  {
-                    !projectData?.config?.doctor?.disable_photo_upload && (
-                       <div className="w-24 h-24 relative overflow-hidden rounded-lg bg-gray-200 flex items-center justify-center dark:bg-gray-700">
-                        {member?.image ? (
-                          <div
-                            className="relative w-full h-[200px] rounded overflow-hidden cursor-pointer"
-                            onClick={() => onPreview(member, "DOCTOR_IMAGE")}
-                          >
-                            <Image
-                              src={member.image}
-                              alt={member.name}
-                              fill
-                              quality={10}
-                              blurDataURL={member.image}
-                              sizes="(max-width: 640px) 100px, (min-width: 641px) 150px, (min-width: 1024px) 200px"
-                              className="object-cover object-top opacity-50"
-                            />
-                          </div>
-                        ) : (
-                          <FaUser
-                            className="text-4xl text-gray-400 cursor-pointer"
-                            onClick={() => onPreview(member, "DOCTOR_IMAGE")}
+                  {!projectData?.config?.doctor?.disable_photo_upload && (
+                    <div className="w-24 h-24 relative overflow-hidden rounded-lg bg-gray-200 flex items-center justify-center dark:bg-gray-700">
+                      {member?.image ? (
+                        <div
+                          className="relative w-full h-[200px] rounded overflow-hidden cursor-pointer"
+                          onClick={() => onPreview(member, "DOCTOR_IMAGE")}
+                        >
+                          <Image
+                            src={member.image}
+                            alt={member.name}
+                            fill
+                            quality={10}
+                            blurDataURL={member.image}
+                            sizes="(max-width: 640px) 100px, (min-width: 641px) 150px, (min-width: 1024px) 200px"
+                            className="object-cover object-top opacity-50"
                           />
-                        )}
-                      </div>
-                    )
-                  }
-                 
+                        </div>
+                      ) : (
+                        <FaUser
+                          className="text-4xl text-gray-400 cursor-pointer"
+                          onClick={() => onPreview(member, "DOCTOR_IMAGE")}
+                        />
+                      )}
+                    </div>
+                  )}
+
                   <div>
                     {!projectData?.config?.game && (
                       <span
@@ -850,17 +888,15 @@ const MemberTable: React.FC<MemberTableProps> = ({
 
                 <div className="mt-2">
                   <div className="flex justify-between gap-2">
-                    {
-                      projectData?.config?.doctor?.preview_enabled && (
-                        <button
-                          className="w-full justify-center flex items-center space-x-1 text-xs text-white bg-blue-600 p-2 rounded-sm"
-                          onClick={() => onPreview(member, "PREVIEW")}
-                        >
-                          <FaEye />
-                          <span>Preview</span>
-                        </button>
-                      )
-                    }
+                    {projectData?.config?.doctor?.preview_enabled && (
+                      <button
+                        className="w-full justify-center flex items-center space-x-1 text-xs text-white bg-blue-600 p-2 rounded-sm"
+                        onClick={() => onPreview(member, "PREVIEW")}
+                      >
+                        <FaEye />
+                        <span>Preview</span>
+                      </button>
+                    )}
                     {projectData?.config?.doctor?.enable_edit_button && (
                       <button
                         className="w-full justify-center flex items-center space-x-1 text-xs text-white bg-purple-600 p-2 rounded-sm"
@@ -870,25 +906,23 @@ const MemberTable: React.FC<MemberTableProps> = ({
                         <span>Edit</span>
                       </button>
                     )}
-                    {
-                      projectData?.config?.doctor?.download_enabled && (
-                        <button
-                          className="w-full justify-center flex items-center space-x-1 text-xs text-white bg-green-600 p-2 rounded-sm"
-                          onClick={() => onDownload(member)}
-                        >
-                          {downloadingStatus.includes(member.doctor_hash) ? (
-                            <FaSpinner className="animate-spin" />
-                          ) : (
-                            <FaDownload />
-                          )}
-                          <span>
-                            {downloadingStatus.includes(member.doctor_hash)
-                              ? "Downloading"
-                              : "Download"}
-                          </span>
-                        </button>
-                      )
-                    }
+                    {projectData?.config?.doctor?.download_enabled && (
+                      <button
+                        className="w-full justify-center flex items-center space-x-1 text-xs text-white bg-green-600 p-2 rounded-sm"
+                        onClick={() => onDownload(member)}
+                      >
+                        {downloadingStatus.includes(member.doctor_hash) ? (
+                          <FaSpinner className="animate-spin" />
+                        ) : (
+                          <FaDownload />
+                        )}
+                        <span>
+                          {downloadingStatus.includes(member.doctor_hash)
+                            ? "Downloading"
+                            : "Download"}
+                        </span>
+                      </button>
+                    )}
                   </div>
                   {approvalState && (
                     <div className="flex-1 mt-1 flex flex-col items-center justify-center space-y-2 w-full">
@@ -1036,7 +1070,7 @@ const MemberTable: React.FC<MemberTableProps> = ({
                     <td className="px-6 py-4 text-right">
                       <div className="flex justify-end items-center space-x-2">
                         {/* Preview/Edit/Download buttons */}
-                        {member.download_url &&  (
+                        {member.download_url && (
                           <button
                             onClick={() => onPreview(member, "PREVIEW")}
                             title="Preview"
@@ -1052,21 +1086,19 @@ const MemberTable: React.FC<MemberTableProps> = ({
                             <FaEdit className="w-5 h-5 fill-purple-500 hover:fill-purple-600" />
                           </button>
                         )}
-                        {
-                          projectData?.config?.doctor?.download_enabled && (
-                              <button
-                              onClick={() => onDownload(member)}
-                              title="Download"
-                            >
-                              {downloadingStatus.includes(member.doctor_hash) ? (
-                                <FaSpinner className="animate-spin w-5 h-5 fill-blue-500" />
-                              ) : (
-                                <FaDownload className="w-5 h-5 fill-blue-500 hover:fill-blue-600" />
-                              )}
-                            </button>
-                          )
-                        }
-                        
+                        {projectData?.config?.doctor?.download_enabled && (
+                          <button
+                            onClick={() => onDownload(member)}
+                            title="Download"
+                          >
+                            {downloadingStatus.includes(member.doctor_hash) ? (
+                              <FaSpinner className="animate-spin w-5 h-5 fill-blue-500" />
+                            ) : (
+                              <FaDownload className="w-5 h-5 fill-blue-500 hover:fill-blue-600" />
+                            )}
+                          </button>
+                        )}
+
                         {/* Approval buttons */}
                         {renderApprovalButtons(member, true)}
                       </div>
@@ -1124,7 +1156,11 @@ const MemberTable: React.FC<MemberTableProps> = ({
       {/* Empty state */}
       {filteredMembers?.length === 0 && (
         <div className="mt-6 text-center text-gray-400">
-          <FaFilm className="text-4xl mx-auto mb-2" />
+          {projectData?.product_type === "RxPad" ? (
+            <FaFilePrescription className="text-4xl mx-auto mb-2" />
+          ) : (
+            <FaFilm className="text-4xl mx-auto mb-2" />
+          )}
           <p>No members match your search.</p>
         </div>
       )}

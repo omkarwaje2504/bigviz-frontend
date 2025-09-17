@@ -1,5 +1,5 @@
 "use client";
-import React, { ReactNode } from "react";
+import React, { ReactNode, useEffect, useState } from "react";
 import { FaSpinner } from "react-icons/fa";
 
 type ButtonProps = {
@@ -11,9 +11,11 @@ type ButtonProps = {
   fullWidth?: boolean;
   leftIcon?: ReactNode;
   ui?: {
-    theme: {
-      selectedBg: string;
-      selectedText: string;
+    basic?: {
+      primaryText: string;
+      primaryColor: string;
+      secondaryColor: string;
+      secondaryText: string;
     };
   };
 };
@@ -28,14 +30,32 @@ const Button: React.FC<ButtonProps> = ({
   leftIcon,
   ui,
 }) => {
+  
+  const [isDark, setIsDark] = useState(false);
+
+  useEffect(() => {
+    const media = window.matchMedia("(prefers-color-scheme: dark)");
+    setIsDark(media.matches);
+
+    const listener = (e: MediaQueryListEvent) => setIsDark(e.matches);
+    media.addEventListener("change", listener);
+
+    return () => media.removeEventListener("change", listener);
+  }, []);
+
   const baseClasses =
     "group relative flex justify-center items-center gap-2 py-3 px-4 border border-transparent text-sm font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 transition";
 
-  const theme = ui?.theme;
+  const bgColor = isDark
+    ? ui?.basic?.secondaryColor || "#f5ba01"
+    : ui?.basic?.primaryColor || "#fb2c36";
 
-  const enabledClass = `${theme?.selectedBg} ${theme?.selectedText} hover:opacity-90 dark:hover:brightness-110`;
-  const disabledClass =
-    "bg-gray-400 dark:bg-gray-600 text-white cursor-not-allowed";
+  const textColor = isDark
+    ? ui?.basic?.secondaryText || "#000000"
+    : ui?.basic?.primaryText || "#ffffff";
+
+  const enabledClass = "hover:opacity-90 dark:hover:brightness-110";
+  const disabledClass = "bg-gray-400 dark:bg-gray-600 text-white cursor-not-allowed";
 
   const finalClass = `${baseClasses} ${
     isLoading || disabled ? disabledClass : enabledClass
@@ -47,13 +67,15 @@ const Button: React.FC<ButtonProps> = ({
       type={type}
       disabled={isLoading || disabled}
       className={finalClass}
+      style={{
+        backgroundColor: isLoading || disabled ? undefined : bgColor,
+        color: isLoading || disabled ? undefined : textColor,
+      }}
     >
-      {leftIcon && !isLoading && (
-        <span className="flex items-center">{leftIcon}</span>
-      )}
+      {leftIcon && !isLoading && <>{/* render left icon if needed */}</>}
       {isLoading ? (
-        <span className="flex items-center gap-2">
-          <FaSpinner className="animate-spin text-white" />
+        <span className="flex items-center gap-2" style={{ color: textColor }}>
+          <FaSpinner className="animate-spin" style={{ color: textColor }} />
           Please wait...
         </span>
       ) : (
