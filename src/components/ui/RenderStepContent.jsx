@@ -234,6 +234,7 @@ const RenderStepContent = ({
               )}
               
               {/* Show file upload fields for RxPad in step 2 */}
+              {/* {console.log(projectData)} */}
               {projectData?.product_type === "RxPad" && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {getFileUploadFieldsForStep2().map((field) => (

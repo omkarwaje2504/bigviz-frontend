@@ -288,7 +288,7 @@ export default function PhotoUploadEditor({
     }
   };
   return (
-    <div className="bg-gray-900 rounded-lg max-w-3xl mx-auto font-sans">
+    <div className="bg-gray-900 rounded-lg max-w-3xl mx-auto font-sans p-3">
       <h2 className="text-2xl font-bold text-white mb-6">
         Photo Upload & Editor
       </h2>

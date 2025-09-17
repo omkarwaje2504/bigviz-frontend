@@ -34,10 +34,10 @@ const Config = async (projectData) => {
       highlightBg: "bg-gradient-to-br from-green-600 to-green-900",
     },
     basic: {
-      primaryText: projectData?.Theme?.primaryTextColor || "#ffffff",
-      primaryColor: projectData?.Theme?.primaryColor || "#fb2c36",
-      secondaryColor: projectData?.Theme?.secondaryColor || "#f5ba01",
-      secondaryText: projectData?.Theme?.secondaryTextColor || "#ffffff",
+      primaryText: projectData?.config?.Theme?.primary_text_color || "#ffffff",
+      primaryColor: projectData?.config?.Theme?.primary_color || "#fb2c36",
+      secondaryColor: projectData?.config?.Theme?.secondary_color || "#f5ba01",
+      secondaryText: projectData?.config?.Theme?.secondary_text_color || "#ffffff",
     },
     loaderPage: {
       loaderTitle:  projectData?.config?.theme?.loading_title || projectData?.name,

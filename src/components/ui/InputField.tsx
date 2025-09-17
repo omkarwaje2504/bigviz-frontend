@@ -99,7 +99,6 @@ const InputField: React.FC<InputFieldProps> = ({
   const onValidationChangeRef = useRef(onValidationChange);
   const [detectChange, setDetectChange] = useState<number>();
 
-  // --- File upload states ---
   const [uploading, setUploading] = useState(false);
   const [uploadedUrl, setUploadedUrl] = useState<string | null>(null);
   const [uploadError, setUploadError] = useState<string>("");
@@ -108,12 +107,10 @@ const InputField: React.FC<InputFieldProps> = ({
     typeof o === "string" ? { label: o, value: o } : o,
   );
 
-  // Keep latest validation callback
   useEffect(() => {
     onValidationChangeRef.current = onValidationChange;
   }, [onValidationChange]);
 
-  // Validation
   useEffect(() => {
     let safeValue: string;
     let isValid = true;
@@ -147,7 +144,6 @@ const InputField: React.FC<InputFieldProps> = ({
     }
   }, [value, detectChange]);
 
-  // Handle normal text/select/textarea change
   const handleChange = (
     e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>,
   ) => {
@@ -163,7 +159,6 @@ const InputField: React.FC<InputFieldProps> = ({
     onChange(syntheticEvent);
   };
 
-  // Handle file upload
   const handleFileChange = async (
     e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>,
   ) => {
@@ -187,7 +182,6 @@ const InputField: React.FC<InputFieldProps> = ({
 
       setUploadedUrl(uploadedUrl);
 
-      // Fire parent onChange with uploaded URL
       const synthetic = {
         target: { value: uploadedUrl, name: id },
       } as unknown as ChangeEvent<
@@ -476,10 +470,10 @@ const InputField: React.FC<InputFieldProps> = ({
           <label
             htmlFor={id}
             className={`
-  flex flex-col items-center justify-center w-full p-6 border-2 border-dashed rounded-2xl cursor-pointer transition-colors
-  hover:border-indigo-500 hover:bg-indigo-50
-  ${uploading ? "opacity-50 cursor-wait" : "opacity-100"}
-`}
+              flex flex-col items-center justify-center w-full p-6 border-black dark:border-white border-2 border-dashed rounded-2xl cursor-pointer transition-colors
+              hover:border-indigo-500 hover:bg-indigo-50
+              ${uploading ? "opacity-50 cursor-wait" : "opacity-100"}
+            `}
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -498,7 +492,7 @@ const InputField: React.FC<InputFieldProps> = ({
             <p className="text-gray-600 text-sm font-medium">
               {uploading ? "Uploading..." : "Click to upload"}
             </p>
-            
+
             <input
               id={id}
               name={name || id}

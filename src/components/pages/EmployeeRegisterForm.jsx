@@ -106,9 +106,9 @@ function EmployeeRegisterForm({ ui, projectData, projectId }) {
   }
 
   return (
-    <div>
+    <div className="">
       <div>
-        <form onSubmit={handleRegister}>
+        <form className="" onSubmit={handleRegister}>
           {projectData?.config?.employee?.employee_name && (
             <InputField
               ui={ui}
