@@ -133,6 +133,7 @@ export default function RegisterNewCandidate({ projectData, projectId, ui }) {
   return (
     <div className="min-h-screen dark:bg-gray-900 text-white">
       <Header
+        ui={ui}
         userInfo={userInfo}
         projectData={projectData}
         projectHash={projectId}
