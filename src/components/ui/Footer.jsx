@@ -32,7 +32,8 @@ const Footer = ({ projectData }) => {
           {/* Right: Logo */}
           <div className="flex space-x-6">
             <Image
-              src={projectData?.company?.logo || "/sai-logo.png"}
+            src="/sai-logo.png"
+              // src={projectData?.company?.logo || "/sai-logo.png"}
               alt="Sai Logo"
               width={120}
               height={50}
