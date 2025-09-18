@@ -6,25 +6,40 @@ import { VideoRender, GetRenderStatus, Analytics } from "@actions/evideoApis";
 import { useRouter } from "next/navigation";
 
 function GenerateVideo({ ui, projectData }) {
-
   const [loading, setLoading] = useState(true);
   const [statusMsg, setStatusMsg] = useState("Generating video...");
+  const [progress, setProgress] = useState(0);
   const [videoUrl, setVideoUrl] = useState(null);
   const [error, setError] = useState(null);
   const [renderId, setRenderId] = useState(null);
 
   const [videoGenerated, setVideoGenerated] = useState(false);
   const [videoDownloaded, setVideoDownloaded] = useState(false);
+
   const router = useRouter();
 
   const doctorHash =
     typeof window !== "undefined" ? localStorage.getItem("doctorHash") : null;
 
   useEffect(() => {
+    const savedUrl = localStorage.getItem("videoUrl");
+    const savedGenerated = localStorage.getItem("videoGenerated");
+    if (savedUrl && savedGenerated === "true") {
+      setVideoUrl(savedUrl);
+      setVideoGenerated(true);
+      setLoading(false);
+      setStatusMsg("Video ready!");
+    }
+  }, []);
+
+
+  useEffect(() => {
+    if (videoGenerated || videoUrl) return; 
+
     const startVideoGeneration = async () => {
       try {
         let formData = DecryptData("formData");
-       
+
         let updatedFormData = {
           ...formData,
           photo: formData.photo.originalImage,
@@ -57,22 +72,33 @@ function GenerateVideo({ ui, projectData }) {
     };
 
     startVideoGeneration();
-  }, [ui]);
+  }, [ui, projectData, videoGenerated, videoUrl]);
 
 
   useEffect(() => {
-    if (!renderId) return;
+    if (!renderId || videoGenerated) return;
+
+    let progressVal = 0;
 
     const interval = setInterval(async () => {
       try {
         const check = await GetRenderStatus(renderId);
+
+        progressVal = Math.min(progressVal + 10, 90); 
+        setProgress(progressVal);
 
         if (check.success && check.data?.url && check.data.status === "OK") {
           clearInterval(interval);
           setVideoUrl(check.data.url);
           setLoading(false);
           setStatusMsg("Video ready!");
-          Analytics({}, projectData, doctorHash, 24);
+          setProgress(100);
+
+          localStorage.setItem("videoUrl", check.data.url);
+          localStorage.setItem("videoGenerated", "true");
+
+          let data = await Analytics({}, projectData, doctorHash, 24); 
+          console.log(data)
           setVideoGenerated(true);
         }
       } catch (err) {
@@ -81,35 +107,46 @@ function GenerateVideo({ ui, projectData }) {
         setError("Error while checking video status.");
         setLoading(false);
       }
-    }, 2000);
+    }, 5000);
 
     return () => clearInterval(interval);
-  }, [renderId, projectData, doctorHash]);
+  }, [renderId, projectData, doctorHash, videoGenerated]);
 
-
-  const handleDownload = () => {
-    Analytics({}, projectData, doctorHash, 25);
+  const handleDownload = async() => {
+    await Analytics({}, projectData, doctorHash, 25); 
     setVideoDownloaded(true);
   };
 
   const handleGoBack = () => {
-    if (!videoGenerated || !videoDownloaded) {
-      alert("Data will get lost if you go back before completing download!");
-      return;
-    }
     router.back();
   };
 
   return (
     <div className="flex flex-col items-center justify-center min-h-[300px] p-6">
+
       {loading && !error && (
-        <div className="flex flex-col items-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-blue-600 mb-4"></div>
+        <div className="flex flex-col items-center w-full max-w-md">
+          <div className="w-full bg-gray-200 rounded-full h-4 mb-4">
+            <div
+              className="bg-blue-600 h-4 rounded-full transition-all"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
           <p className="text-gray-600">{statusMsg}</p>
         </div>
       )}
 
-      {error && <div className="text-red-500 font-medium">{error}</div>}
+      {error && (
+        <div className="flex flex-col items-center gap-4">
+          <div className="text-red-500 font-medium">{error}</div>
+          <button
+            onClick={handleGoBack}
+            className="mt-2 px-6 py-2 rounded-lg shadow bg-red-600 text-white hover:bg-red-700"
+          >
+            ⬅️ Go Back
+          </button>
+        </div>
+      )}
 
       {!loading && videoUrl && (
         <div className="flex flex-col items-center gap-4">
@@ -129,17 +166,21 @@ function GenerateVideo({ ui, projectData }) {
         </div>
       )}
 
-      <button
-        onClick={handleGoBack}
-        disabled={!videoGenerated || !videoDownloaded}
-        className={`mt-6 px-6 py-2 rounded-lg shadow ${
-          videoGenerated && videoDownloaded
-            ? "bg-green-600 text-white hover:bg-green-700"
-            : "bg-gray-400 text-gray-200 cursor-not-allowed"
-        }`}
-      >
-        ⬅️ Go Back
-      </button>
+      {(!loading && (videoGenerated && videoDownloaded)) || error ? (
+        <button
+          onClick={handleGoBack}
+          className="mt-6 px-6 py-2 rounded-lg shadow bg-green-600 text-white hover:bg-green-700"
+        >
+          ⬅️ Go Back
+        </button>
+      ) : (
+        <button
+          disabled
+          className="mt-6 px-6 py-2 rounded-lg shadow bg-gray-400 text-gray-200 cursor-not-allowed"
+        >
+          ⬅️ Go Back
+        </button>
+      )}
     </div>
   );
 }

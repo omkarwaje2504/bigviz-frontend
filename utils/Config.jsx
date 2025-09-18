@@ -77,7 +77,7 @@ const Config = async (projectData) => {
       HomePageButtonLabel:projectData?.config?.theme?.home_page_button_label?  projectData?.config?.theme?.home_page_button_label : "Add New Doctor",
       title:projectData?.config?.theme?.home_title?  projectData?.config?.theme?.home_title : "Dashboard Overview",
       ActiveLabel: projectData?.config?.employee?.approval_required
-        ? "Active Clients"
+        ? "Total Doctors"
         : projectData?.product_name === "E-Video"
           ? "Videos Generated"
           : projectData?.product_name === "E-Greeting"

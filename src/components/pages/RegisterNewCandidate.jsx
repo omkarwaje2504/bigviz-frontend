@@ -6,20 +6,13 @@ import FormNavigationButtons from "@components/ui/FormNavigationButtons";
 import RenderStepContent from "@components/ui/RenderStepContent";
 import RenderStepIndicator from "@components/ui/RenderStepIndicator";
 import { useEffect, useState } from "react";
-import {
-  FaCheck,
-  FaTimes,
-  FaMicrophone,
-  FaChevronRight,
-  FaChevronLeft,
-  FaStar,
-} from "react-icons/fa";
-import { set } from "zod";
 import { useRouter } from "next/navigation";
 import { IoArrowBackCircleSharp } from "react-icons/io5";
 import Link from "next/link";
 import MyError from "@services/MyError";
 import { SaveDoctors } from "@actions/user";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 export default function RegisterNewCandidate({ projectData, projectId, ui }) {
   const [currentStep, setCurrentStep] = useState(1);
@@ -42,7 +35,6 @@ export default function RegisterNewCandidate({ projectData, projectId, ui }) {
     photo: null,
   });
   const [doctorHash, setDoctorHash] = useState(null);
-  const [showSuccess, setShowSuccess] = useState(false);
 
   const router = useRouter();
 
@@ -61,9 +53,8 @@ export default function RegisterNewCandidate({ projectData, projectId, ui }) {
         hash: getUserInfo?.hash,
       });
     }
-    
-    // Check if we already have a doctor hash in localStorage
-    const storedDoctorHash = localStorage.getItem('doctorHash');
+
+    const storedDoctorHash = localStorage.getItem("doctorHash");
     if (storedDoctorHash) {
       setDoctorHash(storedDoctorHash);
     }
@@ -75,30 +66,35 @@ export default function RegisterNewCandidate({ projectData, projectId, ui }) {
     }
   }, [formData]);
 
-
   const handleSaveDoctor = async () => {
-    let doctorHash = DecryptData("doctorHash")
-    if(doctorHash){
-      return true
+    let doctorHash = DecryptData("doctorHash");
+    if (doctorHash) {
+      return true;
     }
     setIsSaveLoading(true);
     try {
-      let doctorCode = DecryptData("doctorHash")
-      const save = await SaveDoctors(projectData, userInfo.hash, formData,doctorCode);
+      let doctorCode = DecryptData("doctorHash");
+      const save = await SaveDoctors(
+        projectData,
+        userInfo.hash,
+        formData,
+        doctorCode
+      );
       if (save.success) {
-        
-        EncryptData('doctorHash', save.doctorHash);
+        EncryptData("doctorHash", save.doctorHash);
         setDoctorHash(save.doctorHash);
         setIsSaveLoading(false);
         return true;
       } else {
         console.log(save.message);
+        toast.error(save.message || "Failed to save doctor");
         setIsSaveLoading(false);
         return false;
       }
     } catch (error) {
       console.error(error);
       MyError(error);
+      toast.error("An error occurred while saving doctor");
       setIsSaveLoading(false);
       return false;
     }
@@ -108,46 +104,46 @@ export default function RegisterNewCandidate({ projectData, projectId, ui }) {
     e.preventDefault();
     setIsSubmitLoading(true);
     try {
-      let doctorCode = DecryptData("doctorHash")
-      const save = await SaveDoctors(projectData, userInfo.hash, formData,doctorCode);
+      let doctorCode = DecryptData("doctorHash");
+      const save = await SaveDoctors(
+        projectData,
+        userInfo.hash,
+        formData,
+        doctorCode
+      );
       if (!save.success) {
         console.log(save.message);
+        toast.error(save.message || "Submission failed");
       } else {
-        setShowSuccess(true)
-        setTimeout(() => {
-        if (projectData?.config?.game) {
-          router.push("game");
-        } else if (projectData?.product_type === "RxPad") {
-          router.push("homepage");
-        } else if (projectData?.product_type === "Evideo") {
-          router.push("generate-video");
-        } else {
-          router.push("homepage");
-        }
+        toast.success("Doctor Added Successfully!");
 
-        setIsSubmitLoading(false);
-        setShowSuccess(false);
-      }, 2000);
-        
-        localStorage.removeItem('doctorHash');
+        setTimeout(() => {
+          if (projectData?.config?.game) {
+            router.push("game");
+          } else if (projectData?.product_type === "RxPad") {
+            router.push("homepage");
+          } else if (projectData?.product_type === "Evideo") {
+            router.push("generate-video");
+          } else {
+            router.push("homepage");
+          }
+          setIsSubmitLoading(false);
+        }, 2000);
+
+        localStorage.removeItem("doctorHash");
       }
     } catch (error) {
       console.error(error);
       MyError(error);
+      toast.error("Unexpected error occurred");
     }
   };
 
   return (
     <div className="min-h-screen dark:bg-gray-900 text-white">
-      {showSuccess && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black/80 bg-opacity-40 z-50">
-          <div className="bg-white px-6 py-14 rounded-lg shadow-lg text-center">
-            <h2 className="text-green-600 font-bold text-lg">
-              Doctor Added Successfully!
-            </h2>
-          </div>
-        </div>
-      )}
+ 
+      <ToastContainer position="top-center" autoClose={3000} />
+
       <Header
         ui={ui}
         userInfo={userInfo}
@@ -155,7 +151,6 @@ export default function RegisterNewCandidate({ projectData, projectId, ui }) {
         projectHash={projectId}
       />
 
-      {/* Main Content */}
       <div className="container mx-auto px-4 py-3">
         <div className="max-w-3xl mx-auto">
           <Link
@@ -189,7 +184,7 @@ export default function RegisterNewCandidate({ projectData, projectId, ui }) {
               setPhotoUploadStatus={setPhotoUploadStatus}
               setAudioUploadStatus={setAudioUploadStatus}
               setValidationStatus={setValidationStatus}
-              doctorHash={doctorHash} 
+              doctorHash={doctorHash}
             />
             <FormNavigationButtons
               ui={ui}
@@ -199,7 +194,7 @@ export default function RegisterNewCandidate({ projectData, projectId, ui }) {
               formData={formData}
               validationStatus={validationStatus}
               isSubmitLoading={isSubmitLoading}
-              onSaveDoctor={handleSaveDoctor} 
+              onSaveDoctor={handleSaveDoctor}
               isSaveLoading={isSaveLoading}
             />
           </form>

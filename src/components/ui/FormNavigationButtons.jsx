@@ -29,8 +29,8 @@ const FormNavigationButtons = ({
       formData.calendarData.every((item) => !!item.images[0]?.croppedImage));
 
   const isLastStepForProject =
-    (projectType === "Evideo" &&  currentStep === 2 ) ||
-    (projectType === "RxPad" &&  currentStep === 2 ) ||
+    (projectType === "Evideo" &&  currentStep === 2 && formData.photo ) ||
+    (projectType === "RxPad" &&  currentStep === 2 && formData.photo ) ||
     (disablePhotoUpload && currentStep === 1 && isPage1Valid) ||
     (projectType === "DeskCalendar" && currentStep === 2 && isPage2Valid) ||
     (projectType === "PhotoFrame" && currentStep === 2 && isPage2Valid) ||

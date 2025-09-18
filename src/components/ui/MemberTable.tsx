@@ -554,7 +554,6 @@ const MemberTable: React.FC<MemberTableProps> = ({
   };
   const renderApprovalProgress = (member: Doctor) => {
     const approval = getApprovalLogic(member);
-    // Use strict boolean check to prevent any undefined issues
     const isOpen = Boolean(approvalProgressStates[member.doctor_hash]);
 
     return (
@@ -720,7 +719,6 @@ const MemberTable: React.FC<MemberTableProps> = ({
                   />
                 ) : previewImageType === "DOCTOR_IMAGE" ? (
                   <div className="w-64 h-64 p-10 bg-gray-800 flex flex-col items-center justify-center">
-                    <FaUser className="text-4xl text-gray-400" />
                     No Doctor Photo
                   </div>
                 ) : (
@@ -853,10 +851,7 @@ const MemberTable: React.FC<MemberTableProps> = ({
                           />
                         </div>
                       ) : (
-                        <FaUser
-                          className="text-4xl text-gray-400 cursor-pointer"
-                          onClick={() => onPreview(member, "DOCTOR_IMAGE")}
-                        />
+                        <></>
                       )}
                     </div>
                   )}
@@ -996,10 +991,7 @@ const MemberTable: React.FC<MemberTableProps> = ({
                               />
                             </div>
                           ) : (
-                            <FaUser
-                              className="text-4xl text-gray-400 cursor-pointer"
-                              onClick={() => onPreview(member, "DOCTOR_IMAGE")}
-                            />
+                            <></>
                           )}
                           {member.name}
                         </p>
@@ -1018,7 +1010,7 @@ const MemberTable: React.FC<MemberTableProps> = ({
                       ).toLocaleDateString()}
                     </td>
                     <td className="px-6 py-4 hidden md:table-cell">
-                      {projectData?.config?.employee?.approval_required &&
+                      {projectData?.config?.employee?.approval_required && member?.download_url &&
                       userInfo.role !== 1 ? (
                         <div className="flex flex-col gap-1">
                           {/* Main Status */}
@@ -1080,7 +1072,7 @@ const MemberTable: React.FC<MemberTableProps> = ({
                             <FaEdit className="w-5 h-5 fill-purple-500 hover:fill-purple-600" />
                           </button>
                         )}
-                        {projectData?.config?.doctor?.download_enabled && (
+                        {projectData?.config?.doctor?.download_enabled && member?.download_url && (
                           <button
                             onClick={() => onDownload(member)}
                             title="Download"
@@ -1094,7 +1086,7 @@ const MemberTable: React.FC<MemberTableProps> = ({
                         )}
 
                         {/* Approval buttons */}
-                        {renderApprovalButtons(member, true)}
+                        { member?.download_url && (renderApprovalButtons(member, true))}
                       </div>
                     </td>
                   </tr>
