@@ -215,7 +215,7 @@ export const SaveDoctors = async (
   const countryCode = projectData?.config?.doctor?.country_codes?.[0] || +91;
 
   const unwantedBase =
-    "https://pub-55257b9217554e4cad3b45d7ee44674b.r2.dev/production/";
+    "https://pub-0b6394cfeda24bf196c98e1746afe09b.r2.dev/production/";
 
   let photo = formData?.photo?.originalImage || "";
   if (photo.startsWith(unwantedBase)) {
