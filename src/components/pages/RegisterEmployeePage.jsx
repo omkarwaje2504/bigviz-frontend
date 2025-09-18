@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import { DecryptData, EncryptData } from "@utils/cryptoUtils";
 
 function RegisterEmployeePage({ projectData, projectId, ui }) {
-  // console.log(projectData)
+
   const router = useRouter();
   const [loading, setLoading] = useState();
 

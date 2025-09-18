@@ -309,6 +309,10 @@ const MemberTable: React.FC<MemberTableProps> = ({
       } else {
         setPreviewImageType("");
         switch (projectData.product_type) {
+          case "RxPad":
+            setPreviewType("IMAGE");
+            setPreviewUrl(member.download_url || "");
+            break;
           case "PhotoFrame":
             setPreviewType("IMAGE");
             setPreviewUrl(member.download_url || "");
@@ -349,8 +353,6 @@ const MemberTable: React.FC<MemberTableProps> = ({
       anyDisapproved,
       allApproved,
       userInApprovalFlow,
-      approvalHistory,
-      currentUser,
     } = approval;
 
     if (!approvalState) return null;
@@ -841,7 +843,7 @@ const MemberTable: React.FC<MemberTableProps> = ({
                           onClick={() => onPreview(member, "DOCTOR_IMAGE")}
                         >
                           <Image
-                            src={member.image}
+                            src={`${member.image}`}
                             alt={member.name}
                             fill
                             quality={10}
@@ -887,8 +889,10 @@ const MemberTable: React.FC<MemberTableProps> = ({
                 </div>
 
                 <div className="mt-2">
+                  
                   <div className="flex justify-between gap-2">
-                    {projectData?.config?.doctor?.preview_enabled && (
+     
+                    {projectData?.config?.doctor?.preview_enabled && member.download_url && (
                       <button
                         className="w-full justify-center flex items-center space-x-1 text-xs text-white bg-blue-600 p-2 rounded-sm"
                         onClick={() => onPreview(member, "PREVIEW")}
@@ -906,7 +910,7 @@ const MemberTable: React.FC<MemberTableProps> = ({
                         <span>Edit</span>
                       </button>
                     )}
-                    {projectData?.config?.doctor?.download_enabled && (
+                    {projectData?.config?.doctor?.download_enabled && member.download_url && (
                       <button
                         className="w-full justify-center flex items-center space-x-1 text-xs text-white bg-green-600 p-2 rounded-sm"
                         onClick={() => onDownload(member)}
@@ -924,7 +928,7 @@ const MemberTable: React.FC<MemberTableProps> = ({
                       </button>
                     )}
                   </div>
-                  {approvalState && (
+                  {approvalState && member?.download_url && (
                     <div className="flex-1 mt-1 flex flex-col items-center justify-center space-y-2 w-full">
                       <div className="w-full">
                         <div className="mb-3">
@@ -976,16 +980,6 @@ const MemberTable: React.FC<MemberTableProps> = ({
                       <div className="font-medium">
                         <p className="flex items-center gap-2 text-sm">
                           {" "}
-                          {/* <div
-                            className="md:w-10 w-8 h-8 md:h-10 rounded-full overflow-hidden"
-                            onClick={() => onPreview(member, "DOCTOR_IMAGE")}
-                          >
-                            <img
-                              src={member.image}
-                              alt="Doctor-Image"
-                              className="w-full"
-                            />
-                          </div> */}
                           {member?.image ? (
                             <div
                               className="relative w-full h-[200px] rounded overflow-hidden cursor-pointer"

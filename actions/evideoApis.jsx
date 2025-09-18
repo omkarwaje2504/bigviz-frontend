@@ -1,13 +1,3 @@
-// {
-//     "function": "pixpro-propmotion",
-//     "videoId": "IndependenceDayIPCA",
-//     "props": {
-//         "name": "Dr. Ved",
-//         "photo": "https://pub-1866961b46144251bd1b1f5a7087fd41.r2.dev/production/photos/2025/09/independence-day/1z7mq5dz/dr-ved/caxkv8-1757566615242-cropped.png"
-//     }
-// }
-
-
 export const VideoRender = async (videoId, videoProps) => {
   const apiKey = "adfljhsdgofsahgalsdfjasadssaflkadnfgasldfsadf";
 
@@ -94,5 +84,45 @@ export const GetRenderStatus = async (id) => {
       success: false,
       message: "Failure occur while generating Ai Video",
     };
+  }
+};
+
+export const Analytics = async (formData, projectInfo,doctorHash,type) => {
+  if (!formData.code || !projectInfo?.project_hash) {
+    return { success: false, message: "Invalid input data" };
+  }
+  try {
+    const loginResponse = await fetch(
+      `${process.env.NEXT_PUBLIC_PROJECT_URL}/analytics/video`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify({
+            project_hash:projectInfo.project_hash,
+            doctor_hash:doctorHash,
+            type:type
+        }),
+      },
+    );
+
+    const response = await loginResponse.json();
+   
+    if (!response) {
+      if (
+        response.message ===
+        "The Code has alreday been taken"
+      ) {
+        throw new Error("Employee code is already taken. Please check and retry");
+      } else {
+        throw new Error("Register fail. Please try again.");
+      }
+    }
+    return { success: true, data: response };
+  } catch (error) {
+    MyError(error);
+    return { success: false, message: error.message };
   }
 };

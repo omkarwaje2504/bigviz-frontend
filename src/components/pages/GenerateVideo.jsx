@@ -2,27 +2,36 @@
 
 import React, { useEffect, useState } from "react";
 import { DecryptData } from "@utils/cryptoUtils";
-import { VideoRender, GetRenderStatus } from "@actions/evideoApis";
+import { VideoRender, GetRenderStatus, Analytics } from "@actions/evideoApis";
+import { useRouter } from "next/navigation";
 
-function GenerateVideo({ ui }) {
+function GenerateVideo({ ui, projectData }) {
+
   const [loading, setLoading] = useState(true);
   const [statusMsg, setStatusMsg] = useState("Generating video...");
   const [videoUrl, setVideoUrl] = useState(null);
   const [error, setError] = useState(null);
   const [renderId, setRenderId] = useState(null);
 
-  // Start video generation once
+  const [videoGenerated, setVideoGenerated] = useState(false);
+  const [videoDownloaded, setVideoDownloaded] = useState(false);
+  const router = useRouter();
+
+  const doctorHash =
+    typeof window !== "undefined" ? localStorage.getItem("doctorHash") : null;
+
   useEffect(() => {
     const startVideoGeneration = async () => {
       try {
         let formData = DecryptData("formData");
+       
         let updatedFormData = {
           ...formData,
           photo: formData.photo.originalImage,
         };
 
         const response = await VideoRender(
-          ui.EVideoConfigs.VideoID,
+          projectData?.artworks[0]?.name,
           updatedFormData
         );
 
@@ -56,14 +65,15 @@ function GenerateVideo({ ui }) {
 
     const interval = setInterval(async () => {
       try {
-        // console.log(renderId)
         const check = await GetRenderStatus(renderId);
-        // console.log(check)
 
         if (check.success && check.data?.url && check.data.status === "OK") {
           clearInterval(interval);
           setVideoUrl(check.data.url);
           setLoading(false);
+          setStatusMsg("Video ready!");
+          Analytics({}, projectData, doctorHash, 24);
+          setVideoGenerated(true);
         }
       } catch (err) {
         console.error("Polling error:", err);
@@ -73,8 +83,22 @@ function GenerateVideo({ ui }) {
       }
     }, 2000);
 
-    return () => clearInterval(interval); 
-  }, [renderId]);
+    return () => clearInterval(interval);
+  }, [renderId, projectData, doctorHash]);
+
+
+  const handleDownload = () => {
+    Analytics({}, projectData, doctorHash, 25);
+    setVideoDownloaded(true);
+  };
+
+  const handleGoBack = () => {
+    if (!videoGenerated || !videoDownloaded) {
+      alert("Data will get lost if you go back before completing download!");
+      return;
+    }
+    router.back();
+  };
 
   return (
     <div className="flex flex-col items-center justify-center min-h-[300px] p-6">
@@ -97,12 +121,25 @@ function GenerateVideo({ ui }) {
           <a
             href={videoUrl}
             download="generated-video.mp4"
+            onClick={handleDownload}
             className="bg-blue-600 text-white px-6 py-2 rounded-lg shadow hover:bg-blue-700 transition"
           >
             ⬇️ Download Video
           </a>
         </div>
       )}
+
+      <button
+        onClick={handleGoBack}
+        disabled={!videoGenerated || !videoDownloaded}
+        className={`mt-6 px-6 py-2 rounded-lg shadow ${
+          videoGenerated && videoDownloaded
+            ? "bg-green-600 text-white hover:bg-green-700"
+            : "bg-gray-400 text-gray-200 cursor-not-allowed"
+        }`}
+      >
+        ⬅️ Go Back
+      </button>
     </div>
   );
 }

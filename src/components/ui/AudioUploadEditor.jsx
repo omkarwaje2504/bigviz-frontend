@@ -320,7 +320,6 @@ const AudioUploadEditor = ({
   };
 
   const stopRecording = () => {
-    console.log("Stopping recording...");
     if (!isRecording) {
       console.warn("Recording already stopped.");
       return;
@@ -328,13 +327,11 @@ const AudioUploadEditor = ({
 
     setIsRecording(false);
 
-    // Clear timer
     if (recordingTimerRef.current) {
       clearInterval(recordingTimerRef.current);
       recordingTimerRef.current = null;
     }
 
-    // Stop recorder if active
     if (
       mediaRecorderRef.current &&
       mediaRecorderRef.current.state !== "inactive"

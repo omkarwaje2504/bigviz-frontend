@@ -208,7 +208,7 @@ export default function PhotoUploadEditor({
   };
 
   const saveCroppedImage = async () => {
-    console.log("Saving cropped image...");
+
     let canvas = null;
 
     if (editMode === "crop" && cropperRef.current) {
@@ -217,12 +217,10 @@ export default function PhotoUploadEditor({
         height: cropHeight,
       });
     } else if (imageRef.current) {
-      // Create a temporary canvas and draw the image with rotation, zoom, and filters
       const imgElement = imageRef.current;
       const tempCanvas = document.createElement("canvas");
       const ctx = tempCanvas.getContext("2d");
 
-      // Calculate new dimensions
       const size = Math.max(imgElement.naturalWidth, imgElement.naturalHeight);
       tempCanvas.width = size;
       tempCanvas.height = size;
@@ -313,7 +311,7 @@ export default function PhotoUploadEditor({
       
       setEditMode(null);
       setUnsavedChanges(false);
-      console.log("Image saved successfully!");
+     
     }
   };
 
@@ -532,31 +530,35 @@ export default function PhotoUploadEditor({
             )}
           </div>
 
-          <div className="bg-gray-800 rounded-lg p-4 flex flex-col md:flex-row  justify-between items-center">
-            <div className="text-white mb-2 md:mb-0">
-              <p className="text-sm text-gray-400">Filename: {filename}</p>
-              <div className="flex items-center mt-1">
-                <span className="text-sm mr-2">Zoom: {zoom.toFixed(1)}x</span>
-                <span className="text-sm">Rotation: {rotation}°</span>
-              </div>
-            </div>
-            <div>
-              <Button
-                ui={ui}
-                type="button"
-                fullWidth={false}
-                leftIcon={<FaSave size={20} className="mr-2" />}
-                onClick={saveCroppedImage}
-              >
-                Save Changes
-              </Button>
-              {unsavedChanges && (
-                <p className="text-yellow-400 text-xs mt-1 text-center">
-                  Unsaved Changes
-                </p>
-              )}
-            </div>
-          </div>
+          <div className="bg-gray-800 rounded-lg p-4 flex flex-col md:flex-row justify-between items-center gap-3">
+  <div className="text-white w-full md:w-auto overflow-hidden">
+    <p className="text-sm text-gray-400 truncate max-w-full">
+      Filename: {filename}
+    </p>
+    <div className="flex flex-wrap items-center mt-1 text-sm text-gray-300">
+      <span className="mr-2">Zoom: {zoom.toFixed(1)}x</span>
+      <span>Rotation: {rotation}°</span>
+    </div>
+  </div>
+
+  <div className="flex flex-col items-center md:items-end w-full md:w-auto">
+    <Button
+      ui={ui}
+      type="button"
+      fullWidth={false}
+      leftIcon={<FaSave size={20} className="mr-2" />}
+      onClick={saveCroppedImage}
+    >
+      Save Changes
+    </Button>
+    {unsavedChanges && (
+      <p className="text-yellow-400 text-xs mt-1 text-center">
+        Unsaved Changes
+      </p>
+    )}
+  </div>
+</div>
+
         </div>
       )}
 

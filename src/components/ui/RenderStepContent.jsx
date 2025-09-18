@@ -31,7 +31,7 @@ const getMaxLengthFromRegex = (str) => {
   total += quantifiers.reduce((sum, m) => sum + parseInt(m[1], 10), 0);
 
   const charClasses = [...str.matchAll(/\[[^\]]+\](?!\{)/g)];
-  total += charClasses.length; 
+  total += charClasses.length;
 
   const groups = [...str.matchAll(/\(([^)]+)\)/g)];
   for (const g of groups) {
@@ -57,6 +57,8 @@ const RenderStepContent = ({
   const dynamicFields = projectData?.config?.field || [];
   const prefixOptions = projectData?.config?.doctor?.prefix || ["Dr"];
   const countryCode = projectData?.config?.doctor?.country_codes?.[0] || +91;
+  const [showStep2Confirm, setShowStep2Confirm] = useState(true);
+  const isRxPadImage = projectData?.product_type === "RxPad" ? true : false;
 
   useEffect(() => {
     if (formData?.name?.length > 5) {
@@ -68,25 +70,25 @@ const RenderStepContent = ({
     setValidationStatus((prev) => ({ ...prev, [key]: isValid }));
   };
 
- 
   const getFilteredFieldsForStep1 = () => {
     if (projectData?.product_type === "RxPad") {
-      return dynamicFields.filter(field => 
-        !field?.additional_config?.includes("backstage_only") && 
-        field.type !== "file upload"
+      return dynamicFields.filter(
+        (field) =>
+          !field?.additional_config?.includes("backstage_only") &&
+          field.type !== "file upload",
       );
     }
-    return dynamicFields.filter(field => 
-      !field?.additional_config?.includes("backstage_only")
+    return dynamicFields.filter(
+      (field) => !field?.additional_config?.includes("backstage_only"),
     );
   };
 
-
   const getFileUploadFieldsForStep2 = () => {
     if (projectData?.product_type === "RxPad") {
-      return dynamicFields.filter(field => 
-        !field?.additional_config?.includes("backstage_only") && 
-        field.type === "file upload"
+      return dynamicFields.filter(
+        (field) =>
+          !field?.additional_config?.includes("backstage_only") &&
+          field.type === "file upload",
       );
     }
     return [];
@@ -119,7 +121,7 @@ const RenderStepContent = ({
                 projectData={projectData}
               />
             </div>
-           
+
             {!projectData?.features?.includes("disable_mobile_number") && (
               <div>
                 <InputField
@@ -128,14 +130,21 @@ const RenderStepContent = ({
                   label={`${ui?.DoctorRegistrationForm?.MobileInputLable}*`}
                   type="tel"
                   value={formData.mobile}
-                  countryCode={ui?.DoctorRegistrationForm?.MobileValidation ? countryCode : undefined}
+                  countryCode={
+                    ui?.DoctorRegistrationForm?.MobileValidation
+                      ? countryCode
+                      : undefined
+                  }
                   onChange={(e) => {
                     let val = e.target.value;
 
                     if (ui?.DoctorRegistrationForm?.MobileValidation) {
                       try {
                         const regex = new RegExp(
-                          projectData?.config?.doctor?.regex?.replace(/^\/|\/$/g, "")
+                          projectData?.config?.doctor?.regex?.replace(
+                            /^\/|\/$/g,
+                            "",
+                          ),
                         );
                       } catch (err) {
                         console.warn("Invalid regex from backend:", err);
@@ -151,12 +160,15 @@ const RenderStepContent = ({
                     ui?.DoctorRegistrationForm?.MobileValidation
                       ? {
                           regex: new RegExp(
-                            projectData?.config?.doctor?.regex?.replace(/^\/|\/$/g, "")
+                            projectData?.config?.doctor?.regex?.replace(
+                              /^\/|\/$/g,
+                              "",
+                            ),
                           ),
                           message: `Enter a valid mobile number`,
                           trim: true,
                           maxLength: getMaxLengthFromRegex(
-                            projectData?.config?.doctor?.regex
+                            projectData?.config?.doctor?.regex,
                           ),
                         }
                       : undefined
@@ -170,7 +182,6 @@ const RenderStepContent = ({
                 />
               </div>
             )}
-
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {getFilteredFieldsForStep1().map((field) => (
@@ -180,8 +191,7 @@ const RenderStepContent = ({
                 projectData={projectData}
                 id={field.name}
                 label={
-                  field.display_name +
-                  (field.validations?.required ? " *" : "")
+                  field.display_name + (field.validations?.required ? " *" : "")
                 }
                 type={field.type}
                 value={String(formData[field.name] ?? "")}
@@ -213,69 +223,125 @@ const RenderStepContent = ({
       );
     case 2:
       return (
-        <div className="space-y-6">
-          {projectData?.product_type === "DeskCalendar" ? (
-            <CalendarPage
-              projectData={projectData}
-              formData={formData}
-              setFormData={setFormData}
-              ui={ui}
-            />
+        <>
+          {showStep2Confirm ? (
+            <div className="fixed inset-0 flex items-center justify-center bg-black/70 z-50">
+              <div className="bg-white shadow-xl flex flex-col items-center gap-6 rounded-2xl w-[90%] max-w-md p-6 animate-fadeIn">
+                {/* Heading / Title */}
+                <h2 className="text-lg font-semibold text-gray-800 text-center">
+                  Please check the correct vs incorrect example
+                </h2>
+
+                {/* Image Section */}
+                {isRxPadImage ? (
+                  <div className="flex gap-4 justify-center items-center w-full">
+                    <img
+                      className="rounded-lg h-24 w-24 object-cover border-2 border-green-500 shadow-md"
+                      src="/right-1.jpg"
+                      alt="Correct"
+                    />
+                    <img
+                      className="rounded-lg h-24 w-24 object-cover border-2 border-red-500 shadow-md"
+                      src="/wrong-1.jpg"
+                      alt="Incorrect"
+                    />
+                  </div>
+                ) : (
+                  <div className="flex gap-4 justify-center items-center w-full">
+                    <img
+                      className="rounded-lg h-24 w-24 object-cover border-2 border-green-500 shadow-md"
+                      src="/right-2.jpg"
+                      alt="Correct"
+                    />
+                    <img
+                      className="rounded-lg h-24 w-24 object-cover border-2 border-red-500 shadow-md"
+                      src="/wrong-3.jpg"
+                      alt="Incorrect"
+                    />
+                  </div>
+                )}
+
+                {/* Action Button */}
+                <button
+                  className="mt-4 px-6 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white font-medium shadow-md transition"
+                  onClick={() => setShowStep2Confirm(false)}
+                >
+                  Got it
+                </button>
+              </div>
+            </div>
           ) : (
-            <>
-              {!projectData?.config?.doctor?.disable_photo_upload && !projectData?.product_type === "RxPad" && (
-                <PhotoUploadEditor
-                  ui={ui}
+            // Case 2 content
+            <div className="space-y-6">
+              {projectData?.product_type === "DeskCalendar" ? (
+                <CalendarPage
                   projectData={projectData}
-                  setPhotoUploadStatus={setPhotoUploadStatus}
                   formData={formData}
                   setFormData={setFormData}
+                  ui={ui}
                 />
-              )}
-              
-              {projectData?.product_type === "RxPad" && (
-                <div className="">
-                  {getFileUploadFieldsForStep2().map((field) => (
-                    <InputField
-                      key={field.id}
+              ) : (
+                <>
+                  {!projectData?.config?.doctor?.disable_photo_upload && (
+                    <PhotoUploadEditor
                       ui={ui}
                       projectData={projectData}
-                      id={'rxpad_image'}
-                      label={
-                        field.display_name +
-                        (field.validations?.required ? " *" : "")
-                      }
-                      type={field.type}
-                      value={String(formData['rxpad_image'] ?? "")}
-                      onChange={(e) =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          ['rxpad_image']: e.target.value,
-                        }))
-                      }
-                      required={field?.additional_config?.includes("is_required")}
-                      placeholder={field.placeholder}
-                      options={field.options || []}
-                      validation={{
-                        regex:
-                          field.validations?.min || field.validations?.max
-                            ? new RegExp(
-                                `^.{${field.validations.min || 0},${
-                                  field.validations.max || 100
-                                }}$`,
-                              )
-                            : undefined,
-                        message: `Enter valid ${field.label}`,
-                      }}
-                      onValidationChange={handleValidationChange('rxpad_image')}
+                      setPhotoUploadStatus={setPhotoUploadStatus}
+                      formData={formData}
+                      setFormData={setFormData}
                     />
-                  ))}
-                </div>
+                  )}
+
+                  {projectData?.product_type === "RxPad" && (
+                    <div className="">
+                      {getFileUploadFieldsForStep2().map((field) => (
+                        <InputField
+                          key={field.id}
+                          ui={ui}
+                          projectData={projectData}
+                          id={field.name}
+                          label={
+                            field.display_name +
+                            (field.validations?.required ? " *" : "")
+                          }
+                          type={field.type}
+                          value={String(formData[field.name] ?? "")}
+                          onChange={(e) =>
+                            setFormData((prev) => ({
+                              ...prev,
+                              [field.name]: e.target.value,
+                            }))
+                          }
+                          required={field?.additional_config?.includes(
+                            "is_required",
+                          )}
+                          placeholder={field.placeholder}
+                          options={field.options || []}
+                          validation={{
+                            regex:
+                              field.validations?.min || field.validations?.max
+                                ? new RegExp(
+                                    `^.{${field.validations.min || 0},${
+                                      field.validations.max || 100
+                                    }}$`,
+                                  )
+                                : undefined,
+                            message: `Enter valid ${field.label}`,
+                          }}
+                          onValidationChange={handleValidationChange(
+                            "rxpad_image",
+                          )}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </>
               )}
-            </>
+            </div>
           )}
-        </div>
+        </>
       );
+
     case 3:
       return (
         <div className="space-y-6">
@@ -297,7 +363,7 @@ const RenderStepContent = ({
           {/* Theater Preferences */}
           <div>
             <InputField
-            projectData={projectData}
+              projectData={projectData}
               ui={ui}
               id="theaterPreference"
               label="Select Cinema Locations*"

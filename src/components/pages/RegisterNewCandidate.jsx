@@ -42,6 +42,7 @@ export default function RegisterNewCandidate({ projectData, projectId, ui }) {
     photo: null,
   });
   const [doctorHash, setDoctorHash] = useState(null);
+  const [showSuccess, setShowSuccess] = useState(false);
 
   const router = useRouter();
 
@@ -76,9 +77,14 @@ export default function RegisterNewCandidate({ projectData, projectId, ui }) {
 
 
   const handleSaveDoctor = async () => {
+    let doctorHash = DecryptData("doctorHash")
+    if(doctorHash){
+      return true
+    }
     setIsSaveLoading(true);
     try {
-      const save = await SaveDoctors(projectData, userInfo.hash, formData);
+      let doctorCode = DecryptData("doctorHash")
+      const save = await SaveDoctors(projectData, userInfo.hash, formData,doctorCode);
       if (save.success) {
         
         EncryptData('doctorHash', save.doctorHash);
@@ -102,26 +108,27 @@ export default function RegisterNewCandidate({ projectData, projectId, ui }) {
     e.preventDefault();
     setIsSubmitLoading(true);
     try {
-      
-      const save = await SaveDoctors(projectData, userInfo.hash, formData);
+      let doctorCode = DecryptData("doctorHash")
+      const save = await SaveDoctors(projectData, userInfo.hash, formData,doctorCode);
       if (!save.success) {
         console.log(save.message);
       } else {
+        setShowSuccess(true)
+        setTimeout(() => {
         if (projectData?.config?.game) {
-          router.push(`game`);
-          setIsSubmitLoading(false);
-        } else if(projectData?.product_type==="RxPad"){
-          router.push(`homepage`);
-          setIsSubmitLoading(false);
-        } else if(projectData?.product_type==="Evideo"){
-          router.push(`generate-video`)
-          setIsSubmitLoading(false);
+          router.push("game");
+        } else if (projectData?.product_type === "RxPad") {
+          router.push("homepage");
+        } else if (projectData?.product_type === "Evideo") {
+          router.push("generate-video");
         } else {
-          router.push(`homepage`);
-          setIsSubmitLoading(false);
+          router.push("homepage");
         }
+
+        setIsSubmitLoading(false);
+        setShowSuccess(false);
+      }, 2000);
         
-        // Clear the stored doctor hash after successful submission
         localStorage.removeItem('doctorHash');
       }
     } catch (error) {
@@ -132,6 +139,15 @@ export default function RegisterNewCandidate({ projectData, projectId, ui }) {
 
   return (
     <div className="min-h-screen dark:bg-gray-900 text-white">
+      {showSuccess && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black/80 bg-opacity-40 z-50">
+          <div className="bg-white px-6 py-14 rounded-lg shadow-lg text-center">
+            <h2 className="text-green-600 font-bold text-lg">
+              Doctor Added Successfully!
+            </h2>
+          </div>
+        </div>
+      )}
       <Header
         ui={ui}
         userInfo={userInfo}

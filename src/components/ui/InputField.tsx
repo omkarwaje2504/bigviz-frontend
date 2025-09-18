@@ -10,6 +10,7 @@ import React, {
 import inputStyles from "styles/inputStyles";
 import UploadFile from "../../../services/uploadFile";
 import { CiFileOn } from "react-icons/ci";
+import { DecryptData } from "@utils/cryptoUtils";
 
 type ValidationRule = {
   regex?: RegExp;
@@ -70,6 +71,17 @@ const formatDateObject = (date: DateValue): string => {
   return `${date.day}/${date.month}/${date.year}`;
 };
 
+function getFileNameFromUrl(url: string): string | null {
+  try {
+    const pathname: string = new URL(url).pathname;
+    return pathname.substring(pathname.lastIndexOf("/") + 1);
+  } catch (e) {
+    console.error("Invalid URL:", e);
+    return null;
+  }
+}
+
+
 const InputField: React.FC<InputFieldProps> = ({
   ui,
   id,
@@ -103,6 +115,15 @@ const InputField: React.FC<InputFieldProps> = ({
   const [uploading, setUploading] = useState(false);
   const [uploadedUrl, setUploadedUrl] = useState<string | null>(null);
   const [uploadError, setUploadError] = useState<string>("");
+
+ useEffect(()=>{
+   let fomrData = DecryptData("formData")
+
+  if(fomrData?.file_upload !== "" || fomrData?.file_upload !== null){
+    setUploadedUrl(fomrData?.file_upload)
+    setFileName(getFileNameFromUrl(fomrData?.file_upload))
+  }
+ },[])
 
   const normalizedOptions = options.map((o) =>
     typeof o === "string" ? { label: o, value: o } : o,
@@ -160,6 +181,8 @@ const InputField: React.FC<InputFieldProps> = ({
     onChange(syntheticEvent);
   };
 
+  const [fileName, setFileName] = useState<string | null>(null); // 👈 new state
+
   const handleFileChange = async (
     e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>,
   ) => {
@@ -167,6 +190,7 @@ const InputField: React.FC<InputFieldProps> = ({
     if (!target.files?.length) return;
 
     const file = target.files[0];
+    setFileName(file.name); // 👈 store selected file name
     setUploadError("");
     setUploading(true);
     setUploadedUrl(null);
@@ -191,6 +215,7 @@ const InputField: React.FC<InputFieldProps> = ({
       onChange(synthetic);
     } catch (err: any) {
       setUploadError(err.message || "Upload failed");
+      setFileName(null); // reset file name on failure
     } finally {
       setUploading(false);
     }
@@ -474,18 +499,32 @@ const InputField: React.FC<InputFieldProps> = ({
       ) : // FILE UPLOAD
       type === "file upload" ? (
         <div className="w-full mt-5 px-4">
+          
           <label
             htmlFor={id}
             className={`
-              relative border-2 border-dashed border-gray-600 rounded-lg py-8 text-center h-80 flex flex-col items-center justify-center cursor-pointer
-              ${uploading ? "opacity-50 cursor-wait" : "opacity-100"}
-            `}
+            relative border-2 border-dashed rounded-lg py-8 text-center h-80 flex flex-col items-center justify-center cursor-pointer
+            ${uploading ? "opacity-50 cursor-wait" : "opacity-100"}
+            ${uploadedUrl ? "border-green-500 bg-green-50" : "border-gray-600"}
+          `}
           >
             <div className="text-gray-400 mb-4 bg-gray-800 p-4 rounded-full">
               <CiFileOn size={40} />
             </div>
-            <p className="text-gray-400 mt-2 text-xl font-medium">
-              {uploading ? "Uploading..." : "Click to upload"}
+             
+            <p className="mt-2 text-xl font-medium">
+              {uploading ? (
+                "Uploading..."
+              ) : uploadedUrl ? (
+                <span className="text-green-600 flex flex-col items-center">
+                  {fileName && <>✅ {fileName}</>}
+                  <span className="text-sm text-black mt-1">
+                    Edit / Replace file
+                  </span>
+                </span>
+              ) : (
+                <span className="text-gray-400">Click to upload</span>
+              )}
             </p>
 
             <input
@@ -504,10 +543,6 @@ const InputField: React.FC<InputFieldProps> = ({
               <div className="w-5 h-5 border-2 border-gray-300 border-t-indigo-600 rounded-full animate-spin"></div>
               <span className="text-sm text-gray-600">Uploading...</span>
             </div>
-          )}
-
-          {uploadedUrl && (
-            <p className="text-green-600 text-sm mt-3">File uploaded</p>
           )}
 
           {uploadError && (

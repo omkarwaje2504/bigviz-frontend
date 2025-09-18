@@ -1,5 +1,6 @@
 import MyError from "@services/MyError";
 import cleanUrls from "@utils/CleanUrl";
+import { DecryptData, EncryptData } from "@utils/cryptoUtils";
 import { FormData, ProjectInfo } from "@utils/types";
 
 export const FetchDoctors = async (
@@ -84,10 +85,92 @@ export const FetchDoctors = async (
   }
 };
 
-function mapFormDataToFields(formData: FormData, project: ProjectInfo) {
-  return project.config.field.map((field, index) => {
+export const FetchDoctor = async (
+  projectData: ProjectInfo,
+  doctorHash: string,
+) => {
+  if (!projectData?.project_hash) {
     return {
-      id: field.id ?? index + 1, // use field.id if available, else fallback to index
+      success: false,
+      message: "Something left behind. Please refresh and try again.",
+    };
+  }
+
+  if (!doctorHash) {
+    return {
+      success: false,
+      message: "DoctorHash Required",
+    };
+  }
+
+  const apiUrl = process.env.NEXT_PUBLIC_PROJECT_URL;
+
+  if (!apiUrl) {
+    throw new Error("API url is missing. Pleach check");
+  }
+
+  try {
+    const response = await fetch(`${apiUrl}/doctor/single/fetch`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify({
+        project_hash: projectData.project_hash,
+        doctor_hash: doctorHash,
+      }),
+    });
+
+    if (!response.ok) {
+      console.error(
+        `FetchDoctors error: Server responded with status ${response.status}`,
+      );
+      throw new Error(`Server responded with status ${response.status}`);
+    }
+
+    let result;
+    try {
+      result = await response.json();
+    } catch (jsonErr) {
+      console.error("FetchDoctors error: Failed to parse JSON", jsonErr);
+      throw new Error("Invalid server response format.");
+    }
+
+    const isVlpProject = projectData.project_hash === "vlp6k2ze";
+    const data = result?.data;
+
+    if (isVlpProject && Array.isArray(data)) {
+      const cleanedData = cleanUrls(data);
+
+      return {
+        success: true,
+        data: cleanedData,
+        cached: false,
+      };
+    }
+
+    return {
+      success: true,
+      data: Array.isArray(data) || typeof data === "object" ? data : [],
+      cached: false,
+    };
+  } catch (error: any) {
+    MyError(error);
+    console.error("FetchDoctors catch block error:", error?.message || error);
+    return {
+      success: false,
+      message:
+        error?.message ||
+        "An unexpected error occurred while fetching doctors.",
+    };
+  }
+};
+
+function mapFormDataToFields(formData: FormData, project: ProjectInfo) {
+  return project?.config?.field?.map((field, index) => {
+    return {
+      id: field.id ?? index + 1, 
       value: formData[field.name] ?? field.default_value ?? "",
     };
   });
@@ -97,8 +180,11 @@ export const SaveDoctors = async (
   projectData: ProjectInfo,
   employeeCode: string,
   formData: any,
+  doctorCode: string,
 ) => {
-  console.log(formData)
+  
+  let prevData = DecryptData("prevData")
+  
   if (!projectData?.project_hash) {
     return {
       success: false,
@@ -129,37 +215,41 @@ export const SaveDoctors = async (
   const countryCode = projectData?.config?.doctor?.country_codes?.[0] || +91;
 
   const unwantedBase =
-    "https://pub-0b6394cfeda24bf196c98e1746afe09b.r2.dev/production/";
+    "https://pub-55257b9217554e4cad3b45d7ee44674b.r2.dev/production/";
 
-  let photo = formData?.photo?.originalImage || ""; 
+  let photo = formData?.photo?.originalImage || "";
   if (photo.startsWith(unwantedBase)) {
-    photo = photo.replace(unwantedBase, ""); 
+    photo = photo.replace(unwantedBase, "");
   }
 
-
-  let rxpadImage = "";
-  if (projectData?.product_type === "RxPad" && formData?.rxpad_image) {
-    rxpadImage = formData.rxpad_image || "";
-    if (rxpadImage.startsWith(unwantedBase)) {
-      rxpadImage = rxpadImage.replace(unwantedBase, ""); 
-    }
+  let cropped_image = formData?.photo?.croppedImage || "";
+  if (cropped_image.startsWith(unwantedBase)) {
+    cropped_image = cropped_image.replace(unwantedBase, "");
   }
 
-  
   try {
-    const requestBody: any = {
+    let requestBody: any = {
       project_hash: projectData.project_hash,
       employee_hash: employeeCode,
-      image_path: photo,
-      name: `${formData?.prefix}. ${formData?.name}`,
-      mobile: countryCode + formData?.mobile,
-      fields,
+      doctor_hash: doctorCode,
     };
 
-
-    if (projectData?.product_type === "RxPad" && rxpadImage) {
-      console.log("hetre")
-      requestBody.rxpad = rxpadImage;
+    let updatedformData = {
+      ...formData,
+      name: `${formData.prefix}. ${formData.name}`, 
+    };
+    
+    if (prevData && JSON.stringify(prevData) === JSON.stringify(updatedformData)) {
+      requestBody.doctor_hash=doctorCode;
+      requestBody.name = `${formData?.prefix}. ${formData?.name}`;
+    } else {
+      requestBody = {
+        ...requestBody,
+        media: { images: photo, cropped_image },
+        name: `${formData?.prefix}. ${formData?.name}`,
+        mobile: countryCode + formData?.mobile,
+        fields,
+      };
     }
 
     const response = await fetch(`${apiUrl}/doctor/save`, {
@@ -173,21 +263,21 @@ export const SaveDoctors = async (
 
     if (!response.ok) {
       console.error(
-        `SaveDoctors error: Server responded with status ${response.status}`,
+        `SaveDoctors error: Server responded with status ${response.status}`
       );
       throw new Error(
         `Save Fail:- Server responded with status ${response.status}, Doctor Data: ${JSON.stringify(
-          formData,
-        )}`,
+          formData
+        )}`
       );
     }
 
     const responseData = await response.json();
-    
+
     return {
       success: true,
       message: "Doctor Register Successfully",
-      doctorHash: responseData.hash
+      doctorHash: responseData.hash,
     };
   } catch (error: any) {
     MyError(error);
@@ -199,4 +289,5 @@ export const SaveDoctors = async (
     };
   }
 };
+
 

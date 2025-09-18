@@ -464,7 +464,6 @@ function ScratchCard({ projectData, projectId, ui }) {
 
           await new Promise((resolve) => setTimeout(resolve, audioDuration));
         } catch (err) {
-          console.log("Audio play failed:", err);
           await new Promise((resolve) => setTimeout(resolve, 2600));
         }
       } else {
@@ -686,6 +685,7 @@ function ScratchCard({ projectData, projectId, ui }) {
     };
 
     localStorage.setItem("scratchCardDuration", durationMinutes);
+  
     const save = await SaveDoctors(projectData, userInfo.hash, updatedformData);
 
     localStorage.removeItem("formData");

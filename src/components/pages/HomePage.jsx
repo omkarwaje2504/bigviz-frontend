@@ -10,8 +10,8 @@ import LoadingPage from "@components/ui/LoadingPage";
 import Dashboard from "@components/ui/Dashboard";
 import Link from "next/link";
 import Config from "@utils/Config";
-import { DecryptData, RemoveData } from "@utils/cryptoUtils";
-import { FetchDoctors } from "@actions/user";
+import { DecryptData, EncryptData, RemoveData } from "@utils/cryptoUtils";
+import { FetchDoctor, FetchDoctors } from "@actions/user";
 import config from "@utils/Config";
 import { useRouter } from "next/navigation";
 import { ApprovalAction } from "@actions/approvalApis";
@@ -57,7 +57,6 @@ const HomePage = ({ projectData, projectId, ui }) => {
       });
     }
     if (!getUserInfo) {
-      // console.log("hjbhjrdn")
       router.push(`/${projectId}`);
     }
 
@@ -80,7 +79,7 @@ const HomePage = ({ projectData, projectId, ui }) => {
       setMembers([]);
     }
   };
-  
+
   const handleApprove = async (member, comments) => {
     setApprovingStatus((prev) => ({ ...prev, [member.doctor_hash]: true }));
     try {
@@ -91,11 +90,44 @@ const HomePage = ({ projectData, projectId, ui }) => {
         comments ? 2 : 1,
         comments,
       );
-      await getMembers(userInfo); // refresh list/status from server
+      await getMembers(userInfo);
     } catch (error) {
       console.error("Approval error:", error);
     } finally {
       setApprovingStatus((prev) => ({ ...prev, [member.doctor_hash]: false }));
+    }
+  };
+
+  const editDoctor = async (id) => {
+    EncryptData("doctorHash", id);
+    let fetchDoctor = await FetchDoctor(projectData, id);
+
+    let tempData = {
+      name: fetchDoctor?.data?.name,
+      mobile: fetchDoctor?.data?.mobile?.replace(/^\+91/, "") || "",
+      prefix: "Dr",
+      photo: {
+        croppedImage: fetchDoctor?.data?.image,
+        originalImage: fetchDoctor?.data?.cropped_image,
+      },
+    };
+
+    if (projectData?.config?.field?.length) {
+      projectData.config.field.forEach((field) => {
+        const matchingField = fetchDoctor?.data?.fields?.find(
+          (f) => String(f.id) === String(field.id),
+        );
+
+        tempData[field.name] = matchingField
+          ? matchingField.value
+          : field.default_value || "";
+      });
+    }
+
+    if (tempData) {
+      EncryptData("prevData", tempData);
+      EncryptData("formData", tempData);
+      router.push(`register-new-candidate`);
     }
   };
 
@@ -109,11 +141,11 @@ const HomePage = ({ projectData, projectId, ui }) => {
       />
     );
   }
- 
+
   return (
     <div className="min-h-screen bg-white text-gray-800 dark:bg-gray-900 dark:text-white transition-colors duration-300">
       <Header
-      ui={ui}
+        ui={ui}
         userInfo={userInfo}
         projectData={projectData}
         projectHash={projectId}
@@ -156,7 +188,7 @@ const HomePage = ({ projectData, projectId, ui }) => {
             members={members}
             approvalState={projectData.config.employee.approval_required}
             approvingStatus={approvingStatus}
-            onEdit={(id) => console.log("Edit", id)}
+            onEdit={(id) => editDoctor(id)}
             onApprove={handleApprove}
             onDisapprove={handleApprove}
           />

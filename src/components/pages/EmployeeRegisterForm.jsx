@@ -11,6 +11,10 @@ import { RegisterEmployee } from "@actions/loginApis";
 import { MdHighQuality } from "react-icons/md";
 import { FaRegIdCard } from "react-icons/fa";
 import { FaRegistered } from "react-icons/fa6";
+import { TbPasswordUser } from "react-icons/tb";
+import { MdLocationOn } from "react-icons/md";
+import { RiUserLocationFill } from "react-icons/ri";
+import { IoEarth } from "react-icons/io5";
 
 const validations = {
   name: {
@@ -140,7 +144,7 @@ function EmployeeRegisterForm({ ui, projectData, projectId }) {
               ui={ui}
               id="code"
               label={ui.EmployeeConfig.EmployeeCodeLabel}
-              icon={<FaRegIdCard className="text-gray-400" />}
+              icon={<TbPasswordUser className="text-gray-400" />}
               type="text"
               value={formData.code}
               onChange={handleChange("code")}
@@ -156,7 +160,7 @@ function EmployeeRegisterForm({ ui, projectData, projectId }) {
               ui={ui}
               id="hq"
               label={ui.EmployeeConfig.EmployeeHQLabel}
-              icon={<MdHighQuality className="text-gray-400" />}
+              icon={<MdLocationOn  className="text-gray-400" />}
               type="text"
               value={formData.hq}
               onChange={handleChange("hq")}
@@ -172,7 +176,7 @@ function EmployeeRegisterForm({ ui, projectData, projectId }) {
               ui={ui}
               id="region"
               label={ui.EmployeeConfig.EmployeeRegionLabel}
-              icon={<FaRegistered className="text-gray-400" />}
+              icon={<IoEarth  className="text-gray-400" />}
               type="text"
               value={formData.region}
               onChange={handleChange("region")}
