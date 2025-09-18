@@ -36,6 +36,7 @@ export default function PhotoUploadEditor({
   setPhotoUploadStatus,
   formData,
   setFormData,
+  isRxPadImage = false, // Add this prop to distinguish between regular photo and RxPad image
 }) {
   const imageRef = useRef(null);
   const inputRef = useRef(null);
@@ -55,6 +56,11 @@ export default function PhotoUploadEditor({
   const { w: cropWidth, h: cropHeight } = getPhotoDims(projectData);
   const ratio = cropWidth / cropHeight;
 
+  // Determine which image to use based on isRxPadImage prop
+  const currentImageData = isRxPadImage 
+    ? formData?.rxpad_image 
+    : formData?.photo;
+
   useEffect(() => {
     if (unsavedChanges) {
       setPhotoUploadStatus(false);
@@ -65,9 +71,9 @@ export default function PhotoUploadEditor({
 
   useEffect(() => {
     const loadCroppedImage = async () => {
-      if (formData.photo?.croppedImage) {
+      if (currentImageData?.croppedImage) {
         try {
-          const response = await fetch(formData.photo.croppedImage, {
+          const response = await fetch(currentImageData.croppedImage, {
             cache: "no-store",
           });
           const blob = await response.blob();
@@ -85,10 +91,10 @@ export default function PhotoUploadEditor({
 
     loadCroppedImage();
 
-    if (formData?.photo?.originalImage) {
+    if (currentImageData?.originalImage) {
       const fetchAndConvertToBlob = async () => {
         try {
-          const response = await fetch(formData.photo.originalImage, {
+          const response = await fetch(currentImageData.originalImage, {
             cache: "no-store",
           });
           const blob = await response.blob();
@@ -98,11 +104,11 @@ export default function PhotoUploadEditor({
         }
       };
 
-      if (formData.photo.originalImage) {
+      if (currentImageData.originalImage) {
         fetchAndConvertToBlob();
       }
     }
-  }, []);
+  }, [currentImageData]);
 
   useEffect(() => {
     return () => {
@@ -187,11 +193,20 @@ export default function PhotoUploadEditor({
     setImage(null);
 
     setFilename("");
-    setFormData((prev) => ({
-      ...prev,
-      photo: null,
-    }));
+    
+    if (isRxPadImage) {
+      setFormData((prev) => ({
+        ...prev,
+        rxpad_image: null,
+      }));
+    } else {
+      setFormData((prev) => ({
+        ...prev,
+        photo: null,
+      }));
+    }
   };
+
   const saveCroppedImage = async () => {
     console.log("Saving cropped image...");
     let canvas = null;
@@ -259,6 +274,7 @@ export default function PhotoUploadEditor({
       const imageBlob = dataURLToBlob(dataUrl);
       const cropperFileName = `cropped_${blobName}`;
       const originalFileName = `original_${blobName}`;
+      
       const uploadedCroppedFileUrl = await UploadFile(
         projectData,
         imageBlob,
@@ -272,26 +288,39 @@ export default function PhotoUploadEditor({
         originalFileName,
         "image",
       );
+      
       setImage({
         src: uploadedCroppedFileUrl,
       });
-      setFormData((prev) => ({
-        ...prev,
-        photo: {
-          croppedImage: uploadedCroppedFileUrl,
-          originalImage: uploadedOriginalFileUrl,
-        },
-      }));
+      
+      if (isRxPadImage) {
+        setFormData((prev) => ({
+          ...prev,
+          rxpad_image: {
+            croppedImage: uploadedCroppedFileUrl,
+            originalImage: uploadedOriginalFileUrl,
+          },
+        }));
+      } else {
+        setFormData((prev) => ({
+          ...prev,
+          photo: {
+            croppedImage: uploadedCroppedFileUrl,
+            originalImage: uploadedOriginalFileUrl,
+          },
+        }));
+      }
+      
       setEditMode(null);
       setUnsavedChanges(false);
       console.log("Image saved successfully!");
     }
   };
+
   return (
     <div className="bg-gray-900 rounded-lg max-w-3xl mx-auto font-sans p-3">
       <h2 className="text-2xl font-bold text-white mb-6">
-        {/* {console.log(projectData.product_type==="RxPad")} */}
-        {projectData.product_type==="RxPad"? "RxPad Image" :"Photo Upload & Editor"}
+        {isRxPadImage ? "RxPad Image" : "Photo Upload & Editor"}
       </h2>
 
       <input
@@ -323,7 +352,7 @@ export default function PhotoUploadEditor({
             <FaRegImage size={48} />
           </div>
           <p className="text-gray-300 mb-4 text-lg">
-            Drag and drop your photo here, or click to browse
+            Drag and drop your {isRxPadImage ? "RxPad image" : "photo"} here, or click to browse
           </p>
           <p className="text-gray-500 mb-6 text-sm">
             Supported formats: JPG, PNG, WEBP
@@ -532,16 +561,17 @@ export default function PhotoUploadEditor({
       )}
 
       <div className="mt-8">
-        {
-          projectData?.product_type=== "RxPad" ? (<div className="flex gap-2 mx-auto justify-center items-center  w-full">
+        {isRxPadImage ? (
+          <div className="flex gap-2 mx-auto justify-center items-center w-full">
             <img className="rounded-lg h-20 w-20" src="/right-1.jpg"/>
             <img className="rounded-lg h-20 w-20" src="/wrong-1.jpg"/>
-          </div>) : (<div  className="flex gap-2 mx-auto justify-center items-center  w-full">
+          </div>
+        ) : (
+          <div className="flex gap-2 mx-auto justify-center items-center w-full">
             <img className="rounded-lg h-20 w-20" src="/right-2.jpg"/>
             <img className="rounded-lg h-20 w-20" src="/wrong-3.jpg"/>
-          </div>)
-        }
-        {/* {console.log(projectData)} */}
+          </div>
+        )}
       </div>
     </div>
   );

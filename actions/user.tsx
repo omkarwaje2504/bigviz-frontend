@@ -98,6 +98,7 @@ export const SaveDoctors = async (
   employeeCode: string,
   formData: any,
 ) => {
+  console.log(formData)
   if (!projectData?.project_hash) {
     return {
       success: false,
@@ -128,28 +129,46 @@ export const SaveDoctors = async (
   const countryCode = projectData?.config?.doctor?.country_codes?.[0] || +91;
 
   const unwantedBase =
-    "https://pub-0b6394cfeda24bf196c98e1746afe09b.r2.dev/production";
+    "https://pub-0b6394cfeda24bf196c98e1746afe09b.r2.dev/production/";
 
   let photo = formData?.photo?.originalImage || ""; 
   if (photo.startsWith(unwantedBase)) {
     photo = photo.replace(unwantedBase, ""); 
   }
 
+
+  let rxpadImage = "";
+  if (projectData?.product_type === "RxPad" && formData?.rxpad_image) {
+    rxpadImage = formData.rxpad_image || "";
+    if (rxpadImage.startsWith(unwantedBase)) {
+      rxpadImage = rxpadImage.replace(unwantedBase, ""); 
+    }
+  }
+
+  
   try {
+    const requestBody: any = {
+      project_hash: projectData.project_hash,
+      employee_hash: employeeCode,
+      image_path: photo,
+      name: `${formData?.prefix}. ${formData?.name}`,
+      mobile: countryCode + formData?.mobile,
+      fields,
+    };
+
+
+    if (projectData?.product_type === "RxPad" && rxpadImage) {
+      console.log("hetre")
+      requestBody.rxpad = rxpadImage;
+    }
+
     const response = await fetch(`${apiUrl}/doctor/save`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Accept: "application/json",
       },
-      body: JSON.stringify({
-        project_hash: projectData.project_hash,
-        employee_hash: employeeCode,
-        photo,
-        name: `${formData?.prefix}. ${formData?.name}`,
-        mobile: countryCode + formData?.mobile,
-        fields,
-      }),
+      body: JSON.stringify(requestBody),
     });
 
     if (!response.ok) {
@@ -163,9 +182,12 @@ export const SaveDoctors = async (
       );
     }
 
+    const responseData = await response.json();
+    
     return {
       success: true,
       message: "Doctor Register Successfully",
+      doctorHash: responseData.hash
     };
   } catch (error: any) {
     MyError(error);
@@ -177,5 +199,4 @@ export const SaveDoctors = async (
     };
   }
 };
-
 

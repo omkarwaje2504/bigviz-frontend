@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { FaChevronLeft, FaChevronRight, FaSpinner } from "react-icons/fa";
 
 const FormNavigationButtons = ({
@@ -11,17 +10,8 @@ const FormNavigationButtons = ({
   validationStatus,
   projectData,
   isSubmitLoading,
+  onSaveDoctor,
 }) => {
-  const [isDark, setIsDark] = useState(false);
-
-  useEffect(() => {
-    const media = window.matchMedia("(prefers-color-scheme: dark)");
-    setIsDark(media.matches);
-    const listener = (e) => setIsDark(e.matches);
-    media.addEventListener("change", listener);
-    return () => media.removeEventListener("change", listener);
-  }, []);
-
   const projectType = projectData?.product_type;
   const disablePhotoUpload = projectData?.config?.doctor?.disable_photo_upload;
 
@@ -39,8 +29,8 @@ const FormNavigationButtons = ({
       formData.calendarData.every((item) => !!item.images[0]?.croppedImage));
 
   const isLastStepForProject =
-    (projectType === "Evideo" && currentStep === 2) ||
-    (projectType === "RxPad" && currentStep === 2) ||
+    (projectType === "Evideo" &&  currentStep === 2 ) ||
+    (projectType === "RxPad" &&  currentStep === 2 ) ||
     (disablePhotoUpload && currentStep === 1 && isPage1Valid) ||
     (projectType === "DeskCalendar" && currentStep === 2 && isPage2Valid) ||
     (projectType === "PhotoFrame" && currentStep === 2 && isPage2Valid) ||
@@ -51,7 +41,15 @@ const FormNavigationButtons = ({
     (currentStep === 2 && isPage2Valid) ||
     (currentStep === 3 && projectType !== "Evideo");
 
-  const handleNext = () => {
+  const handleNext = async () => {
+    if (currentStep === 1) {
+   
+      const success = await onSaveDoctor();
+      if (!success) {
+        return;
+      }
+    }
+    
     if (disablePhotoUpload && currentStep === 1) {
       setCurrentStep(99);
     } else {
@@ -63,22 +61,13 @@ const FormNavigationButtons = ({
     setCurrentStep(currentStep - 1);
   };
 
-  // Theme-aware colors
-  const buttonBgColor = isDark
-    ? ui?.basic?.secondaryColor || "#444444"
-    : ui?.basic?.primaryColor || "#fb2c36";
-
-  const buttonTextColor = isDark
-    ? ui?.basic?.secondaryText || "#ffffff"
-    : ui?.basic?.primaryText || "#ffffff";
-
   return (
     <div className="mt-8 flex justify-between">
       {currentStep > 1 && currentStep !== 99 && (
         <button
           type="button"
           onClick={handleBack}
-          className="flex items-center bg-gray-700 hover:bg-gray-600 text-white dark:bg-gray-500 dark:hover:bg-gray-400 py-2 px-4 rounded"
+          className="flex items-center bg-gray-700 hover:bg-gray-600 text-white py-2 px-4 rounded"
         >
           <FaChevronLeft size={16} className="mr-1" />
           Back
@@ -89,11 +78,7 @@ const FormNavigationButtons = ({
         <button
           type="button"
           onClick={handleNext}
-          style={{
-            backgroundColor: buttonBgColor,
-            color: buttonTextColor,
-          }}
-          className="flex items-center ml-auto py-2 px-4 rounded transition-colors duration-200"
+          className="flex items-center ml-auto bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded"
         >
           Next
           <FaChevronRight size={16} className="ml-1" />
@@ -103,16 +88,12 @@ const FormNavigationButtons = ({
       {isLastStepForProject && (
         <button
           type="submit"
-          style={{
-            backgroundColor: buttonBgColor,
-            color: buttonTextColor,
-          }}
-          className="flex items-center ml-auto py-2 px-4 rounded transition-colors duration-200"
+          className="flex items-center ml-auto bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded"
           disabled={isSubmitLoading}
         >
           {ui?.DoctorRegistrationForm?.SubmitButtonLable}
           {isSubmitLoading ? (
-            <FaSpinner className="gap-2 w-4 h-4 animate-spin" />
+            <FaSpinner className="gap-2 w-4 h-4 animate-spin fill-white" />
           ) : (
             <FaChevronRight size={16} className="ml-1" />
           )}

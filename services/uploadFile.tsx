@@ -46,7 +46,13 @@ const s3 = new S3Client({
 });
 
 async function GenerateFilePath(fileName: string, projectInfo: any) {
-  const employeeInfo = DecryptData("empData");
+
+  let doctorHash = DecryptData('doctorHash');
+
+  if (!doctorHash) {
+    const employeeInfo = DecryptData("empData");
+    doctorHash = employeeInfo.hash;
+  }
 
   const year = new Date().getFullYear();
   if (!projectInfo) {
@@ -56,7 +62,7 @@ async function GenerateFilePath(fileName: string, projectInfo: any) {
     .replace(/\s+/g, "-")
     .toLocaleLowerCase();
 
-  return `production/photos/${year}/${projectName}/${employeeInfo.hash}/${fileName}`;
+  return `production/photos/${year}/${projectName}/${doctorHash}/${fileName}`;
 }
 
 const UploadFile = async (

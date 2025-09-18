@@ -27,6 +27,7 @@ export default function RegisterNewCandidate({ projectData, projectId, ui }) {
   const [audioUploadStatus, setAudioUploadStatus] = useState(false);
   const [validationStatus, setValidationStatus] = useState();
   const [isSubmitLoading, setIsSubmitLoading] = useState(false);
+  const [isSaveLoading, setIsSaveLoading] = useState(false);
   const [userInfo, setUserInfo] = useState({
     name: "",
     role: 1,
@@ -40,6 +41,7 @@ export default function RegisterNewCandidate({ projectData, projectId, ui }) {
     prefix: "Dr",
     photo: null,
   });
+  const [doctorHash, setDoctorHash] = useState(null);
 
   const router = useRouter();
 
@@ -58,6 +60,12 @@ export default function RegisterNewCandidate({ projectData, projectId, ui }) {
         hash: getUserInfo?.hash,
       });
     }
+    
+    // Check if we already have a doctor hash in localStorage
+    const storedDoctorHash = localStorage.getItem('doctorHash');
+    if (storedDoctorHash) {
+      setDoctorHash(storedDoctorHash);
+    }
   }, []);
 
   useEffect(() => {
@@ -66,41 +74,65 @@ export default function RegisterNewCandidate({ projectData, projectId, ui }) {
     }
   }, [formData]);
 
+
+  const handleSaveDoctor = async () => {
+    setIsSaveLoading(true);
+    try {
+      const save = await SaveDoctors(projectData, userInfo.hash, formData);
+      if (save.success) {
+        
+        EncryptData('doctorHash', save.doctorHash);
+        setDoctorHash(save.doctorHash);
+        setIsSaveLoading(false);
+        return true;
+      } else {
+        console.log(save.message);
+        setIsSaveLoading(false);
+        return false;
+      }
+    } catch (error) {
+      console.error(error);
+      MyError(error);
+      setIsSaveLoading(false);
+      return false;
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitLoading(true);
     try {
+      
       const save = await SaveDoctors(projectData, userInfo.hash, formData);
       if (!save.success) {
         console.log(save.message);
-      }else{
+      } else {
         if (projectData?.config?.game) {
-      router.push(`game`);
-      setIsSubmitLoading(false);
-    }else if(projectData?.product_type==="RxPad"){
-      router.push(`homepage`);
-      setIsSubmitLoading(false);
-    }else if(projectData?.product_type==="Evideo"){
-      router.push(`generate-video`)
-      const formData= DecryptData("formData")
-
-      setIsSubmitLoading(false);
-    } else {
-      router.push(`homepage`);
-      setIsSubmitLoading(false);
-    }
+          router.push(`game`);
+          setIsSubmitLoading(false);
+        } else if(projectData?.product_type==="RxPad"){
+          router.push(`homepage`);
+          setIsSubmitLoading(false);
+        } else if(projectData?.product_type==="Evideo"){
+          router.push(`generate-video`)
+          setIsSubmitLoading(false);
+        } else {
+          router.push(`homepage`);
+          setIsSubmitLoading(false);
+        }
+        
+        // Clear the stored doctor hash after successful submission
+        localStorage.removeItem('doctorHash');
       }
     } catch (error) {
-      console.group(error);
+      console.error(error);
       MyError(error);
     }
-    
   };
 
   return (
     <div className="min-h-screen dark:bg-gray-900 text-white">
       <Header
-      ui={ui}
         userInfo={userInfo}
         projectData={projectData}
         projectHash={projectId}
@@ -140,6 +172,7 @@ export default function RegisterNewCandidate({ projectData, projectId, ui }) {
               setPhotoUploadStatus={setPhotoUploadStatus}
               setAudioUploadStatus={setAudioUploadStatus}
               setValidationStatus={setValidationStatus}
+              doctorHash={doctorHash} 
             />
             <FormNavigationButtons
               ui={ui}
@@ -149,6 +182,8 @@ export default function RegisterNewCandidate({ projectData, projectId, ui }) {
               formData={formData}
               validationStatus={validationStatus}
               isSubmitLoading={isSubmitLoading}
+              onSaveDoctor={handleSaveDoctor} 
+              isSaveLoading={isSaveLoading}
             />
           </form>
         </div>

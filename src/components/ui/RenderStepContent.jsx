@@ -223,7 +223,7 @@ const RenderStepContent = ({
             />
           ) : (
             <>
-              {!projectData?.config?.doctor?.disable_photo_upload && (
+              {!projectData?.config?.doctor?.disable_photo_upload && !projectData?.product_type === "RxPad" && (
                 <PhotoUploadEditor
                   ui={ui}
                   projectData={projectData}
@@ -240,17 +240,17 @@ const RenderStepContent = ({
                       key={field.id}
                       ui={ui}
                       projectData={projectData}
-                      id={field.name}
+                      id={'rxpad_image'}
                       label={
                         field.display_name +
                         (field.validations?.required ? " *" : "")
                       }
                       type={field.type}
-                      value={String(formData[field.name] ?? "")}
+                      value={String(formData['rxpad_image'] ?? "")}
                       onChange={(e) =>
                         setFormData((prev) => ({
                           ...prev,
-                          [field.name]: e.target.value,
+                          ['rxpad_image']: e.target.value,
                         }))
                       }
                       required={field?.additional_config?.includes("is_required")}
@@ -267,7 +267,7 @@ const RenderStepContent = ({
                             : undefined,
                         message: `Enter valid ${field.label}`,
                       }}
-                      onValidationChange={handleValidationChange(field.name)}
+                      onValidationChange={handleValidationChange('rxpad_image')}
                     />
                   ))}
                 </div>
