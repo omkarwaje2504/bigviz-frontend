@@ -68,7 +68,7 @@ export default function PhotoUploadEditor({
   }, [unsavedChanges]);
 
   useEffect(() => {
-    console.log(currentImageData);
+
     const loadCroppedImage = async () => {
       if (currentImageData?.croppedImage) {
         setIsCropperLoading(true);

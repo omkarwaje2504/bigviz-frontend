@@ -19,11 +19,10 @@ function GenerateVideo({ ui, projectData }) {
   const router = useRouter();
 
   const doctorHash =DecryptData("doctorHash");
-  console.log(doctorHash)
-
+  
   useEffect(() => {
-    const savedUrl = localStorage.getItem("videoUrl");
-    const savedGenerated = localStorage.getItem("videoGenerated");
+    const savedUrl = DecryptData("videoUrl");
+    const savedGenerated = DecryptData("videoGenerated");
     if (savedUrl && savedGenerated === "true") {
       setVideoUrl(savedUrl);
       setVideoGenerated(true);
@@ -94,11 +93,11 @@ function GenerateVideo({ ui, projectData }) {
           setStatusMsg("Video ready!");
           setProgress(100);
 
-          localStorage.setItem("videoUrl", check.data.url);
-          localStorage.setItem("videoGenerated", "true");
+          EncryptData("videoUrl", check.data.url);
+          EncryptData("videoGenerated", "true");
 
           let data = await Analytics({}, projectData, doctorHash, 24); 
-          console.log(data)
+         
           setVideoGenerated(true);
         }
       } catch (err) {

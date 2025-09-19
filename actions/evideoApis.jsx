@@ -88,7 +88,6 @@ export const GetRenderStatus = async (id) => {
 };
 
 export const Analytics = async (formData, projectInfo,doctorHash,type) => {
-  console.log(type,doctorHash,projectInfo.project_hash)
 
   if ( !doctorHash || type || projectInfo?.project_hash) {
     return { success: false, message: "Invalid input data" };
@@ -111,10 +110,10 @@ export const Analytics = async (formData, projectInfo,doctorHash,type) => {
         }),
       },
     );
-console.log(loginResponse)
+
     const response = await loginResponse.json();
-    console.log(response)
-   
+
+  
     if (!response) {
       if (
         response.message ===

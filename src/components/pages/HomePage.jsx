@@ -68,7 +68,6 @@ const HomePage = ({ projectData, projectId, ui }) => {
   const getMembers = async (getUserInfo) => {
     const membersData = await FetchDoctors(projectData, getUserInfo?.hash);
     if (membersData) {
-      console.log("memeber",membersData)
       setDoctorList(membersData.result)
       setMembers(membersData.data);
       setLoadMembers(false);

@@ -78,7 +78,7 @@ const RenderStepContent = ({
   const handleMobileCheck = async (mobile) => {
     try {
       const result = await CheckMobile(projectData, mobile);
-      console.log(result);
+
       if (result?.data && result?.message !== "Mobile number is available.") {
         setExistingDoctor(result?.data);
         setShowMobileModal(true);
@@ -91,7 +91,7 @@ const RenderStepContent = ({
 
   const handleUseSameDoctor = () => {
     if (existingDoctor) {
-      console.log(existingDoctor);
+      
       let tempData = {
         name: existingDoctor?.name,
         mobile: existingDoctor?.mobile?.replace(/^\+91/, "") || "",
