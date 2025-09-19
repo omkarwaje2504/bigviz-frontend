@@ -70,6 +70,7 @@ export const FetchDoctors = async (
 
     return {
       success: true,
+       result:result,
       data: Array.isArray(data) || typeof data === "object" ? data : [],
       cached: false,
     };

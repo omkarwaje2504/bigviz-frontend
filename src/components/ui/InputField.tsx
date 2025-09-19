@@ -499,7 +499,7 @@ const InputField: React.FC<InputFieldProps> = ({
       ) : // FILE UPLOAD
       type === "file upload" ? (
         <div className="w-full mt-5 px-4">
-          
+          <h1 className="-mt-2 mb-5">Please upload a clear, front-facing image or file. Ensure the content is fully visible and legible for accurate processing. Supported formats: JPG, PNG, AI, CDR, PDF</h1>
           <label
             htmlFor={id}
             className={`
@@ -508,6 +508,7 @@ const InputField: React.FC<InputFieldProps> = ({
             ${uploadedUrl ? "border-green-500 bg-green-50" : "border-gray-600"}
           `}
           >
+            
             <div className="text-gray-400 mb-4 bg-gray-800 p-4 rounded-full">
               <CiFileOn size={40} />
             </div>

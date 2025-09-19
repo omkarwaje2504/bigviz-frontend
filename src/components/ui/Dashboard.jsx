@@ -1,29 +1,43 @@
- "use client";
- const Dashboard = ({ stats, ui }) => {
+"use client";
 
+const Dashboard = ({ members, ui }) => {
+
+  const memberList = Array.isArray(members?.data) ? members.data : [];
+  const totalCount = memberList.length;
+  const approvedCount = memberList.filter(m => m.photo_approval_status === 1).length;
+  const disapprovedCount = memberList.filter(m => m.photo_approval_status === 2).length;
+  const pendingCount = memberList.filter(m => m.photo_approval_status === 0).length;
+
+  const stats = [
+    { label: "Approved", value: approvedCount, color: "green" },
+    { label: "Disapproved", value: disapprovedCount, color: "red" },
+    { label: "Pending", value: pendingCount, color: "yellow" },
+    { label: "Total Doctors", value: totalCount, color: "blue" },
+  ];
 
   return (
     <div className="mb-8">
-      <h2 className="text-xl font-semibold mb-4">{ui.Dashboard.title}</h2>
+      <h2 className="text-xl font-semibold mb-4">{ui?.Dashboard?.title || "Dashboard"}</h2>
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {stats?.map((stat, index) => (
+        {stats.map((stat, index) => (
           <div
             key={index}
-            className="bg-gray-100 dark:bg-gray-800 rounded-lg p-2 border border-gray-300 dark:border-gray-700 shadow transition-all hover:border-red-500"
+            className={`bg-gray-100 dark:bg-gray-800 rounded-lg p-4 border border-gray-300 dark:border-gray-700 shadow transition-all hover:border-${stat.color}-500`}
           >
-            <div className="flex flex-col md:flex-row justify-between">
+            <div className="flex justify-between items-center">
               <p className="text-gray-700 dark:text-gray-300">{stat.label}</p>
-              <span
-                className={`text-xs w-fit font-medium px-2 py-1 rounded ${
-                  stat?.percentage?.startsWith("+")
-                    ? "text-green-500 bg-green-100 dark:bg-green-900/30"
-                    : "text-red-500 bg-red-100 dark:bg-red-900/30"
-                }`}
-              >
-                {stat.percentage}
-              </span>
             </div>
-            <p className="text-2xl font-bold mt-2 text-black dark:text-white">
+            <p
+              className={`text-2xl font-bold mt-2 ${
+                stat.color === "green"
+                  ? "text-green-500"
+                  : stat.color === "red"
+                  ? "text-red-500"
+                  : stat.color === "yellow"
+                  ? "text-yellow-500"
+                  : "text-blue-500"
+              }`}
+            >
               {stat.value}
             </p>
           </div>

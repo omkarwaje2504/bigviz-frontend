@@ -36,7 +36,7 @@ export default function PhotoUploadEditor({
   setPhotoUploadStatus,
   formData,
   setFormData,
-  isRxPadImage = false, // Add this prop to distinguish between regular photo and RxPad image
+  isRxPadImage = false,
 }) {
   const imageRef = useRef(null);
   const inputRef = useRef(null);
@@ -53,25 +53,24 @@ export default function PhotoUploadEditor({
   const [saturate, setSaturate] = useState(100);
   const [originalFile, setOriginalFile] = useState(null);
   const [unsavedChanges, setUnsavedChanges] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isCropperLoading, setIsCropperLoading] = useState(false);
+
   const { w: cropWidth, h: cropHeight } = getPhotoDims(projectData);
   const ratio = cropWidth / cropHeight;
 
-  // Determine which image to use based on isRxPadImage prop
-  const currentImageData = isRxPadImage 
-    ? formData?.rxpad_image 
+  const currentImageData = isRxPadImage
+    ? formData?.rxpad_image
     : formData?.photo;
 
   useEffect(() => {
-    if (unsavedChanges) {
-      setPhotoUploadStatus(false);
-    } else {
-      setPhotoUploadStatus(false);
-    }
+    setPhotoUploadStatus(!unsavedChanges);
   }, [unsavedChanges]);
 
   useEffect(() => {
     const loadCroppedImage = async () => {
       if (currentImageData?.croppedImage) {
+        setIsCropperLoading(true);
         try {
           const response = await fetch(currentImageData.croppedImage, {
             cache: "no-store",
@@ -85,6 +84,7 @@ export default function PhotoUploadEditor({
           });
         } catch (err) {
           console.error("Failed to load cropped image:", err);
+          setIsCropperLoading(false);
         }
       }
     };
@@ -104,9 +104,7 @@ export default function PhotoUploadEditor({
         }
       };
 
-      if (currentImageData.originalImage) {
-        fetchAndConvertToBlob();
-      }
+      if (currentImageData.originalImage) fetchAndConvertToBlob();
     }
   }, [currentImageData]);
 
@@ -117,16 +115,10 @@ export default function PhotoUploadEditor({
   }, [image]);
 
   const currentFilterStyle = {
-    filter: `
-    contrast(${contrast}%)
-    brightness(${brightness}%)
-    saturate(${saturate}%)
-  `,
+    filter: `contrast(${contrast}%) brightness(${brightness}%) saturate(${saturate}%)`,
   };
 
-  const onUpload = () => {
-    inputRef.current?.click();
-  };
+  const onUpload = () => inputRef.current?.click();
 
   const onLoadImage = (event) => {
     event.preventDefault();
@@ -145,6 +137,7 @@ export default function PhotoUploadEditor({
         setFilename(file.name);
         setEditMode("crop");
         setUnsavedChanges(true);
+        setIsCropperLoading(true);
       };
       reader.readAsArrayBuffer(file);
     }
@@ -191,24 +184,18 @@ export default function PhotoUploadEditor({
     setEditMode(null);
     setPosition({ x: 0, y: 0 });
     setImage(null);
-
     setFilename("");
-    
+
     if (isRxPadImage) {
-      setFormData((prev) => ({
-        ...prev,
-        rxpad_image: null,
-      }));
+      setFormData((prev) => ({ ...prev, rxpad_image: null }));
     } else {
-      setFormData((prev) => ({
-        ...prev,
-        photo: null,
-      }));
+      setFormData((prev) => ({ ...prev, photo: null }));
     }
   };
 
   const saveCroppedImage = async () => {
-
+    if (!image) return;
+    setIsSaving(true);
     let canvas = null;
 
     if (editMode === "crop" && cropperRef.current) {
@@ -220,30 +207,17 @@ export default function PhotoUploadEditor({
       const imgElement = imageRef.current;
       const tempCanvas = document.createElement("canvas");
       const ctx = tempCanvas.getContext("2d");
-
       const size = Math.max(imgElement.naturalWidth, imgElement.naturalHeight);
       tempCanvas.width = size;
       tempCanvas.height = size;
 
       ctx.clearRect(0, 0, size, size);
-
       ctx.save();
       ctx.translate(size / 2, size / 2);
       ctx.rotate((rotation * Math.PI) / 180);
       ctx.scale(zoom, zoom);
-
-      // Apply filters
-      ctx.filter = `
-      contrast(${contrast}%)
-      brightness(${brightness}%)
-      saturate(${saturate}%)
-    `;
-
-      ctx.drawImage(
-        imgElement,
-        -imgElement.naturalWidth / 2,
-        -imgElement.naturalHeight / 2,
-      );
+      ctx.filter = `contrast(${contrast}%) brightness(${brightness}%) saturate(${saturate}%)`;
+      ctx.drawImage(imgElement, -imgElement.naturalWidth / 2, -imgElement.naturalHeight / 2);
       ctx.restore();
 
       canvas = tempCanvas;
@@ -257,40 +231,15 @@ export default function PhotoUploadEditor({
 
     if (canvas) {
       const now = new Date();
-      const blobName = `image-${now
-        .toLocaleString("en-GB", {
-          year: "numeric",
-          month: "2-digit",
-          day: "2-digit",
-          hour: "2-digit",
-          minute: "2-digit",
-          second: "2-digit",
-        })
-        .replace(/[/, ]/g, "_")
-        .replace(/:/g, "-")}.png`;
+      const blobName = `image-${now.toLocaleString("en-GB").replace(/[/, ]/g, "_").replace(/:/g, "-")}.png`;
       const dataUrl = canvas.toDataURL("image");
       const imageBlob = dataURLToBlob(dataUrl);
-      const cropperFileName = `cropped_${blobName}`;
-      const originalFileName = `original_${blobName}`;
-      
-      const uploadedCroppedFileUrl = await UploadFile(
-        projectData,
-        imageBlob,
-        cropperFileName,
-        "image",
-      );
 
-      const uploadedOriginalFileUrl = await UploadFile(
-        projectData,
-        originalFile,
-        originalFileName,
-        "image",
-      );
-      
-      setImage({
-        src: uploadedCroppedFileUrl,
-      });
-      
+      const uploadedCroppedFileUrl = await UploadFile(projectData, imageBlob, `cropped_${blobName}`, "image");
+      const uploadedOriginalFileUrl = await UploadFile(projectData, originalFile, `original_${blobName}`, "image");
+
+      setImage({ src: uploadedCroppedFileUrl });
+
       if (isRxPadImage) {
         setFormData((prev) => ({
           ...prev,
@@ -308,11 +257,12 @@ export default function PhotoUploadEditor({
           },
         }));
       }
-      
+
       setEditMode(null);
       setUnsavedChanges(false);
-     
     }
+
+    setIsSaving(false);
   };
 
   return (
@@ -338,11 +288,7 @@ export default function PhotoUploadEditor({
             e.preventDefault();
             const file = e.dataTransfer.files?.[0];
             if (file) {
-              const fakeEvent = {
-                target: { files: [file] },
-                preventDefault: () => {},
-              };
-              onLoadImage(fakeEvent);
+              onLoadImage({ target: { files: [file] }, preventDefault: () => {} });
             }
           }}
         >
@@ -352,9 +298,7 @@ export default function PhotoUploadEditor({
           <p className="text-gray-300 mb-4 text-lg">
             Drag and drop your {isRxPadImage ? "RxPad image" : "photo"} here, or click to browse
           </p>
-          <p className="text-gray-500 mb-6 text-sm">
-            Supported formats: JPG, PNG, WEBP
-          </p>
+          <p className="text-gray-500 mb-6 text-sm">Supported formats: JPG, PNG, WEBP</p>
         </div>
       ) : (
         <div className="space-y-4">
@@ -395,9 +339,7 @@ export default function PhotoUploadEditor({
               <div className="relative inline-block">
                 <button
                   type="button"
-                  onClick={() =>
-                    setEditMode((prev) => (prev === "filter" ? null : "filter"))
-                  }
+                  onClick={() => setEditMode((prev) => (prev === "filter" ? null : "filter"))}
                   className={`p-2 rounded-lg text-white ${editMode === "filter" ? "bg-red-600 hover:bg-red-700" : "bg-gray-700 hover:bg-gray-600"}`}
                   title="Filters"
                 >
@@ -405,50 +347,18 @@ export default function PhotoUploadEditor({
                 </button>
                 {editMode === "filter" && (
                   <div className="absolute top-full left-0 mt-2 bg-gray-800 rounded-lg shadow-lg p-4 z-50 w-64">
-                    <h3 className="text-white font-medium mb-2">
-                      Adjust Filters
-                    </h3>
-
+                    <h3 className="text-white font-medium mb-2">Adjust Filters</h3>
                     <div className="mb-2">
-                      <label className="text-gray-300 text-sm">
-                        Contrast: {contrast}%
-                      </label>
-                      <input
-                        type="range"
-                        min="50"
-                        max="200"
-                        value={contrast}
-                        onChange={(e) => setContrast(e.target.value)}
-                        className="w-full"
-                      />
+                      <label className="text-gray-300 text-sm">Contrast: {contrast}%</label>
+                      <input type="range" min="50" max="200" value={contrast} onChange={(e) => setContrast(e.target.value)} className="w-full" />
                     </div>
-
                     <div className="mb-2">
-                      <label className="text-gray-300 text-sm">
-                        Brightness: {brightness}%
-                      </label>
-                      <input
-                        type="range"
-                        min="50"
-                        max="200"
-                        value={brightness}
-                        onChange={(e) => setBrightness(e.target.value)}
-                        className="w-full"
-                      />
+                      <label className="text-gray-300 text-sm">Brightness: {brightness}%</label>
+                      <input type="range" min="50" max="200" value={brightness} onChange={(e) => setBrightness(e.target.value)} className="w-full" />
                     </div>
-
                     <div className="mb-2">
-                      <label className="text-gray-300 text-sm">
-                        Saturation: {saturate}%
-                      </label>
-                      <input
-                        type="range"
-                        min="50"
-                        max="200"
-                        value={saturate}
-                        onChange={(e) => setSaturate(e.target.value)}
-                        className="w-full"
-                      />
+                      <label className="text-gray-300 text-sm">Saturation: {saturate}%</label>
+                      <input type="range" min="50" max="200" value={saturate} onChange={(e) => setSaturate(e.target.value)} className="w-full" />
                     </div>
                   </div>
                 )}
@@ -470,7 +380,7 @@ export default function PhotoUploadEditor({
                 <FaTrashAlt size={20} />
               </button>
             </div>
-            <div className=" gap-3 hidden md:flex">
+            <div className="gap-3 hidden md:flex">
               <button
                 type="button"
                 onClick={resetEdits}
@@ -491,11 +401,18 @@ export default function PhotoUploadEditor({
           </div>
 
           <div className="relative bg-gray-800 rounded-lg overflow-hidden flex items-center justify-center h-80">
+            {isCropperLoading && (
+              <div className="absolute inset-0 flex items-center justify-center bg-gray-900 bg-opacity-50 z-50">
+                <FaSyncAlt className="animate-spin text-white text-3xl" />
+              </div>
+            )}
             <img
               ref={imageRef}
               src={image?.src || image}
               alt="Preview"
               className="max-h-80 transition-all duration-200"
+              onLoad={() => setIsCropperLoading(false)}
+              onError={() => setIsCropperLoading(false)}
               style={{
                 transform: `rotate(${rotation}deg) scale(${zoom})`,
                 transformOrigin: "center",
@@ -511,8 +428,8 @@ export default function PhotoUploadEditor({
                   src={image?.src}
                   stencilComponent={RectangleStencil}
                   stencilProps={{
-                    stencilSize: { width: cropWidth, height: cropHeight }, // lock to 800×300
-                    movable: true, // can drag
+                    stencilSize: { width: cropWidth, height: cropHeight },
+                    movable: true,
                     resizable: true,
                   }}
                   aspectRatio={ratio}
@@ -531,50 +448,46 @@ export default function PhotoUploadEditor({
           </div>
 
           <div className="bg-gray-800 rounded-lg p-4 flex flex-col md:flex-row justify-between items-center gap-3">
-  <div className="text-white w-full md:w-auto overflow-hidden">
-    <p className="text-sm text-gray-400 truncate max-w-full">
-      Filename: {filename}
-    </p>
-    <div className="flex flex-wrap items-center mt-1 text-sm text-gray-300">
-      <span className="mr-2">Zoom: {zoom.toFixed(1)}x</span>
-      <span>Rotation: {rotation}°</span>
-    </div>
-  </div>
+            <div className="text-white w-full md:w-auto overflow-hidden">
+              <p className="text-sm text-gray-400 truncate max-w-full">Filename: {filename}</p>
+              <div className="flex flex-wrap items-center mt-1 text-sm text-gray-300">
+                <span className="mr-2">Zoom: {zoom.toFixed(1)}x</span>
+                <span>Rotation: {rotation}°</span>
+              </div>
+            </div>
 
-  <div className="flex flex-col items-center md:items-end w-full md:w-auto">
-    <Button
-      ui={ui}
-      type="button"
-      fullWidth={false}
-      leftIcon={<FaSave size={20} className="mr-2" />}
-      onClick={saveCroppedImage}
-    >
-      Save Changes
-    </Button>
-    {unsavedChanges && (
-      <p className="text-yellow-400 text-xs mt-1 text-center">
-        Unsaved Changes
-      </p>
-    )}
-  </div>
-</div>
-
+            <div className="flex flex-col items-center md:items-end w-full md:w-auto">
+              <Button
+                ui={ui}
+                type="button"
+                fullWidth={false}
+                leftIcon={isSaving ? <FaSyncAlt className="animate-spin mr-2" /> : <FaSave size={20} className="mr-2" />}
+                onClick={saveCroppedImage}
+                disabled={isSaving}
+              >
+                {isSaving ? "Saving..." : "Save Changes"}
+              </Button>
+              {unsavedChanges && (
+                <p className="text-yellow-400 text-xs mt-1 text-center">Unsaved Changes</p>
+              )}
+            </div>
+          </div>
         </div>
       )}
 
-      <div className="mt-8">
+      {/* <div className="mt-8">
         {isRxPadImage ? (
           <div className="flex gap-2 mx-auto justify-center items-center w-full">
-            <img className="rounded-lg h-20 w-20" src="/right-1.jpg"/>
-            <img className="rounded-lg h-20 w-20" src="/wrong-1.jpg"/>
+            <img className="rounded-lg h-20 w-20" src="/right-1.jpg" />
+            <img className="rounded-lg h-20 w-20" src="/wrong-1.jpg" />
           </div>
         ) : (
           <div className="flex gap-2 mx-auto justify-center items-center w-full">
-            <img className="rounded-lg h-20 w-20" src="/right-2.jpg"/>
-            <img className="rounded-lg h-20 w-20" src="/wrong-3.jpg"/>
+            <img className="rounded-lg h-20 w-20" src="/right-2.jpg" />
+            <img className="rounded-lg h-20 w-20" src="/wrong-3.jpg" />
           </div>
         )}
-      </div>
+      </div> */}
     </div>
   );
 }
@@ -584,10 +497,6 @@ function dataURLToBlob(dataUrl) {
   const mime = header.match(/:(.*?);/)?.[1] || "image/png";
   const binary = atob(base64);
   const array = new Uint8Array(binary.length);
-
-  for (let i = 0; i < binary.length; i++) {
-    array[i] = binary.charCodeAt(i);
-  }
-
+  for (let i = 0; i < binary.length; i++) array[i] = binary.charCodeAt(i);
   return new Blob([array], { type: mime });
 }

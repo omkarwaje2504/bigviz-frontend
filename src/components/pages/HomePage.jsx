@@ -19,6 +19,7 @@ import { ApprovalAction } from "@actions/approvalApis";
 const HomePage = ({ projectData, projectId, ui }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [members, setMembers] = useState([]);
+  const [doctorList,setDoctorList] = useState([])
   const [loadMembers, setLoadMembers] = useState(true);
   const [userInfo, setUserInfo] = useState({
     name: "",
@@ -67,6 +68,8 @@ const HomePage = ({ projectData, projectId, ui }) => {
   const getMembers = async (getUserInfo) => {
     const membersData = await FetchDoctors(projectData, getUserInfo?.hash);
     if (membersData) {
+      console.log("memeber",membersData)
+      setDoctorList(membersData.result)
       setMembers(membersData.data);
       setLoadMembers(false);
       // Recalculate stats after members are fetched
@@ -152,7 +155,7 @@ const HomePage = ({ projectData, projectId, ui }) => {
       />
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2 md:py-8">
         {projectData?.config?.theme?.enable_dashboard === true && (
-          <Dashboard stats={statistics} ui={ui} projectData={projectData} />
+          <Dashboard members={doctorList} stats={statistics} ui={ui} projectData={projectData} />
         )}
 
         <div className="flex  md:flex-row justify-between items-start md:items-center mb-6 space-y-4 md:space-y-0">
