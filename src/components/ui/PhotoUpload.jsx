@@ -41,7 +41,7 @@ export default function PhotoUploadEditor({
   const imageRef = useRef(null);
   const inputRef = useRef(null);
   const cropperRef = useRef(null);
-  let isRxPad = projectData?.product_type === "RxPad" ? true : false
+  let isRxPad = projectData?.product_type === "RxPad" ? true : false;
   const [image, setImage] = useState(null);
   const [zoom, setZoom] = useState(1);
   const [rotation, setRotation] = useState(0);
@@ -68,7 +68,6 @@ export default function PhotoUploadEditor({
   }, [unsavedChanges]);
 
   useEffect(() => {
-
     const loadCroppedImage = async () => {
       if (currentImageData?.croppedImage) {
         setIsCropperLoading(true);
@@ -281,7 +280,9 @@ export default function PhotoUploadEditor({
         setFormData((prev) => ({
           ...prev,
           rxpad_image: {
-            croppedImage: projectData?.config?.doctor?.disable_photo_cropper ? uploadedOriginalFileUrl : uploadedCroppedFileUrl,
+            croppedImage: projectData?.config?.doctor?.disable_photo_cropper
+              ? uploadedOriginalFileUrl
+              : uploadedCroppedFileUrl,
             originalImage: uploadedOriginalFileUrl,
           },
         }));
@@ -289,7 +290,9 @@ export default function PhotoUploadEditor({
         setFormData((prev) => ({
           ...prev,
           photo: {
-            croppedImage: projectData?.config?.doctor?.disable_photo_cropper ? uploadedOriginalFileUrl : uploadedCroppedFileUrl,
+            croppedImage: projectData?.config?.doctor?.disable_photo_cropper
+              ? uploadedOriginalFileUrl
+              : uploadedCroppedFileUrl,
             originalImage: uploadedOriginalFileUrl,
           },
         }));
@@ -303,8 +306,8 @@ export default function PhotoUploadEditor({
   };
 
   return (
-    <div className="bg-gray-900 rounded-lg max-w-3xl mx-auto font-sans p-3">
-      <h2 className="text-2xl font-bold text-white mb-6">
+    <div className="bg-white dark:bg-gray-900 rounded-lg max-w-3xl mx-auto font-sans p-3">
+      <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
         {isRxPad ? "RxPad Image Upload" : "Photo Upload & Editor"}
       </h2>
 
@@ -318,7 +321,7 @@ export default function PhotoUploadEditor({
 
       {!image ? (
         <div
-          className="relative border-2 border-dashed border-gray-600 rounded-lg p-8 text-center h-80 flex flex-col items-center justify-center cursor-pointer"
+          className="relative border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-8 text-center h-80 flex flex-col items-center justify-center cursor-pointer"
           onClick={onUpload}
           onDragOver={(e) => e.preventDefault()}
           onDrop={(e) => {
@@ -332,25 +335,26 @@ export default function PhotoUploadEditor({
             }
           }}
         >
-          <div className="text-gray-400 mb-4 bg-gray-800 p-4 rounded-full">
+          <div className="text-gray-400 mb-4 bg-gray-100 dark:bg-gray-800 p-4 rounded-full">
             <FaRegImage size={48} />
           </div>
-          <p className="text-gray-300 mb-4 text-lg">
+          <p className="text-gray-600 dark:text-gray-300 mb-4 text-lg">
             Drag and drop your {isRxPadImage ? "RxPad image" : "photo"} here, or
             click to browse
           </p>
-          <p className="text-gray-500 mb-6 text-sm">
+          <p className="text-gray-400 dark:text-gray-500 mb-6 text-sm">
             Supported formats: JPG, PNG, WEBP
           </p>
         </div>
       ) : (
         <div className="space-y-4">
-          <div className="bg-gray-800 rounded-lg p-4 flex flex-wrap gap-4 justify-between items-center">
+          {/* 🔹 Toolbar */}
+          <div className="bg-gray-100 dark:bg-gray-800 rounded-lg p-4 flex flex-wrap gap-4 justify-between items-center">
             <div className="flex flex-wrap gap-3">
               <button
                 type="button"
                 onClick={() => rotateImage(1)}
-                className="bg-gray-700 hover:bg-gray-600 p-2 rounded-lg text-white"
+                className="bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 p-2 rounded-lg text-gray-900 dark:text-white"
                 title="Rotate"
               >
                 <FaRedo size={20} />
@@ -358,7 +362,7 @@ export default function PhotoUploadEditor({
               <button
                 type="button"
                 onClick={() => handleZoom(1)}
-                className="bg-gray-700 hover:bg-gray-600 p-2 rounded-lg text-white"
+                className="bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 p-2 rounded-lg text-gray-900 dark:text-white"
                 title="Zoom In"
               >
                 <FaSearchPlus size={20} />
@@ -366,7 +370,7 @@ export default function PhotoUploadEditor({
               <button
                 type="button"
                 onClick={() => handleZoom(-1)}
-                className="bg-gray-700 hover:bg-gray-600 p-2 rounded-lg text-white"
+                className="bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 p-2 rounded-lg text-gray-900 dark:text-white"
                 title="Zoom Out"
               >
                 <FaSearchMinus size={20} />
@@ -374,29 +378,39 @@ export default function PhotoUploadEditor({
               <button
                 type="button"
                 onClick={toggleCropMode}
-                className={`p-2 rounded-lg text-white ${editMode === "crop" ? "bg-red-600 hover:bg-red-700" : "bg-gray-700 hover:bg-gray-600"}`}
+                className={`p-2 rounded-lg text-gray-900 dark:text-white ${
+                  editMode === "crop"
+                    ? "bg-red-500 hover:bg-red-600"
+                    : "bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600"
+                }`}
                 title="Crop"
               >
                 <FaCrop size={20} />
               </button>
+
+              {/* 🔹 Filters */}
               <div className="relative inline-block">
                 <button
                   type="button"
                   onClick={() =>
                     setEditMode((prev) => (prev === "filter" ? null : "filter"))
                   }
-                  className={`p-2 rounded-lg text-white ${editMode === "filter" ? "bg-red-600 hover:bg-red-700" : "bg-gray-700 hover:bg-gray-600"}`}
+                  className={`p-2 rounded-lg text-gray-900 dark:text-white ${
+                    editMode === "filter"
+                      ? "bg-red-500 hover:bg-red-600"
+                      : "bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600"
+                  }`}
                   title="Filters"
                 >
                   <FaSlidersH size={20} />
                 </button>
                 {editMode === "filter" && (
-                  <div className="absolute top-full left-0 mt-2 bg-gray-800 rounded-lg shadow-lg p-4 z-50 w-64">
-                    <h3 className="text-white font-medium mb-2">
+                  <div className="absolute top-full left-0 mt-2 bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4 z-50 w-64">
+                    <h3 className="text-gray-900 dark:text-white font-medium mb-2">
                       Adjust Filters
                     </h3>
                     <div className="mb-2">
-                      <label className="text-gray-300 text-sm">
+                      <label className="text-gray-700 dark:text-gray-300 text-sm">
                         Contrast: {contrast}%
                       </label>
                       <input
@@ -409,7 +423,7 @@ export default function PhotoUploadEditor({
                       />
                     </div>
                     <div className="mb-2">
-                      <label className="text-gray-300 text-sm">
+                      <label className="text-gray-700 dark:text-gray-300 text-sm">
                         Brightness: {brightness}%
                       </label>
                       <input
@@ -422,7 +436,7 @@ export default function PhotoUploadEditor({
                       />
                     </div>
                     <div className="mb-2">
-                      <label className="text-gray-300 text-sm">
+                      <label className="text-gray-700 dark:text-gray-300 text-sm">
                         Saturation: {saturate}%
                       </label>
                       <input
@@ -437,10 +451,12 @@ export default function PhotoUploadEditor({
                   </div>
                 )}
               </div>
+
+              {/* 🔹 Reset / Remove (mobile) */}
               <button
                 type="button"
                 onClick={resetEdits}
-                className="bg-gray-700 hover:bg-gray-600 p-2 rounded-lg text-white md:hidden"
+                className="bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 p-2 rounded-lg text-gray-900 dark:text-white md:hidden"
                 title="Reset Edits"
               >
                 <FaSyncAlt size={20} />
@@ -448,17 +464,19 @@ export default function PhotoUploadEditor({
               <button
                 type="button"
                 onClick={handleRemoveImage}
-                className="bg-red-600 hover:bg-red-700 p-2 rounded-lg text-white md:hidden"
+                className="bg-red-500 hover:bg-red-600 p-2 rounded-lg text-white md:hidden"
                 title="Remove Image"
               >
                 <FaTrashAlt size={20} />
               </button>
             </div>
+
+            {/* 🔹 Reset / Remove (desktop) */}
             <div className="gap-3 hidden md:flex">
               <button
                 type="button"
                 onClick={resetEdits}
-                className="bg-gray-700 hover:bg-gray-600 p-2 rounded-lg text-white"
+                className="bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 p-2 rounded-lg text-gray-900 dark:text-white"
                 title="Reset Edits"
               >
                 <FaSyncAlt size={20} />
@@ -466,7 +484,7 @@ export default function PhotoUploadEditor({
               <button
                 type="button"
                 onClick={handleRemoveImage}
-                className="bg-red-600 hover:bg-red-700 p-2 rounded-lg text-white"
+                className="bg-red-500 hover:bg-red-600 p-2 rounded-lg text-white"
                 title="Remove Image"
               >
                 <FaTrashAlt size={20} />
@@ -474,20 +492,21 @@ export default function PhotoUploadEditor({
             </div>
           </div>
 
-          <div className="relative bg-gray-800 rounded-lg overflow-hidden flex items-center justify-center h-80">
+          {/* 🔹 Image Preview */}
+          <div className="relative bg-gray-100 dark:bg-gray-800 rounded-lg overflow-hidden flex items-center justify-center h-80">
             {isCropperLoading && (
-              <div className="absolute inset-0 flex items-center justify-center bg-gray-900 bg-opacity-50 z-50">
-                <FaSyncAlt className="animate-spin text-white text-3xl" />
+              <div className="absolute inset-0 flex items-center justify-center bg-gray-200 dark:bg-gray-900 bg-opacity-70 z-50">
+                <FaSyncAlt className="animate-spin text-gray-800 dark:text-white text-3xl" />
               </div>
             )}
 
-            {/* 🔹 Add this overlay when saving */}
             {isSaving && (
               <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-60 z-50">
                 <FaSyncAlt className="animate-spin text-white text-3xl" />
                 <span className="ml-3 text-white font-medium">Saving...</span>
               </div>
             )}
+
             {image?.src && (
               <img
                 ref={imageRef}
@@ -505,6 +524,7 @@ export default function PhotoUploadEditor({
                 }}
               />
             )}
+
             {editMode === "crop" && (
               <div className="absolute inset-0">
                 <Cropper
@@ -531,12 +551,13 @@ export default function PhotoUploadEditor({
             )}
           </div>
 
-          <div className="bg-gray-800 rounded-lg p-4 flex flex-col md:flex-row justify-between items-center gap-3">
-            <div className="text-white w-full md:w-auto overflow-hidden">
-              <p className="text-sm text-gray-400 truncate max-w-full">
+          {/* 🔹 Footer */}
+          <div className="bg-gray-100 dark:bg-gray-800 rounded-lg p-4 flex flex-col md:flex-row justify-between items-center gap-3">
+            <div className="text-gray-800 dark:text-white w-full md:w-auto overflow-hidden">
+              <p className="text-sm text-gray-500 dark:text-gray-400 truncate max-w-full">
                 Filename: {filename}
               </p>
-              <div className="flex flex-wrap items-center mt-1 text-sm text-gray-300">
+              <div className="flex flex-wrap items-center mt-1 text-sm text-gray-700 dark:text-gray-300">
                 <span className="mr-2">Zoom: {zoom.toFixed(1)}x</span>
                 <span>Rotation: {rotation}°</span>
               </div>
@@ -560,7 +581,7 @@ export default function PhotoUploadEditor({
                 {isSaving ? "Saving..." : "Save Changes"}
               </Button>
               {unsavedChanges && (
-                <p className="text-yellow-400 text-xs mt-1 text-center">
+                <p className="text-yellow-500 text-xs mt-1 text-center">
                   Unsaved Changes
                 </p>
               )}
@@ -568,20 +589,6 @@ export default function PhotoUploadEditor({
           </div>
         </div>
       )}
-
-      {/* <div className="mt-8">
-        {isRxPadImage ? (
-          <div className="flex gap-2 mx-auto justify-center items-center w-full">
-            <img className="rounded-lg h-20 w-20" src="/right-1.jpg" />
-            <img className="rounded-lg h-20 w-20" src="/wrong-1.jpg" />
-          </div>
-        ) : (
-          <div className="flex gap-2 mx-auto justify-center items-center w-full">
-            <img className="rounded-lg h-20 w-20" src="/right-2.jpg" />
-            <img className="rounded-lg h-20 w-20" src="/wrong-3.jpg" />
-          </div>
-        )}
-      </div> */}
     </div>
   );
 }

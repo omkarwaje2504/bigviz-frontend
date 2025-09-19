@@ -142,7 +142,7 @@ export default function RegisterNewCandidate({ projectData, projectId, ui }) {
   return (
     <div className="min-h-screen dark:bg-gray-900 text-white">
  
-      <ToastContainer position="top-center" autoClose={3000} />
+      <ToastContainer position="bottom-center" autoClose={3000} />
 
       <Header
         ui={ui}

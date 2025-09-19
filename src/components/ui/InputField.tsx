@@ -81,7 +81,6 @@ function getFileNameFromUrl(url: string): string | null {
   }
 }
 
-
 const InputField: React.FC<InputFieldProps> = ({
   ui,
   id,
@@ -116,14 +115,14 @@ const InputField: React.FC<InputFieldProps> = ({
   const [uploadedUrl, setUploadedUrl] = useState<string | null>(null);
   const [uploadError, setUploadError] = useState<string>("");
 
- useEffect(()=>{
-   let fomrData = DecryptData("formData")
+  useEffect(() => {
+    let fomrData = DecryptData("formData");
 
-  if(fomrData?.file_upload !== "" || fomrData?.file_upload !== null){
-    setUploadedUrl(fomrData?.file_upload)
-    setFileName(getFileNameFromUrl(fomrData?.file_upload))
-  }
- },[])
+    if (fomrData?.file_upload !== "" || fomrData?.file_upload !== null) {
+      setUploadedUrl(fomrData?.file_upload);
+      setFileName(getFileNameFromUrl(fomrData?.file_upload));
+    }
+  }, []);
 
   const normalizedOptions = options.map((o) =>
     typeof o === "string" ? { label: o, value: o } : o,
@@ -256,7 +255,7 @@ const InputField: React.FC<InputFieldProps> = ({
         htmlFor={id}
         className={`
           ${inputStyles.label}
-          ${label === "RxPad Pdf/File Upload" ? "text-xl font-bold text-white px-4" : ""}
+          ${label === "RxPad Pdf/File Upload" ? "text-xl font-bold text-gray-800 dark:text-white px-4" : ""}
         `}
       >
         {required && <span className="text-red-500">*</span>} {label}
@@ -499,25 +498,45 @@ const InputField: React.FC<InputFieldProps> = ({
       ) : // FILE UPLOAD
       type === "file upload" ? (
         <div className="w-full mt-5 px-4">
-          <h1 className="-mt-2 mb-5">Please upload a clear, front-facing image or file. Ensure the content is fully visible and legible for accurate processing. Supported formats: JPG, PNG, AI, CDR, PDF</h1>
+          <div className="-mt-2 mb-5 text-gray-800 dark:text-white">
+            <h1 className="text-lg font-semibold mb-3">
+              Please follow these guidelines before uploading:
+            </h1>
+            <ul className="list-disc list-inside space-y-2 text-sm md:text-base">
+              <li>
+                Upload a{" "}
+                <span className="font-medium">clear, front-facing</span> image
+                or file.
+              </li>
+              <li>
+                Ensure the content is{" "}
+                <span className="font-medium">fully visible and legible</span>{" "}
+                for accurate processing.
+              </li>
+              <li>
+                Supported formats:
+                <span className="ml-1 font-medium">JPG, PNG, AI, CDR, PDF</span>
+              </li>
+            </ul>
+          </div>
+
           <label
             htmlFor={id}
             className={`
             relative border-2 border-dashed rounded-lg py-8 text-center h-80 flex flex-col items-center justify-center cursor-pointer
             ${uploading ? "opacity-50 cursor-wait" : "opacity-100"}
-            ${uploadedUrl ? "border-green-500 bg-green-50" : "border-gray-600"}
+            ${uploadedUrl ? "border-green-500 bg-green-50 dark:bg-gray-700" : "border-gray-600"}
           `}
           >
-            
             <div className="text-gray-400 mb-4 bg-gray-800 p-4 rounded-full">
               <CiFileOn size={40} />
             </div>
-             
+
             <p className="mt-2 text-xl font-medium">
               {uploading ? (
                 "Uploading..."
               ) : uploadedUrl ? (
-                <span className="text-green-600 flex flex-col items-center">
+                <span className="text-green-600 text-sm flex flex-col items-center">
                   {fileName && <>✅ {fileName}</>}
                   <span className="text-sm text-black mt-1">
                     Edit / Replace file

@@ -157,7 +157,7 @@ const HomePage = ({ projectData, projectId, ui }) => {
           <Dashboard members={doctorList} stats={statistics} ui={ui} projectData={projectData} />
         )}
 
-        <div className="flex  md:flex-row justify-between items-start md:items-center mb-6 space-y-4 md:space-y-0">
+        <div className="flex  md:flex-row justify-center items-start md:items-center mb-6 space-y-4 md:space-y-0">
           <div className="w-full md:w-auto">
             <h2 className="text-xl font-semibold">
               {ui.Dashboard.HomePageTitle}
