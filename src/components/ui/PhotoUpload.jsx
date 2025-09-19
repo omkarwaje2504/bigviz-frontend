@@ -41,7 +41,7 @@ export default function PhotoUploadEditor({
   const imageRef = useRef(null);
   const inputRef = useRef(null);
   const cropperRef = useRef(null);
-
+  let isRxPad = projectData?.product_type === "RxPad" ? true : false
   const [image, setImage] = useState(null);
   const [zoom, setZoom] = useState(1);
   const [rotation, setRotation] = useState(0);
@@ -68,11 +68,29 @@ export default function PhotoUploadEditor({
   }, [unsavedChanges]);
 
   useEffect(() => {
+    console.log(currentImageData);
     const loadCroppedImage = async () => {
       if (currentImageData?.croppedImage) {
         setIsCropperLoading(true);
         try {
           const response = await fetch(currentImageData.croppedImage, {
+            cache: "no-store",
+          });
+          const blob = await response.blob();
+          const objectURL = URL.createObjectURL(blob);
+
+          setImage({
+            src: objectURL,
+            type: blob.type || "image/png",
+          });
+        } catch (err) {
+          console.error("Failed to load cropped image:", err);
+          setIsCropperLoading(false);
+        }
+      } else {
+        setIsCropperLoading(true);
+        try {
+          const response = await fetch(currentImageData.originalImage, {
             cache: "no-store",
           });
           const blob = await response.blob();
@@ -135,7 +153,10 @@ export default function PhotoUploadEditor({
         });
 
         setFilename(file.name);
-        setEditMode("crop");
+
+        if (!projectData?.config?.doctor?.disable_photo_cropper) {
+          setEditMode("crop");
+        }
         setUnsavedChanges(true);
         setIsCropperLoading(true);
       };
@@ -173,7 +194,7 @@ export default function PhotoUploadEditor({
   };
 
   const toggleCropMode = () => {
-    setEditMode((prev) => (prev === "crop" ? null : "crop"));
+    setEditMode((prev) => (prev === "crop" ? null : null));
     setUnsavedChanges(true);
   };
 
@@ -217,7 +238,11 @@ export default function PhotoUploadEditor({
       ctx.rotate((rotation * Math.PI) / 180);
       ctx.scale(zoom, zoom);
       ctx.filter = `contrast(${contrast}%) brightness(${brightness}%) saturate(${saturate}%)`;
-      ctx.drawImage(imgElement, -imgElement.naturalWidth / 2, -imgElement.naturalHeight / 2);
+      ctx.drawImage(
+        imgElement,
+        -imgElement.naturalWidth / 2,
+        -imgElement.naturalHeight / 2,
+      );
       ctx.restore();
 
       canvas = tempCanvas;
@@ -234,9 +259,21 @@ export default function PhotoUploadEditor({
       const blobName = `image-${now.toLocaleString("en-GB").replace(/[/, ]/g, "_").replace(/:/g, "-")}.png`;
       const dataUrl = canvas.toDataURL("image");
       const imageBlob = dataURLToBlob(dataUrl);
-
-      const uploadedCroppedFileUrl = await UploadFile(projectData, imageBlob, `cropped_${blobName}`, "image");
-      const uploadedOriginalFileUrl = await UploadFile(projectData, originalFile, `original_${blobName}`, "image");
+      let uploadedCroppedFileUrl;
+      if (!projectData?.config?.doctor?.disable_photo_cropper) {
+        uploadedCroppedFileUrl = await UploadFile(
+          projectData,
+          imageBlob,
+          `cropped_${blobName}`,
+          "image",
+        );
+      }
+      const uploadedOriginalFileUrl = await UploadFile(
+        projectData,
+        originalFile,
+        `original_${blobName}`,
+        "image",
+      );
 
       setImage({ src: uploadedCroppedFileUrl });
 
@@ -244,7 +281,7 @@ export default function PhotoUploadEditor({
         setFormData((prev) => ({
           ...prev,
           rxpad_image: {
-            croppedImage: uploadedCroppedFileUrl,
+            croppedImage: projectData?.config?.doctor?.disable_photo_cropper ? uploadedOriginalFileUrl : uploadedCroppedFileUrl,
             originalImage: uploadedOriginalFileUrl,
           },
         }));
@@ -252,7 +289,7 @@ export default function PhotoUploadEditor({
         setFormData((prev) => ({
           ...prev,
           photo: {
-            croppedImage: uploadedCroppedFileUrl,
+            croppedImage: projectData?.config?.doctor?.disable_photo_cropper ? uploadedOriginalFileUrl : uploadedCroppedFileUrl,
             originalImage: uploadedOriginalFileUrl,
           },
         }));
@@ -268,7 +305,7 @@ export default function PhotoUploadEditor({
   return (
     <div className="bg-gray-900 rounded-lg max-w-3xl mx-auto font-sans p-3">
       <h2 className="text-2xl font-bold text-white mb-6">
-        {isRxPadImage ? "RxPad Image" : "Photo Upload & Editor"}
+        {isRxPad ? "RxPad Image Upload" : "Photo Upload & Editor"}
       </h2>
 
       <input
@@ -288,7 +325,10 @@ export default function PhotoUploadEditor({
             e.preventDefault();
             const file = e.dataTransfer.files?.[0];
             if (file) {
-              onLoadImage({ target: { files: [file] }, preventDefault: () => {} });
+              onLoadImage({
+                target: { files: [file] },
+                preventDefault: () => {},
+              });
             }
           }}
         >
@@ -296,9 +336,12 @@ export default function PhotoUploadEditor({
             <FaRegImage size={48} />
           </div>
           <p className="text-gray-300 mb-4 text-lg">
-            Drag and drop your {isRxPadImage ? "RxPad image" : "photo"} here, or click to browse
+            Drag and drop your {isRxPadImage ? "RxPad image" : "photo"} here, or
+            click to browse
           </p>
-          <p className="text-gray-500 mb-6 text-sm">Supported formats: JPG, PNG, WEBP</p>
+          <p className="text-gray-500 mb-6 text-sm">
+            Supported formats: JPG, PNG, WEBP
+          </p>
         </div>
       ) : (
         <div className="space-y-4">
@@ -339,7 +382,9 @@ export default function PhotoUploadEditor({
               <div className="relative inline-block">
                 <button
                   type="button"
-                  onClick={() => setEditMode((prev) => (prev === "filter" ? null : "filter"))}
+                  onClick={() =>
+                    setEditMode((prev) => (prev === "filter" ? null : "filter"))
+                  }
                   className={`p-2 rounded-lg text-white ${editMode === "filter" ? "bg-red-600 hover:bg-red-700" : "bg-gray-700 hover:bg-gray-600"}`}
                   title="Filters"
                 >
@@ -347,18 +392,47 @@ export default function PhotoUploadEditor({
                 </button>
                 {editMode === "filter" && (
                   <div className="absolute top-full left-0 mt-2 bg-gray-800 rounded-lg shadow-lg p-4 z-50 w-64">
-                    <h3 className="text-white font-medium mb-2">Adjust Filters</h3>
+                    <h3 className="text-white font-medium mb-2">
+                      Adjust Filters
+                    </h3>
                     <div className="mb-2">
-                      <label className="text-gray-300 text-sm">Contrast: {contrast}%</label>
-                      <input type="range" min="50" max="200" value={contrast} onChange={(e) => setContrast(e.target.value)} className="w-full" />
+                      <label className="text-gray-300 text-sm">
+                        Contrast: {contrast}%
+                      </label>
+                      <input
+                        type="range"
+                        min="50"
+                        max="200"
+                        value={contrast}
+                        onChange={(e) => setContrast(e.target.value)}
+                        className="w-full"
+                      />
                     </div>
                     <div className="mb-2">
-                      <label className="text-gray-300 text-sm">Brightness: {brightness}%</label>
-                      <input type="range" min="50" max="200" value={brightness} onChange={(e) => setBrightness(e.target.value)} className="w-full" />
+                      <label className="text-gray-300 text-sm">
+                        Brightness: {brightness}%
+                      </label>
+                      <input
+                        type="range"
+                        min="50"
+                        max="200"
+                        value={brightness}
+                        onChange={(e) => setBrightness(e.target.value)}
+                        className="w-full"
+                      />
                     </div>
                     <div className="mb-2">
-                      <label className="text-gray-300 text-sm">Saturation: {saturate}%</label>
-                      <input type="range" min="50" max="200" value={saturate} onChange={(e) => setSaturate(e.target.value)} className="w-full" />
+                      <label className="text-gray-300 text-sm">
+                        Saturation: {saturate}%
+                      </label>
+                      <input
+                        type="range"
+                        min="50"
+                        max="200"
+                        value={saturate}
+                        onChange={(e) => setSaturate(e.target.value)}
+                        className="w-full"
+                      />
                     </div>
                   </div>
                 )}
@@ -406,21 +480,31 @@ export default function PhotoUploadEditor({
                 <FaSyncAlt className="animate-spin text-white text-3xl" />
               </div>
             )}
-            <img
-              ref={imageRef}
-              src={image?.src || image}
-              alt="Preview"
-              className="max-h-80 transition-all duration-200"
-              onLoad={() => setIsCropperLoading(false)}
-              onError={() => setIsCropperLoading(false)}
-              style={{
-                transform: `rotate(${rotation}deg) scale(${zoom})`,
-                transformOrigin: "center",
-                ...currentFilterStyle,
-                marginLeft: `${position.x}px`,
-                marginTop: `${position.y}px`,
-              }}
-            />
+
+            {/* 🔹 Add this overlay when saving */}
+            {isSaving && (
+              <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-60 z-50">
+                <FaSyncAlt className="animate-spin text-white text-3xl" />
+                <span className="ml-3 text-white font-medium">Saving...</span>
+              </div>
+            )}
+            {image?.src && (
+              <img
+                ref={imageRef}
+                src={image?.src || image}
+                alt="Preview"
+                className="max-h-80 transition-all duration-200"
+                onLoad={() => setIsCropperLoading(false)}
+                onError={() => setIsCropperLoading(false)}
+                style={{
+                  transform: `rotate(${rotation}deg) scale(${zoom})`,
+                  transformOrigin: "center",
+                  ...currentFilterStyle,
+                  marginLeft: `${position.x}px`,
+                  marginTop: `${position.y}px`,
+                }}
+              />
+            )}
             {editMode === "crop" && (
               <div className="absolute inset-0">
                 <Cropper
@@ -449,7 +533,9 @@ export default function PhotoUploadEditor({
 
           <div className="bg-gray-800 rounded-lg p-4 flex flex-col md:flex-row justify-between items-center gap-3">
             <div className="text-white w-full md:w-auto overflow-hidden">
-              <p className="text-sm text-gray-400 truncate max-w-full">Filename: {filename}</p>
+              <p className="text-sm text-gray-400 truncate max-w-full">
+                Filename: {filename}
+              </p>
               <div className="flex flex-wrap items-center mt-1 text-sm text-gray-300">
                 <span className="mr-2">Zoom: {zoom.toFixed(1)}x</span>
                 <span>Rotation: {rotation}°</span>
@@ -461,14 +547,22 @@ export default function PhotoUploadEditor({
                 ui={ui}
                 type="button"
                 fullWidth={false}
-                leftIcon={isSaving ? <FaSyncAlt className="animate-spin mr-2" /> : <FaSave size={20} className="mr-2" />}
+                leftIcon={
+                  isSaving ? (
+                    <FaSyncAlt className="animate-spin mr-2" />
+                  ) : (
+                    <FaSave size={20} className="mr-2" />
+                  )
+                }
                 onClick={saveCroppedImage}
                 disabled={isSaving}
               >
                 {isSaving ? "Saving..." : "Save Changes"}
               </Button>
               {unsavedChanges && (
-                <p className="text-yellow-400 text-xs mt-1 text-center">Unsaved Changes</p>
+                <p className="text-yellow-400 text-xs mt-1 text-center">
+                  Unsaved Changes
+                </p>
               )}
             </div>
           </div>

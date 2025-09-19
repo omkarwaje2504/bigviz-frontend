@@ -256,7 +256,7 @@ const InputField: React.FC<InputFieldProps> = ({
         htmlFor={id}
         className={`
           ${inputStyles.label}
-          ${label === "RxPad Upload" ? "text-xl font-bold text-white px-4" : ""}
+          ${label === "RxPad Pdf/File Upload" ? "text-xl font-bold text-white px-4" : ""}
         `}
       >
         {required && <span className="text-red-500">*</span>} {label}

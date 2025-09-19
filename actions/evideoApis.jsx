@@ -88,9 +88,13 @@ export const GetRenderStatus = async (id) => {
 };
 
 export const Analytics = async (formData, projectInfo,doctorHash,type) => {
-  if (!formData.code || !projectInfo?.project_hash) {
+  console.log(type,doctorHash,projectInfo.project_hash)
+
+  if ( !doctorHash || type || projectInfo?.project_hash) {
     return { success: false, message: "Invalid input data" };
   }
+
+
   try {
     const loginResponse = await fetch(
       `${process.env.NEXT_PUBLIC_PROJECT_URL}/analytics/video`,
@@ -107,8 +111,9 @@ export const Analytics = async (formData, projectInfo,doctorHash,type) => {
         }),
       },
     );
-
+console.log(loginResponse)
     const response = await loginResponse.json();
+    console.log(response)
    
     if (!response) {
       if (
@@ -123,6 +128,7 @@ export const Analytics = async (formData, projectInfo,doctorHash,type) => {
     return { success: true, data: response };
   } catch (error) {
     MyError(error);
+    console.log(error)
     return { success: false, message: error.message };
   }
 };

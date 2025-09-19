@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { DecryptData } from "@utils/cryptoUtils";
+import { DecryptData, EncryptData } from "@utils/cryptoUtils";
 import { VideoRender, GetRenderStatus, Analytics } from "@actions/evideoApis";
 import { useRouter } from "next/navigation";
 
@@ -18,8 +18,8 @@ function GenerateVideo({ ui, projectData }) {
 
   const router = useRouter();
 
-  const doctorHash =
-    typeof window !== "undefined" ? localStorage.getItem("doctorHash") : null;
+  const doctorHash =DecryptData("doctorHash");
+  console.log(doctorHash)
 
   useEffect(() => {
     const savedUrl = localStorage.getItem("videoUrl");

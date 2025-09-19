@@ -130,7 +130,7 @@ export default function RegisterNewCandidate({ projectData, projectId, ui }) {
           setIsSubmitLoading(false);
         }, 2000);
 
-        localStorage.removeItem("doctorHash");
+        // localStorage.removeItem("doctorHash");
       }
     } catch (error) {
       console.error(error);
