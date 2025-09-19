@@ -315,7 +315,7 @@ export const CheckMobile = async (
   if (!apiUrl) {
     throw new Error("API url is missing. Pleach check");
   }
-
+  const countryCode = projectData?.config?.doctor?.country_codes?.[0] || +91;
   try {
     const response = await fetch(`${apiUrl}/doctor/mobile/check`, {
       method: "POST",
@@ -325,7 +325,7 @@ export const CheckMobile = async (
       },
       body: JSON.stringify({
         project_hash: projectData.project_hash,
-        mobile: mobile,
+        mobile: countryCode + mobile,
       }),
     });
 

@@ -336,9 +336,9 @@ const RenderStepContent = ({
         <>
           {showStep2Confirm ? (
             <div className="fixed inset-0 flex items-center justify-center bg-black/70 z-50">
-              <div className="bg-white dark:bg-gray-400 shadow-xl flex flex-col items-center gap-6 rounded-2xl w-[90%] max-w-md p-6 animate-fadeIn">
+              <div className="bg-white dark:bg-gray-800 shadow-xl flex flex-col items-center gap-6 rounded-2xl w-[90%] max-w-md p-6 animate-fadeIn">
                 {/* Heading / Title */}
-                <h2 className="text-lg font-semibold text-black dark:text-gray-800 text-center">
+                <h2 className="text-lg font-semibold text-gray-700 dark:text-gray-300 text-center">
                   Check the examples to identify the correct and incorrect
                   formats
                 </h2>
