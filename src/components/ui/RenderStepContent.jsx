@@ -6,6 +6,8 @@ import AudioUploadEditor from "./AudioUploadEditor";
 import { FaStar } from "react-icons/fa";
 import CalendarPage from "@components/ui/Calendar";
 import MyError from "@services/MyError";
+import { CheckMobile, CheckMObile } from "@actions/user";
+import { EncryptData } from "@utils/cryptoUtils";
 
 const cleanName = (name) => {
   const prefixes = ["Dr", "Prof", "Mr", "Mrs", "dr", "prof", "mr", "mrs"];
@@ -68,6 +70,70 @@ const RenderStepContent = ({
 
   const handleValidationChange = (key) => (isValid) => {
     setValidationStatus((prev) => ({ ...prev, [key]: isValid }));
+  };
+
+  const [showMobileModal, setShowMobileModal] = useState(false);
+  const [existingDoctor, setExistingDoctor] = useState(null);
+
+  const handleMobileCheck = async (mobile) => {
+    try {
+      const result = await CheckMobile(projectData, mobile);
+      console.log(result);
+      if (result?.data && result?.message !== "Mobile number is available.") {
+        setExistingDoctor(result?.data);
+        setShowMobileModal(true);
+      }
+    } catch (err) {
+      MyError(err);
+      console.error("Mobile check failed:", err);
+    }
+  };
+
+  const handleUseSameDoctor = () => {
+    if (existingDoctor) {
+      console.log(existingDoctor);
+      let tempData = {
+        name: existingDoctor?.name,
+        mobile: existingDoctor?.mobile?.replace(/^\+91/, "") || "",
+        prefix: "Dr",
+        photo: {
+          croppedImage: existingDoctor?.image,
+          originalImage: existingDoctor?.cropped_image,
+        },
+      };
+
+      if (projectData?.config?.field?.length) {
+        projectData.config.field.forEach((field) => {
+          const matchingField = existingDoctor?.fields?.find(
+            (f) => String(f.id) === String(field.id),
+          );
+
+          tempData[field.name] = matchingField
+            ? matchingField.value
+            : field.default_value || "";
+        });
+      }
+
+      setFormData(tempData);
+
+      EncryptData("prevData", tempData);
+      EncryptData("formData", tempData);
+    }
+    setShowMobileModal(false);
+  };
+
+  const handleNewContact = () => {
+    setFormData((prev) => ({
+      ...prev,
+      name: "",
+      prefix: "Dr",
+      photo: {},
+      ...(projectData?.config?.field?.reduce((acc, field) => {
+        acc[field.name] = "";
+        return acc;
+      }, {}) || {}),
+    }));
+    setShowMobileModal(false);
   };
 
   const getFilteredFieldsForStep1 = () => {
@@ -146,6 +212,14 @@ const RenderStepContent = ({
                             "",
                           ),
                         );
+
+                        const maxLength = getMaxLengthFromRegex(
+                          projectData?.config?.doctor?.regex,
+                        );
+
+                        if (val.length === maxLength && regex.test(val)) {
+                          handleMobileCheck(val);
+                        }
                       } catch (err) {
                         console.warn("Invalid regex from backend:", err);
                         MyError(err);
@@ -154,8 +228,17 @@ const RenderStepContent = ({
 
                     setFormData({ ...formData, mobile: val });
                   }}
+                  onBlur={() => {
+                    if (formData.mobile) {
+                      handleMobileCheck(formData.mobile);
+                    }
+                  }}
                   required
-                  placeholder={`e.g. ${ui?.DoctorRegistrationForm?.MobileValidation ? countryCode : ""}9876543210`}
+                  placeholder={`e.g. ${
+                    ui?.DoctorRegistrationForm?.MobileValidation
+                      ? countryCode
+                      : ""
+                  }9876543210`}
                   validation={
                     ui?.DoctorRegistrationForm?.MobileValidation
                       ? {
@@ -219,6 +302,33 @@ const RenderStepContent = ({
               />
             ))}
           </div>
+          {showMobileModal && (
+            <div className="fixed inset-0 flex items-center justify-center bg-black/80 z-50">
+              <div className="bg-white dark:bg-gray-800 rounded-xl p-6 w-96 shadow-lg">
+                <h2 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">
+                  Mobile Already Exists
+                </h2>
+                <p className="mb-6 text-gray-700 dark:text-gray-300">
+                  Doctor with this mobile number already exists. Do you want to
+                  use the same details or enter a new contact?
+                </p>
+                <div className="flex justify-end gap-3">
+                  <button
+                    className="px-4 py-2 cursor-pointer bg-gray-200 dark:bg-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600"
+                    onClick={handleNewContact}
+                  >
+                    New Contact
+                  </button>
+                  <button
+                    className="px-4 py-2 cursor-pointer bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                    onClick={handleUseSameDoctor}
+                  >
+                    Use Same
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       );
     case 2:
@@ -229,7 +339,8 @@ const RenderStepContent = ({
               <div className="bg-white dark:bg-gray-400 shadow-xl flex flex-col items-center gap-6 rounded-2xl w-[90%] max-w-md p-6 animate-fadeIn">
                 {/* Heading / Title */}
                 <h2 className="text-lg font-semibold text-black dark:text-gray-800 text-center">
-                  Check the examples to identify the correct and incorrect formats
+                  Check the examples to identify the correct and incorrect
+                  formats
                 </h2>
 
                 {/* Image Section */}

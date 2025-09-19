@@ -1,6 +1,6 @@
 import MyError from "@services/MyError";
 import cleanUrls from "@utils/CleanUrl";
-import { DecryptData, EncryptData } from "@utils/cryptoUtils";
+import { DecryptData } from "@utils/cryptoUtils";
 import { FormData, ProjectInfo } from "@utils/types";
 
 export const FetchDoctors = async (
@@ -290,5 +290,79 @@ export const SaveDoctors = async (
     };
   }
 };
+
+
+export const CheckMobile = async (
+  projectData: ProjectInfo,
+  mobile: string,
+) => {
+  if (!projectData?.project_hash) {
+    return {
+      success: false,
+      message: "Something left behind. Please refresh and try again.",
+    };
+  }
+
+  if (!mobile) {
+    return {
+      success: false,
+      message: "mobile Required",
+    };
+  }
+
+  const apiUrl = process.env.NEXT_PUBLIC_PROJECT_URL;
+
+  if (!apiUrl) {
+    throw new Error("API url is missing. Pleach check");
+  }
+
+  try {
+    const response = await fetch(`${apiUrl}/doctor/mobile/check`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify({
+        project_hash: projectData.project_hash,
+        mobile: mobile,
+      }),
+    });
+
+    if (!response.ok) {
+      console.error(
+        `FetchDoctors error: Server responded with status ${response.status}`,
+      );
+      throw new Error(`Server responded with status ${response.status}`);
+    }
+
+    let result;
+    try {
+      result = await response.json();
+    } catch (jsonErr) {
+      console.error("FetchDoctors error: Failed to parse JSON", jsonErr);
+      throw new Error("Invalid server response format.");
+    }
+
+    const data = result?.data;
+
+    return {
+      success: true,
+      data: Array.isArray(data) || typeof data === "object" ? data : [],
+      cached: false,
+      message:result?.message
+    };
+  } catch (error: any) {
+    MyError(error);
+    console.error("FetchDoctors catch block error:", error?.message || error);
+    return {
+      success: false,
+      message:
+        error?.message ||
+        "An unexpected error occurred while fetching doctors.",
+    };
+  }
+};
+
 
 
