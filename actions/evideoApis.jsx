@@ -36,7 +36,7 @@ export const VideoRender = async (videoId, videoProps) => {
       data: result,
     };
   } catch (e) {
-    Sentry.captureException(error);
+
     return {
       success: false,
       message: "Failed to generate Ai Video",
@@ -79,7 +79,7 @@ export const GetRenderStatus = async (id) => {
       };
     }
   } catch (error) {
-    Sentry.captureException(error);
+    
     return {
       success: false,
       message: "Failure occur while generating Ai Video",
@@ -87,12 +87,11 @@ export const GetRenderStatus = async (id) => {
   }
 };
 
-export const Analytics = async (formData, projectInfo,doctorHash,type) => {
+export const Analytics = async (projectInfo, doctorHash, type) => {
 
-  if ( !doctorHash || type || projectInfo?.project_hash) {
+  if (!doctorHash || !type || !projectInfo?.project_hash) {
     return { success: false, message: "Invalid input data" };
   }
-
 
   try {
     const loginResponse = await fetch(
@@ -104,30 +103,23 @@ export const Analytics = async (formData, projectInfo,doctorHash,type) => {
           Accept: "application/json",
         },
         body: JSON.stringify({
-            project_hash:projectInfo.project_hash,
-            doctor_hash:doctorHash,
-            type:type
+          project_hash: projectInfo.project_hash,
+          doctor_hash: doctorHash,
+          type: type,
         }),
-      },
+      }
     );
 
-    const response = await loginResponse.json();
-
-  
-    if (!response) {
-      if (
-        response.message ===
-        "The Code has alreday been taken"
-      ) {
-        throw new Error("Employee code is already taken. Please check and retry");
-      } else {
-        throw new Error("Register fail. Please try again.");
-      }
+    if (!loginResponse.ok) {
+      throw new Error(`Server error: ${loginResponse.status}`);
     }
+
+    const text = await loginResponse.text();
+    const response = text ? JSON.parse(text) : {};
+
     return { success: true, data: response };
   } catch (error) {
-    MyError(error);
-    console.log(error)
+    console.error("Analytics error:", error);
     return { success: false, message: error.message };
   }
 };
