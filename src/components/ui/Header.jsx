@@ -37,7 +37,7 @@ const getProjectIcon = (name) => {
   
 const Header = ({ ui, userInfo, projectData, projectHash }) => {
   const { pathnamesArray } = useHeaderData();
-
+  // console.log(projectData?.config?.employee?.)
   const [isDark, setIsDark] = useState(false);
 
   // detect system dark/light
@@ -110,7 +110,9 @@ const Header = ({ ui, userInfo, projectData, projectHash }) => {
               </div>
 
               {/* Logout */}
-              <FaSignOutAlt
+              {
+                projectData?.project_hash !== 'gv2zgqr6' && (
+                  <FaSignOutAlt
                 className="text-gray-500 hover:text-red-500 dark:text-gray-400 dark:hover:text-red-400 cursor-pointer"
                 onClick={() => {
                   const getProjectHash = localStorage.getItem("projectHash");
@@ -120,6 +122,8 @@ const Header = ({ ui, userInfo, projectData, projectHash }) => {
                 }}
                 title="Sign out"
               />
+                )
+              }
             </div>
           </div>
         </div>
