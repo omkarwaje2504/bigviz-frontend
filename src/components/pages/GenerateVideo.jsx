@@ -12,17 +12,24 @@ function GenerateVideo({ ui, projectData }) {
   const [videoUrl, setVideoUrl] = useState(null);
   const [error, setError] = useState(null);
   const [renderId, setRenderId] = useState(null);
+  const [doctorHash,setDoctorHash] = useState(null)
 
   const [videoGenerated, setVideoGenerated] = useState(false);
   const [videoDownloaded, setVideoDownloaded] = useState(false);
 
   const router = useRouter();
 
-  const doctorHash =DecryptData("doctorHash");
+  
   
   useEffect(() => {
     const savedUrl = DecryptData("videoUrl");
+    const doctorHash =DecryptData("doctorHash");
     const savedGenerated = DecryptData("videoGenerated");
+
+    if(doctorHash){
+      setDoctorHash(doctorHash)
+    }
+
     if (savedUrl && savedGenerated === "true") {
       setVideoUrl(savedUrl);
       setVideoGenerated(true);
