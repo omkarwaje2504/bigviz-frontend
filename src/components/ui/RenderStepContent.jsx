@@ -61,6 +61,8 @@ const RenderStepContent = ({
   const countryCode = projectData?.config?.doctor?.country_codes?.[0] || +91;
   const [showStep2Confirm, setShowStep2Confirm] = useState(true);
   const isRxPadImage = projectData?.product_type === "RxPad" ? true : false;
+  const [showMobileModal, setShowMobileModal] = useState(false);
+  const [existingDoctor, setExistingDoctor] = useState(null);
 
   useEffect(() => {
     if (formData?.name?.length > 5) {
@@ -71,9 +73,6 @@ const RenderStepContent = ({
   const handleValidationChange = (key) => (isValid) => {
     setValidationStatus((prev) => ({ ...prev, [key]: isValid }));
   };
-
-  const [showMobileModal, setShowMobileModal] = useState(false);
-  const [existingDoctor, setExistingDoctor] = useState(null);
 
   const handleMobileCheck = async (mobile) => {
     try {
@@ -188,7 +187,7 @@ const RenderStepContent = ({
               />
             </div>
 
-            {!projectData?.features?.includes("disable_mobile_number") && (
+            {!projectData?.config?.doctor?.disable_mobile_number && (
               <div>
                 <InputField
                   ui={ui}

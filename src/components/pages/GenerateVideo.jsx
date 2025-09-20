@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { DecryptData, EncryptData } from "@utils/cryptoUtils";
-import { VideoRender, GetRenderStatus, Analytics } from "@actions/evideoApis";
+import { VideoRender, GetRenderStatus, GenerateVideoAPI, Download } from "@actions/evideoApis";
 import { useRouter } from "next/navigation";
 
 function GenerateVideo({ ui, projectData }) {
@@ -13,7 +13,6 @@ function GenerateVideo({ ui, projectData }) {
   const [error, setError] = useState(null);
   const [renderId, setRenderId] = useState(null);
   const [doctorHash, setDoctorHash] = useState(null);
-
   const [videoGenerated, setVideoGenerated] = useState(false);
   const [videoDownloaded, setVideoDownloaded] = useState(false);
 
@@ -103,7 +102,8 @@ function GenerateVideo({ ui, projectData }) {
           EncryptData("videoUrl", check.data.url);
           EncryptData("videoGenerated", "true");
 
-          await Analytics({}, projectData, doctorHash, 24);
+          let data = await GenerateVideoAPI(projectData, doctorHash, 24, check.data.url);
+          // console.log(data)
           setVideoGenerated(true);
           return;
         }
@@ -128,7 +128,7 @@ function GenerateVideo({ ui, projectData }) {
   }, [renderId, projectData, doctorHash, videoGenerated]);
 
   const handleDownload = async () => {
-    await Analytics({}, projectData, doctorHash, 25);
+    await Download( projectData, doctorHash, 25);
     setVideoDownloaded(true);
   };
 
@@ -137,9 +137,10 @@ function GenerateVideo({ ui, projectData }) {
   };
   const handleFileDownload = async () => {
     try {
-      let data = await Analytics(projectData, doctorHash, 25);
-      console.log(data)
+      let data = await Download(projectData, doctorHash, 25);
+      // console.log(data)
       setVideoDownloaded(true);
+      let formData = DecryptData("formData")
 
       const response = await fetch(videoUrl);
       const blob = await response.blob();
@@ -147,7 +148,7 @@ function GenerateVideo({ ui, projectData }) {
 
       const link = document.createElement("a");
       link.href = url;
-      link.download = "generated-video.mp4";
+      link.download = `${formData.prefix}.${formData.name}.mp4`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);

@@ -1,3 +1,5 @@
+import data from "@utils/types";
+
 export const VideoRender = async (videoId, videoProps) => {
   const apiKey = "adfljhsdgofsahgalsdfjasadssaflkadnfgasldfsadf";
 
@@ -87,15 +89,19 @@ export const GetRenderStatus = async (id) => {
   }
 };
 
-export const Analytics = async (projectInfo, doctorHash, type) => {
-
+export const GenerateVideoAPI = async (projectInfo, doctorHash, type, videourl) => {
   if (!doctorHash || !type || !projectInfo?.project_hash) {
     return { success: false, message: "Invalid input data" };
   }
 
   try {
+    const timestamp = new Date()
+      .toISOString()            
+      .slice(0, 19)             
+      .replace("T", " ");      
+
     const loginResponse = await fetch(
-      `${process.env.NEXT_PUBLIC_PROJECT_URL}/analytics/video`,
+      `${process.env.NEXT_PUBLIC_PROJECT_URL}/analytics`,
       {
         method: "POST",
         headers: {
@@ -106,6 +112,63 @@ export const Analytics = async (projectInfo, doctorHash, type) => {
           project_hash: projectInfo.project_hash,
           doctor_hash: doctorHash,
           type: type,
+          data: [
+            {
+              type,
+              timestamp, 
+              extras: {
+                video_url: videourl,
+              },
+            },
+          ],
+        }),
+      }
+    );
+
+    if (!loginResponse.ok) {
+      throw new Error(`Server error: ${loginResponse.status}`);
+    }
+
+    const text = await loginResponse.text();
+    const response = text ? JSON.parse(text) : {};
+
+    return { success: true, data: response };
+  } catch (error) {
+    console.error("Analytics error:", error);
+    return { success: false, message: error.message };
+  }
+};
+
+export const Download = async (projectInfo, doctorHash, type) => {
+
+  if (!doctorHash || !type || !projectInfo?.project_hash) {
+    return { success: false, message: "Invalid input data" };
+  }
+
+  const timestamp = new Date()
+      .toISOString()            
+      .slice(0, 19)             
+      .replace("T", " "); 
+
+  try {
+    const loginResponse = await fetch(
+      `${process.env.NEXT_PUBLIC_PROJECT_URL}/analytics`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify({
+          project_hash: projectInfo.project_hash,
+          doctor_hash: doctorHash,
+          type: type,
+          data:[
+            {
+              type,
+              timestamp
+            }
+          ]
         }),
       }
     );

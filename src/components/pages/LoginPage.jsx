@@ -17,6 +17,9 @@ export default function LoginPage({ projectData, projectId, ui }) {
   const router = useRouter();
 
   useEffect(() => {
+    if(!projectData?.config?.employee){
+      router.push(`${projectId}/register-new-candidate`);
+    }
     let getUserData = DecryptData("empData");
     const getProjectHash = localStorage.getItem("projectHash");
     if (getProjectHash !== projectId) {
