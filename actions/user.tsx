@@ -70,7 +70,7 @@ export const FetchDoctors = async (
 
     return {
       success: true,
-       result:result,
+      result: result,
       data: Array.isArray(data) || typeof data === "object" ? data : [],
       cached: false,
     };
@@ -171,7 +171,7 @@ export const FetchDoctor = async (
 function mapFormDataToFields(formData: FormData, project: ProjectInfo) {
   return project?.config?.field?.map((field, index) => {
     return {
-      id: field.id ?? index + 1, 
+      id: field.id ?? index + 1,
       value: formData[field.name] ?? field.default_value ?? "",
     };
   });
@@ -183,9 +183,8 @@ export const SaveDoctors = async (
   formData: any,
   doctorCode: string,
 ) => {
-  
-  let prevData = DecryptData("prevData")
-  
+  let prevData = DecryptData("prevData");
+
   if (!projectData?.project_hash) {
     return {
       success: false,
@@ -193,7 +192,7 @@ export const SaveDoctors = async (
     };
   }
 
-  if (!employeeCode) {
+  if (projectData?.config?.employee && !employeeCode) {
     return {
       success: false,
       message: "Employee code is required. Please logout and login again.",
@@ -215,33 +214,35 @@ export const SaveDoctors = async (
   const fields = mapFormDataToFields(formData, projectData);
   const countryCode = projectData?.config?.doctor?.country_codes?.[0] || +91;
 
-  const unwantedBase =
-    "https://pub-0b6394cfeda24bf196c98e1746afe09b.r2.dev/production/";
-
+  const trailingPath = process.env.NEXT_PUBLIC_R2_PUBLIC_URL;
   let photo = formData?.photo?.originalImage || "";
-  if (photo.startsWith(unwantedBase)) {
-    photo = photo.replace(unwantedBase, "");
+  if (photo.startsWith(trailingPath)) {
+    photo = photo.replace(trailingPath, "");
   }
 
   let cropped_image = formData?.photo?.croppedImage || "";
-  if (cropped_image.startsWith(unwantedBase)) {
-    cropped_image = cropped_image.replace(unwantedBase, "");
+  if (cropped_image.startsWith(trailingPath)) {
+    cropped_image = cropped_image.replace(trailingPath, "");
   }
 
   try {
     let requestBody: any = {
       project_hash: projectData.project_hash,
-      employee_hash: employeeCode,
       doctor_hash: doctorCode,
     };
 
     let updatedformData = {
       ...formData,
-      name: `${formData.prefix}. ${formData.name}`, 
+      name: `${formData.prefix}. ${formData.name}`,
     };
-    
-    if (prevData && JSON.stringify(prevData) === JSON.stringify(updatedformData)) {
-      requestBody.doctor_hash=doctorCode;
+    if (projectData?.config?.employee) {
+      requestBody.employee_hash = employeeCode;
+    }
+    if (
+      prevData &&
+      JSON.stringify(prevData) === JSON.stringify(updatedformData)
+    ) {
+      requestBody.doctor_hash = doctorCode;
       requestBody.name = `${formData?.prefix}. ${formData?.name}`;
     } else {
       requestBody = {
@@ -264,12 +265,12 @@ export const SaveDoctors = async (
 
     if (!response.ok) {
       console.error(
-        `SaveDoctors error: Server responded with status ${response.status}`
+        `SaveDoctors error: Server responded with status ${response.status}`,
       );
       throw new Error(
         `Save Fail:- Server responded with status ${response.status}, Doctor Data: ${JSON.stringify(
-          formData
-        )}`
+          formData,
+        )}`,
       );
     }
 
@@ -291,11 +292,7 @@ export const SaveDoctors = async (
   }
 };
 
-
-export const CheckMobile = async (
-  projectData: ProjectInfo,
-  mobile: string,
-) => {
+export const CheckMobile = async (projectData: ProjectInfo, mobile: string) => {
   if (!projectData?.project_hash) {
     return {
       success: false,
@@ -350,7 +347,7 @@ export const CheckMobile = async (
       success: true,
       data: Array.isArray(data) || typeof data === "object" ? data : [],
       cached: false,
-      message:result?.message
+      message: result?.message,
     };
   } catch (error: any) {
     MyError(error);
@@ -363,6 +360,3 @@ export const CheckMobile = async (
     };
   }
 };
-
-
-

@@ -76,9 +76,9 @@ export default function RegisterNewCandidate({ projectData, projectId, ui }) {
       let doctorCode = DecryptData("doctorHash");
       const save = await SaveDoctors(
         projectData,
-        userInfo.hash,
+        userInfo?.hash,
         formData,
-        doctorCode
+        doctorCode,
       );
       if (save.success) {
         EncryptData("doctorHash", save.doctorHash);
@@ -109,10 +109,9 @@ export default function RegisterNewCandidate({ projectData, projectId, ui }) {
         projectData,
         userInfo.hash,
         formData,
-        doctorCode
+        doctorCode,
       );
       if (!save.success) {
-        console.log(save.message);
         toast.error(save.message || "Submission failed");
       } else {
         toast.success("Doctor Added Successfully!");
@@ -123,7 +122,9 @@ export default function RegisterNewCandidate({ projectData, projectId, ui }) {
           } else if (projectData?.product_type === "RxPad") {
             router.push("homepage");
           } else if (projectData?.product_type === "Evideo") {
-            router.push("generate-video");
+            router.push(
+              `${!projectData?.config?.employee ? projectId + "/" : null}generate-video`,
+            );
           } else {
             router.push("homepage");
           }
@@ -141,7 +142,6 @@ export default function RegisterNewCandidate({ projectData, projectId, ui }) {
 
   return (
     <div className="min-h-screen dark:bg-gray-900 text-white">
- 
       <ToastContainer position="bottom-center" autoClose={3000} />
 
       <Header
@@ -153,16 +153,22 @@ export default function RegisterNewCandidate({ projectData, projectId, ui }) {
 
       <div className="container mx-auto px-4 py-3">
         <div className="max-w-3xl mx-auto">
-          <Link
-            className="text-xl font-bold flex gap-2 items-center text-gray-800 dark:text-white"
-            href={`/${projectId}/homepage`}
-          >
-            <IoArrowBackCircleSharp
-              className="w-10 h-10"
-              style={{ fill: ui?.basic?.secondaryColor || "white" }}
-            />{" "}
-            {ui?.DoctorRegistrationForm?.FormHeading}
-          </Link>
+          <div className="flex gap-1">
+            {projectData?.config?.employee && (
+              <Link
+                className="text-xl font-bold flex gap-2 items-center text-gray-800 dark:text-white"
+                href={`/${projectId}/homepage`}
+              >
+                <IoArrowBackCircleSharp
+                  className="w-10 h-10"
+                  style={{ fill: ui?.basic?.secondaryColor || "white" }}
+                />
+              </Link>
+            )}
+            <h1 className="text-xl font-bold flex gap-2 items-center text-gray-800 dark:text-white">
+              {ui?.DoctorRegistrationForm?.FormHeading}
+            </h1>
+          </div>
           <p className="text-gray-400 mb-4 text-sm md:text-md">
             {ui?.DoctorRegistrationForm?.FormSubHeading}
           </p>

@@ -3,6 +3,7 @@ import { getAllProjectsCached } from "../../../utils/projectCache";
 import Config from "../../../utils/Config";
 import NotFoundPage from "./NotFoundPage";
 import RegisterEmployeePage from "@components/pages/RegisterEmployeePage";
+import RegisterNewCandidate from "@components/pages/RegisterNewCandidate";
 
 export async function generateStaticParams() {
   const projects = await getAllProjectsCached();
@@ -25,13 +26,18 @@ export async function generateMetadata({ params }) {
     openGraph: {
       title: projectInfo?.seo_title || "Default Title",
       description: projectInfo?.seo_description || "Default description",
-      images: [`${process.env.NEXT_PUBLIC_R2_PUBLIC_URL}/${projectInfo?.seo_image}` || "/default-image.jpg"],
+      images: [
+        `${process.env.NEXT_PUBLIC_R2_PUBLIC_URL}/${projectInfo?.seo_image}` ||
+          "/default-image.jpg",
+      ],
     },
     twitter: {
       card: "summary_large_image",
       title: projectInfo?.seo_title || "Default Title",
       description: projectInfo?.seo_description || "Default description",
-      image: `${process.env.NEXT_PUBLIC_R2_PUBLIC_URL}/${projectInfo?.seo_image}` || "/default-image.jpg",
+      image:
+        `${process.env.NEXT_PUBLIC_R2_PUBLIC_URL}/${projectInfo?.seo_image}` ||
+        "/default-image.jpg",
     },
   };
 }
@@ -45,14 +51,30 @@ export default async function Home({ params }) {
     );
 
     const ui = await Config(projectInfo);
-    if (projectInfo && projectInfo?.config?.employee?.enable_employee_registration) {
+    if (
+      projectInfo &&
+      projectInfo?.config?.employee?.enable_employee_registration
+    ) {
       return (
-        <RegisterEmployeePage projectData={projectInfo} projectId={pathname} ui={ui} />
+        <RegisterEmployeePage
+          projectData={projectInfo}
+          projectId={pathname}
+          ui={ui}
+        />
       );
-    }else if(projectInfo && !projectInfo?.config?.employee?.enable_employee_registration){
-      return (
-        <LoginPage projectData={projectInfo} projectId={pathname} ui={ui} />
-      );
+    } else if (
+      projectInfo &&
+      !projectInfo?.config?.employee?.enable_employee_registration
+    ) {
+      if (projectInfo?.config?.employee) {
+        return (
+          <LoginPage projectData={projectInfo} projectId={pathname} ui={ui} />
+        );
+      } else {
+        return (
+          <RegisterNewCandidate projectData={projectInfo} projectId={pathname} ui={ui} />
+        );
+      }
     } else {
       return <NotFoundPage />;
     }

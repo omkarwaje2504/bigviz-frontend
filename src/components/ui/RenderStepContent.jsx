@@ -91,7 +91,6 @@ const RenderStepContent = ({
 
   const handleUseSameDoctor = () => {
     if (existingDoctor) {
-      
       let tempData = {
         name: existingDoctor?.name,
         mobile: existingDoctor?.mobile?.replace(/^\+91/, "") || "",
@@ -335,52 +334,10 @@ const RenderStepContent = ({
       return (
         <>
           {showStep2Confirm ? (
-            <div className="fixed inset-0 flex items-center justify-center bg-black/70 z-50">
-              <div className="bg-white dark:bg-gray-800 shadow-xl flex flex-col items-center gap-6 rounded-2xl w-[90%] max-w-md p-6 animate-fadeIn">
-                {/* Heading / Title */}
-                <h2 className="text-lg font-semibold text-gray-700 dark:text-gray-300 text-center">
-                  Check the examples to identify the correct and incorrect
-                  formats
-                </h2>
-
-                {/* Image Section */}
-                {isRxPadImage ? (
-                  <div className="flex gap-4 justify-center items-center w-full">
-                    <img
-                      className="rounded-lg h-24 w-24 object-cover border-2 border-green-500 shadow-md"
-                      src="/right-1.jpg"
-                      alt="Correct"
-                    />
-                    <img
-                      className="rounded-lg h-24 w-24 object-cover border-2 border-red-500 shadow-md"
-                      src="/wrong-1.jpg"
-                      alt="Incorrect"
-                    />
-                  </div>
-                ) : (
-                  <div className="flex gap-4 justify-center items-center w-full">
-                    <img
-                      className="rounded-lg h-24 w-24 object-cover border-2 border-green-500 shadow-md"
-                      src="/right-2.jpg"
-                      alt="Correct"
-                    />
-                    <img
-                      className="rounded-lg h-24 w-24 object-cover border-2 border-red-500 shadow-md"
-                      src="/wrong-3.jpg"
-                      alt="Incorrect"
-                    />
-                  </div>
-                )}
-
-                {/* Action Button */}
-                <button
-                  className="mt-4 cursor-pointer px-6 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white font-medium shadow-md transition"
-                  onClick={() => setShowStep2Confirm(false)}
-                >
-                  Got it
-                </button>
-              </div>
-            </div>
+            <ValidPhotoPreview
+              isRxPadImage={isRxPadImage}
+              setShowStep2Confirm={setShowStep2Confirm}
+            />
           ) : (
             // Case 2 content
             <div className="space-y-6">
@@ -635,6 +592,56 @@ const RenderStepContent = ({
     default:
       return null;
   }
+};
+
+const ValidPhotoPreview = ({ isRxPadImage, setShowStep2Confirm }) => {
+  return (
+    <div className="fixed inset-0 flex items-center justify-center bg-black/70 z-50">
+      <div className="bg-white dark:bg-gray-800 shadow-xl flex flex-col items-center gap-6 rounded-2xl w-[90%] max-w-md p-6 animate-fadeIn">
+        {/* Heading / Title */}
+        <h2 className="text-lg font-semibold text-gray-700 dark:text-gray-300 text-center">
+          Check the examples to identify the correct and incorrect formats
+        </h2>
+
+        {/* Image Section */}
+        {isRxPadImage ? (
+          <div className="flex gap-4 justify-center items-center w-full">
+            <img
+              className="rounded-lg h-24 w-24 object-cover border-2 border-green-500 shadow-md"
+              src="/right-1.jpg"
+              alt="Correct"
+            />
+            <img
+              className="rounded-lg h-24 w-24 object-cover border-2 border-red-500 shadow-md"
+              src="/wrong-1.jpg"
+              alt="Incorrect"
+            />
+          </div>
+        ) : (
+          <div className="flex gap-4 justify-center items-center w-full">
+            <img
+              className="rounded-lg h-24 w-24 object-cover border-2 border-green-500 shadow-md"
+              src="/right-2.jpg"
+              alt="Correct"
+            />
+            <img
+              className="rounded-lg h-24 w-24 object-cover border-2 border-red-500 shadow-md"
+              src="/wrong-3.jpg"
+              alt="Incorrect"
+            />
+          </div>
+        )}
+
+        {/* Action Button */}
+        <button
+          className="mt-4 cursor-pointer px-6 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white font-medium shadow-md transition"
+          onClick={() => setShowStep2Confirm(false)}
+        >
+          Got it
+        </button>
+      </div>
+    </div>
+  );
 };
 
 export default RenderStepContent;

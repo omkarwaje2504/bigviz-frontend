@@ -306,7 +306,7 @@ export default function PhotoUploadEditor({
   };
 
   return (
-    <div className="bg-white dark:bg-gray-900 rounded-lg max-w-3xl mx-auto font-sans p-3">
+    <div className="bg-white dark:bg-gray-900 rounded-lg max-w-3xl mx-auto font-sans">
       <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
         {isRxPad ? "RxPad Image Upload" : "Photo Upload & Editor"}
       </h2>
@@ -350,7 +350,7 @@ export default function PhotoUploadEditor({
         <div className="space-y-4">
           {/* 🔹 Toolbar */}
           <div className="bg-gray-100 dark:bg-gray-800 rounded-lg p-4 flex flex-wrap gap-4 justify-between items-center">
-            <div className="flex flex-wrap gap-3">
+            <div className="flex flex-wrap gap-1">
               <button
                 type="button"
                 onClick={() => rotateImage(1)}
