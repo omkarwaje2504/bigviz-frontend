@@ -4,7 +4,6 @@ import React, { useEffect, useState } from "react";
 import { DecryptData, EncryptData } from "@utils/cryptoUtils";
 import { VideoRender, GetRenderStatus, GenerateVideoAPI, Download } from "@actions/evideoApis";
 import { useRouter } from "next/navigation";
-import RPGNavratri from "@components/ui/VideoGenerator";
 
 function GenerateVideo({ ui, projectData }) {
   const [loading, setLoading] = useState(true);
