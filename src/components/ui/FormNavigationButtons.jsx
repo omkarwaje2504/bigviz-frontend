@@ -20,7 +20,7 @@ const FormNavigationButtons = ({
 
   const isPage1Valid =
     currentStep !== 1 ||
-    (!validationStatus && disableMobileNumber) ||
+    (!validationStatus && disableMobileNumber && formData.name) ||
     (validationStatus &&
       Object.entries(validationStatus).every(([key, value]) => {
         if (disableMobileNumber && key === "mobile_number") {

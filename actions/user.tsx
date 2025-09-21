@@ -292,7 +292,7 @@ export const SaveDoctors = async (
   }
 };
 
-export const CheckMobile = async (projectData: ProjectInfo, mobile: string) => {
+ export const CheckMobile = async (projectData: ProjectInfo, mobile: string, employeeHash: string) => {
   if (!projectData?.project_hash) {
     return {
       success: false,
@@ -310,9 +310,11 @@ export const CheckMobile = async (projectData: ProjectInfo, mobile: string) => {
   const apiUrl = process.env.NEXT_PUBLIC_PROJECT_URL;
 
   if (!apiUrl) {
-    throw new Error("API url is missing. Pleach check");
+    throw new Error("API url is missing. Please check");
   }
-  const countryCode = projectData?.config?.doctor?.country_codes?.[0] || +91;
+  
+  const countryCode = projectData?.config?.doctor?.country_codes?.[0] || "+91";
+  
   try {
     const response = await fetch(`${apiUrl}/doctor/mobile/check`, {
       method: "POST",
@@ -322,6 +324,7 @@ export const CheckMobile = async (projectData: ProjectInfo, mobile: string) => {
       },
       body: JSON.stringify({
         project_hash: projectData.project_hash,
+        employee_hash: employeeHash,
         mobile: countryCode + mobile,
       }),
     });
@@ -341,13 +344,14 @@ export const CheckMobile = async (projectData: ProjectInfo, mobile: string) => {
       throw new Error("Invalid server response format.");
     }
 
-    const data = result?.data;
-
+    // Return the complete result object, not just data
     return {
-      success: true,
-      data: Array.isArray(data) || typeof data === "object" ? data : [],
+      success: result.success,
+      exists: result.exists,
+      other_employee: result.other_employee,
+      message: result.message,
+      data: result.data || {},
       cached: false,
-      message: result?.message,
     };
   } catch (error: any) {
     MyError(error);

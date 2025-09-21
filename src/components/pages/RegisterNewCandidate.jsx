@@ -15,6 +15,7 @@ import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
 export default function RegisterNewCandidate({ projectData, projectId, ui }) {
+
   const [currentStep, setCurrentStep] = useState(1);
   const [photoUploadStatus, setPhotoUploadStatus] = useState(false);
   const [audioUploadStatus, setAudioUploadStatus] = useState(false);
@@ -123,7 +124,7 @@ export default function RegisterNewCandidate({ projectData, projectId, ui }) {
             router.push("homepage");
           } else if (projectData?.product_type === "Evideo") {
             router.push(
-              `${!projectData?.config?.employee ? projectId + "/" : null}generate-video`,
+              `/${projectData.project_hash}/generate-video`,
             );
           } else {
             router.push("homepage");

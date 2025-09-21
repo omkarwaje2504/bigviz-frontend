@@ -6,8 +6,8 @@ import AudioUploadEditor from "./AudioUploadEditor";
 import { FaStar } from "react-icons/fa";
 import CalendarPage from "@components/ui/Calendar";
 import MyError from "@services/MyError";
-import { CheckMobile, CheckMObile } from "@actions/user";
-import { EncryptData } from "@utils/cryptoUtils";
+import { CheckMobile } from "@actions/user";
+import { DecryptData, EncryptData } from "@utils/cryptoUtils";
 
 const cleanName = (name) => {
   const prefixes = ["Dr", "Prof", "Mr", "Mrs", "dr", "prof", "mr", "mrs"];
@@ -63,6 +63,8 @@ const RenderStepContent = ({
   const isRxPadImage = projectData?.product_type === "RxPad" ? true : false;
   const [showMobileModal, setShowMobileModal] = useState(false);
   const [existingDoctor, setExistingDoctor] = useState(null);
+  const [mobileCheckMessage,setMobileCheckMessage] = useState()
+  const [useSameMobile,setUseSameMobile] = useState()
 
   useEffect(() => {
     if (formData?.name?.length > 5) {
@@ -76,11 +78,25 @@ const RenderStepContent = ({
 
   const handleMobileCheck = async (mobile) => {
     try {
-      const result = await CheckMobile(projectData, mobile);
+      let empdata = DecryptData("empData");
+      
+      const result = await CheckMobile(projectData, mobile, empdata.hash);
 
-      if (result?.data && result?.message !== "Mobile number is available.") {
+      if (  
+        result?.exists &&
+        !result?.other_employee &&
+        result?.message === "Doctor with this mobile already exists."
+      ) {
         setExistingDoctor(result?.data);
+        setMobileCheckMessage("Doctor with this mobile number already exists. Do you want to use the same details or enter a new contact?")
+        setUseSameMobile(true)
         setShowMobileModal(true);
+      }else if( result?.exists &&
+        result?.other_employee ){
+          setExistingDoctor(result?.data);
+          setMobileCheckMessage("Doctor with this mobile number already exists for another employee.")
+          setUseSameMobile(false)
+          setShowMobileModal(true);
       }
     } catch (err) {
       MyError(err);
@@ -307,8 +323,7 @@ const RenderStepContent = ({
                   Mobile Already Exists
                 </h2>
                 <p className="mb-6 text-gray-700 dark:text-gray-300">
-                  Doctor with this mobile number already exists. Do you want to
-                  use the same details or enter a new contact?
+                  {mobileCheckMessage}
                 </p>
                 <div className="flex justify-end gap-3">
                   <button
@@ -317,12 +332,16 @@ const RenderStepContent = ({
                   >
                     New Contact
                   </button>
-                  <button
-                    className="px-4 py-2 cursor-pointer bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-                    onClick={handleUseSameDoctor}
-                  >
-                    Use Same
-                  </button>
+                  {
+                    useSameMobile && (
+                      <button
+                        className="px-4 py-2 cursor-pointer bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                        onClick={handleUseSameDoctor}
+                      >
+                        Use Same
+                      </button>
+                    )
+                  }
                 </div>
               </div>
             </div>

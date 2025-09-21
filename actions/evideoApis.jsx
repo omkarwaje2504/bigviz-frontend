@@ -1,10 +1,11 @@
+import { DecryptData } from "@utils/cryptoUtils";
 import data from "@utils/types";
 
 export const VideoRender = async (videoId, videoProps) => {
   const apiKey = "adfljhsdgofsahgalsdfjasadssaflkadnfgasldfsadf";
 
   if (!videoId) {
-    return { 
+    return {
       success: false,
       message: "No videoId is specified",
     };
@@ -38,7 +39,6 @@ export const VideoRender = async (videoId, videoProps) => {
       data: result,
     };
   } catch (e) {
-
     return {
       success: false,
       message: "Failed to generate Ai Video",
@@ -47,7 +47,6 @@ export const VideoRender = async (videoId, videoProps) => {
 };
 
 export const GetRenderStatus = async (id) => {
-  const apiKey = "adfljhsdgofsahgalsdfjasadssaflkadnfgasldfsadf";
 
   if (!id) {
     return {
@@ -57,19 +56,19 @@ export const GetRenderStatus = async (id) => {
   }
 
   try {
-    const response = await fetch(`https://ai.pixpro.app/api/check-video`, {
-      method: "POST",
+    const response = await fetch(`https://remotionlambda-apsouth1-m61gk15thb.s3.ap-south-1.amazonaws.com/renders/${id}/progress.json`, {
+      method: "GET",
       headers: {
         "Content-Type": "application/json",
         Accept: "application/json",
-        "X-API-KEY": apiKey,
       },
-      body: JSON.stringify({
-        renderId: id,
-      }),
+      
     });
+    
     const result = await response.json();
-    if (result.status === "OK") {
+    
+
+    if (result?.postRenderData?.outputFile) {
       return {
         success: true,
         data: result,
@@ -81,7 +80,7 @@ export const GetRenderStatus = async (id) => {
       };
     }
   } catch (error) {
-    
+   
     return {
       success: false,
       message: "Failure occur while generating Ai Video",
@@ -89,18 +88,51 @@ export const GetRenderStatus = async (id) => {
   }
 };
 
-export const GenerateVideoAPI = async (projectInfo, doctorHash, type, videourl) => {
+export const GenerateVideoAPI = async (
+  projectInfo,
+  doctorHash,
+  type,
+  videourl,
+  employee_hash,
+  cost,
+  renderid,
+  outputsize,
+  timetaken
+) => {
+
   if (!doctorHash || !type || !projectInfo?.project_hash) {
     return { success: false, message: "Invalid input data" };
   }
 
   try {
-    const timestamp = new Date()
-      .toISOString()            
-      .slice(0, 19)             
-      .replace("T", " ");      
+    const timestamp = new Date().toISOString().slice(0, 19).replace("T", " ");
 
-    const loginResponse = await fetch(
+    let visitor_hash = DecryptData("visitorHash");
+
+    const payload = {
+      project_hash: projectInfo.project_hash,
+      data: [
+        {
+          doctor_hash: doctorHash, 
+          visitor_hash,
+          type,
+          timestamp,
+          extras: {
+            video_cost:cost,
+            video_url: videourl,
+            time_taken:timetaken,
+            render_id:renderid,
+            output_size:outputsize
+          },
+        },
+      ],
+    };
+
+    if (employee_hash && projectInfo?.config?.employee) {
+      payload.data[0].employee_hash = employee_hash;
+    }
+
+    const GenrateVideoResponse = await fetch(
       `${process.env.NEXT_PUBLIC_PROJECT_URL}/analytics`,
       {
         method: "POST",
@@ -108,29 +140,15 @@ export const GenerateVideoAPI = async (projectInfo, doctorHash, type, videourl) 
           "Content-Type": "application/json",
           Accept: "application/json",
         },
-        body: JSON.stringify({
-          project_hash: projectInfo.project_hash,
-          doctor_hash: doctorHash,
-          type: type,
-          data: [
-            {
-              type,
-              timestamp, 
-              extras: {
-                video_url: videourl,
-              },
-            },
-          ],
-        }),
-      }
+        body: JSON.stringify(payload),
+      },
     );
 
-    if (!loginResponse.ok) {
-      throw new Error(`Server error: ${loginResponse.status}`);
+    if (!GenrateVideoResponse.ok) {
+      throw new Error(`Server error: ${GenrateVideoResponse.status}`);
     }
 
-    const text = await loginResponse.text();
-    const response = text ? JSON.parse(text) : {};
+    const response = await GenrateVideoResponse.json();
 
     return { success: true, data: response };
   } catch (error) {
@@ -139,19 +157,38 @@ export const GenerateVideoAPI = async (projectInfo, doctorHash, type, videourl) 
   }
 };
 
-export const Download = async (projectInfo, doctorHash, type) => {
-
+export const Download = async (
+  projectInfo,
+  doctorHash,
+  type,
+  employee_hash,
+) => {
   if (!doctorHash || !type || !projectInfo?.project_hash) {
     return { success: false, message: "Invalid input data" };
   }
 
-  const timestamp = new Date()
-      .toISOString()            
-      .slice(0, 19)             
-      .replace("T", " "); 
+  const timestamp = new Date().toISOString().slice(0, 19).replace("T", " ");
 
   try {
-    const loginResponse = await fetch(
+    let visitor_hash = DecryptData("visitorHash");
+
+    const payload = {
+      project_hash: projectInfo.project_hash,
+      data: [
+        {
+          doctor_hash: doctorHash,
+          visitor_hash,
+          type,
+          timestamp,
+        },
+      ],
+    };
+
+    if (employee_hash && projectInfo?.config?.employee) {
+      payload.data[0].employee_hash = employee_hash;
+    }
+
+    const Downloadesponse = await fetch(
       `${process.env.NEXT_PUBLIC_PROJECT_URL}/analytics`,
       {
         method: "POST",
@@ -159,25 +196,15 @@ export const Download = async (projectInfo, doctorHash, type) => {
           "Content-Type": "application/json",
           Accept: "application/json",
         },
-        body: JSON.stringify({
-          project_hash: projectInfo.project_hash,
-          doctor_hash: doctorHash,
-          type: type,
-          data:[
-            {
-              type,
-              timestamp
-            }
-          ]
-        }),
-      }
+        body: JSON.stringify(payload),
+      },
     );
 
-    if (!loginResponse.ok) {
-      throw new Error(`Server error: ${loginResponse.status}`);
+    if (!Downloadesponse.ok) {
+      throw new Error(`Server error: ${Downloadesponse.status}`);
     }
 
-    const text = await loginResponse.text();
+    const text = await Downloadesponse.text();
     const response = text ? JSON.parse(text) : {};
 
     return { success: true, data: response };

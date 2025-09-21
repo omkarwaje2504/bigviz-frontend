@@ -34,7 +34,7 @@ const Config = async (projectData) => {
       highlightBg: "bg-gradient-to-br from-green-600 to-green-900",
     },
     basic: {
-      primaryText: projectData?.config?.theme?.primary_text_color || "#ffffff",
+      primaryText: projectData?.config?.theme?.primary_text_color || "#000000",
       primaryColor: projectData?.config?.theme?.primary_color || "#fb2c36",
       secondaryColor: projectData?.config?.theme?.secondary_color || "#f5ba01",
       secondaryText: projectData?.config?.theme?.secondary_text_color || "#ffffff",
