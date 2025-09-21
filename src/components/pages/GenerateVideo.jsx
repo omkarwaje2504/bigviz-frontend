@@ -29,6 +29,7 @@ function GenerateVideo({ ui, projectData }) {
   const surfaceColor = isDark ? "#101828" : "#f8fafc";
   const [downloadLoader,setdownloadLoader] = useState(false)
   const [empData,setempData] = useState(null)
+  
 
   const router = useRouter();
 
