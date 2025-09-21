@@ -15,9 +15,19 @@ const FormNavigationButtons = ({
   const projectType = projectData?.product_type;
   const disablePhotoUpload = projectData?.config?.doctor?.disable_photo_upload;
 
+  const disableMobileNumber =
+    projectData?.config?.doctor?.disable_mobile_number;
+
   const isPage1Valid =
     currentStep !== 1 ||
-    (validationStatus && Object.values(validationStatus).every(Boolean));
+    (!validationStatus && disableMobileNumber) ||
+    (validationStatus &&
+      Object.entries(validationStatus).every(([key, value]) => {
+        if (disableMobileNumber && key === "mobile_number") {
+          return true;
+        }
+        return Boolean(value);
+      }));
 
   const isPage2Valid =
     currentStep !== 2 ||
@@ -29,8 +39,8 @@ const FormNavigationButtons = ({
       formData.calendarData.every((item) => !!item.images[0]?.croppedImage));
 
   const isLastStepForProject =
-    (projectType === "Evideo" &&  currentStep === 2 && formData.photo ) ||
-    (projectType === "RxPad" &&  currentStep === 2 && formData.photo ) ||
+    (projectType === "Evideo" && currentStep === 2 && formData.photo) ||
+    (projectType === "RxPad" && currentStep === 2 && formData.photo) ||
     (disablePhotoUpload && currentStep === 1 && isPage1Valid) ||
     (projectType === "DeskCalendar" && currentStep === 2 && isPage2Valid) ||
     (projectType === "PhotoFrame" && currentStep === 2 && isPage2Valid) ||
@@ -43,13 +53,12 @@ const FormNavigationButtons = ({
 
   const handleNext = async () => {
     if (currentStep === 1) {
-   
       const success = await onSaveDoctor();
       if (!success) {
         return;
       }
     }
-    
+
     if (disablePhotoUpload && currentStep === 1) {
       setCurrentStep(99);
     } else {
