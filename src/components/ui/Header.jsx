@@ -128,13 +128,14 @@ const Header = ({ ui, userInfo, projectData, projectHash }) => {
     );
   } else {
     return (
-      <header className="bg-white dark:bg-black shadow-lg border-b border-gray-200 dark:border-gray-800 transition-colors duration-300">
+      <header className="bg-white dark:bg-black shadow-lg border-b border-gray-200 dark:border-gray-800 transition-colors duration-300 flex items-center justify-center max-h-[20rem]">
         <img
           src={
             process.env.NEXT_PUBLIC_R2_PUBLIC_URL +
             "/" +
             projectData?.top_banner
           }
+          className="max-h-[20rem]"
           alt="Top-banner"
         />
       </header>
