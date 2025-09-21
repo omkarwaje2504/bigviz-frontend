@@ -1,0 +1,558 @@
+/* CertificateDesigner.css */
+
+/* Custom CSS styles that work alongside Tailwind CSS */
+
+/* Canvas specific styles */
+.certificate-canvas {
+  cursor: crosshair;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  transition: box-shadow 0.3s ease;
+}
+
+.certificate-canvas:hover {
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+}
+
+/* Element selection styles */
+.element-selected {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Upload area hover animations */
+.upload-area-hover {
+  animation: uploadPulse 2s infinite;
+}
+
+@keyframes uploadPulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4);
+  }
+  50% {
+    transform: scale(1.02);
+    box-shadow: 0 0 0 10px rgba(59, 130, 246, 0);
+  }
+}
+
+/* Layer management animations */
+.layer-item {
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.layer-item::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.2),
+    transparent
+  );
+  transition: left 0.5s;
+}
+
+.layer-item:hover::before {
+  left: 100%;
+}
+
+.layer-item:hover {
+  transform: translateX(4px);
+  border-left: 3px solid #3b82f6;
+}
+
+/* Element type icons styling */
+.element-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  margin-right: 8px;
+  font-size: 12px;
+}
+
+.element-icon.text {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.element-icon.image {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.element-icon.photo {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.element-icon.qr {
+  background: #e0e7ff;
+  color: #5b21b6;
+}
+
+.element-icon.background {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+/* Form input enhancements */
+.form-input-enhanced {
+  position: relative;
+}
+
+.form-input-enhanced input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.form-input-enhanced label {
+  transition: all 0.2s ease;
+}
+
+.form-input-enhanced input:focus + label {
+  color: #3b82f6;
+  font-weight: 600;
+}
+
+/* Color picker custom styling */
+input[type="color"] {
+  width: 100%;
+  height: 40px;
+  border-radius: 8px;
+  border: 2px solid #e5e7eb;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+input[type="color"]:hover {
+  border-color: #3b82f6;
+  transform: scale(1.05);
+}
+
+input[type="color"]::-webkit-color-swatch-wrapper {
+  padding: 0;
+  border-radius: 6px;
+}
+
+input[type="color"]::-webkit-color-swatch {
+  border: none;
+  border-radius: 6px;
+}
+
+/* Range slider enhancements */
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 6px;
+  border-radius: 3px;
+  background: #e5e7eb;
+  outline: none;
+  transition: background 0.3s ease;
+}
+
+input[type="range"]:hover {
+  background: #d1d5db;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #3b82f6;
+  cursor: pointer;
+  border: 2px solid white;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  transition: all 0.2s ease;
+}
+
+input[type="range"]::-webkit-slider-thumb:hover {
+  background: #2563eb;
+  transform: scale(1.2);
+}
+
+input[type="range"]::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #3b82f6;
+  cursor: pointer;
+  border: 2px solid white;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* Button hover effects */
+.btn-hover-lift {
+  transition: all 0.2s ease;
+}
+
+.btn-hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.btn-hover-lift:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* Checkbox and radio custom styles */
+input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: #3b82f6;
+  cursor: pointer;
+}
+
+/* File input styling */
+input[type="file"] {
+  cursor: pointer;
+}
+
+input[type="file"]::file-selector-button {
+  background: #3b82f6;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  margin-right: 12px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+input[type="file"]::file-selector-button:hover {
+  background: #2563eb;
+}
+
+/* Preview panels */
+.preview-panel {
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 12px;
+  position: relative;
+  overflow: hidden;
+}
+
+.preview-panel::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, #3b82f6, #8b5cf6, #06b6d4);
+}
+
+/* Sample data styling */
+.sample-data-item {
+  background: white;
+  border-left: 4px solid #10b981;
+  padding: 8px 12px;
+  border-radius: 0 6px 6px 0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
+}
+
+.sample-data-item:hover {
+  transform: translateX(2px);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+/* Loading states */
+.loading-spinner {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Error states */
+.error-shake {
+  animation: shake 0.5s ease-in-out;
+}
+
+@keyframes shake {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-5px);
+  }
+  75% {
+    transform: translateX(5px);
+  }
+}
+
+/* Success states */
+.success-bounce {
+  animation: bounce 0.6s ease-in-out;
+}
+
+@keyframes bounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+/* Tooltip styling */
+.tooltip {
+  position: relative;
+  display: inline-block;
+}
+
+.tooltip .tooltip-text {
+  visibility: hidden;
+  width: 200px;
+  background-color: #1f2937;
+  color: white;
+  text-align: center;
+  border-radius: 6px;
+  padding: 8px 12px;
+  position: absolute;
+  z-index: 1000;
+  bottom: 125%;
+  left: 50%;
+  margin-left: -100px;
+  opacity: 0;
+  transition: opacity 0.3s;
+  font-size: 12px;
+}
+
+.tooltip .tooltip-text::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  margin-left: -5px;
+  border-width: 5px;
+  border-style: solid;
+  border-color: #1f2937 transparent transparent transparent;
+}
+
+.tooltip:hover .tooltip-text {
+  visibility: visible;
+  opacity: 1;
+}
+
+/* Scrollbar styling */
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 #f1f5f9;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 8px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+  transition: background 0.2s ease;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .certificate-canvas {
+    max-width: 95%;
+    max-height: 70vh;
+  }
+  
+  .tooltip .tooltip-text {
+    width: 150px;
+    margin-left: -75px;
+  }
+  
+  input[type="range"]::-webkit-slider-thumb {
+    width: 24px;
+    height: 24px;
+  }
+}
+
+/* Dark mode support (if needed) */
+@media (prefers-color-scheme: dark) {
+  .preview-panel {
+    background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+    border-color: #475569;
+    color: #e2e8f0;
+  }
+  
+  .sample-data-item {
+    background: #1e293b;
+    color: #e2e8f0;
+  }
+}
+
+/* Print styles */
+@media print {
+  .certificate-canvas {
+    box-shadow: none !important;
+    border: 1px solid #000 !important;
+  }
+  
+  .tooltip,
+  .btn-hover-lift,
+  .layer-item:hover::before {
+    display: none !important;
+  }
+}
+
+/* Focus visible for accessibility */
+.focus-visible:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Utility classes for animations */
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-slide-up {
+  animation: slideUp 0.4s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Grid layout enhancements */
+.grid-auto-fit {
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+}
+
+.grid-auto-fill {
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+}
+
+
+/* Zoom-specific enhancements */
+.canvas-container {
+  overflow: hidden;
+  position: relative;
+}
+
+.canvas-wrapper {
+  transition: transform 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+  transform-origin: center center;
+}
+
+.zoom-controls {
+  backdrop-filter: blur(10px);
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.zoom-controls button {
+  min-width: 40px;
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.zoom-controls button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+/* Smooth canvas scaling */
+.certificate-canvas-scaled {
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+}
+
+/* Zoom level indicator */
+.zoom-indicator {
+  font-family: 'Courier New', monospace;
+  font-weight: bold;
+  color: #374151;
+}
+
+/* Text wrapping area styles */
+.text-wrap-border {
+  stroke-dasharray: 3, 3;
+  stroke: #cbd5e1;
+  stroke-width: 1;
+  fill: none;
+}
+
+.text-wrap-border.selected {
+  stroke: #3b82f6;
+  stroke-width: 2;
+  stroke-dasharray: 5, 5;
+}
+
+.resize-handle {
+  fill: #ffffff;
+  stroke: #3b82f6;
+  stroke-width: 2;
+  cursor: ew-resize;
+}
+
+.resize-handle:hover {
+  fill: #3b82f6;
+  transform: scale(1.2);
+}
+
+/* Cursor styles for different interactions */
+.canvas-resizing-horizontal {
+  cursor: ew-resize !important;
+}
+
+.canvas-resizing-vertical {
+  cursor: ns-resize !important;
+}
+
+.canvas-resizing-diagonal {
+  cursor: nwse-resize !important;
+}
+
