@@ -246,6 +246,7 @@ export const SaveDoctors = async (
       requestBody.name = `${formData?.prefix}. ${formData?.name}`;
     }
     if(projectData?.config?.doctor?.disable_mobile_number){
+      console.log("here2")
       requestBody = {
         ...requestBody,
         media: { images: photo, cropped_image },
@@ -253,13 +254,15 @@ export const SaveDoctors = async (
         fields,
       };
     }if(isEdit && !projectData?.config?.doctor?.disable_mobile_number){
+      console.log("here")
       requestBody = {
         ...requestBody,
         name: `${formData?.prefix}. ${formData?.name}`,
         mobile: countryCode + formData?.mobile,
         fields,
       };
-    } else {
+    } if(!projectData?.config?.doctor?.disable_mobile_number) {
+      console.log("here3")
       requestBody = {
         ...requestBody,
         media: { images: photo, cropped_image },
