@@ -215,7 +215,7 @@ export const SaveDoctors = async (
   const fields = mapFormDataToFields(formData, projectData);
   const countryCode = projectData?.config?.doctor?.country_codes?.[0] || +91;
 
-  const trailingPath = process.env.NEXT_PUBLIC_R2_PUBLIC_URL;
+  const trailingPath = "https://pub-0b6394cfeda24bf196c98e1746afe09b.r2.dev/production";
   let photo = formData?.photo?.originalImage || "";
   if (photo.startsWith(trailingPath)) {
     photo = photo.replace(trailingPath, "");
