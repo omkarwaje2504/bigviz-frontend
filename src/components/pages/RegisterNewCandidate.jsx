@@ -121,6 +121,7 @@ export default function RegisterNewCandidate({ projectData, projectId, ui }) {
           if (projectData?.config?.game) {
             router.push("game");
           } else if (projectData?.product_type === "RxPad") {
+            localStorage.removeItem("isEdit")
             localStorage.removeItem("doctorHash");
             router.push("homepage");
           } else if (projectData?.product_type === "Evideo") {
