@@ -2,7 +2,6 @@ import MyError from "@services/MyError";
 import cleanUrls from "@utils/CleanUrl";
 import { DecryptData } from "@utils/cryptoUtils";
 import { FormData, ProjectInfo } from "@utils/types";
-import { config } from "process";
 
 export const FetchDoctors = async (
   projectData: ProjectInfo,
