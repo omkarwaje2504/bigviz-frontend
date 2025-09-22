@@ -1,22 +1,22 @@
 "use client";
 
-// import { useEffect } from "react";
+import { useEffect } from "react";
 
-// export default function GlobalError({
-//   error,
-//   reset,
-// }: {
-//   error: Error & { digest?: string };           
-//   reset: () => void;
-// }) {
-//   useEffect(() => {
-//     console.error("Global error:", error);
+export default function GlobalError({
+  error,
+  reset,
+}: {
+  error: Error & { digest?: string };           
+  reset: () => void;
+}) {
+  useEffect(() => {
+    console.error("Global error:", error);
 
-//     if (typeof window !== "undefined") {
-//       localStorage.clear();
-//       window.location.href = "/"; 
-//     }
-//   }, [error]);
+    if (typeof window !== "undefined") {
+      localStorage.clear();
+      window.location.href = "/"; 
+    }
+  }, [error]);
 
-//   return null;
-// }
+  return null;
+}
