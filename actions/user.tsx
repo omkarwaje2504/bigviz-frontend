@@ -224,7 +224,7 @@ export const SaveDoctors = async (
   if (cropped_image.startsWith(trailingPath)) {
     cropped_image = cropped_image.replace(trailingPath, "");
   }
-
+  let isEdit = DecryptData("isEdit")
   try {
     let requestBody: any = {
       project_hash: projectData.project_hash,
@@ -250,6 +250,13 @@ export const SaveDoctors = async (
         ...requestBody,
         media: { images: photo, cropped_image },
         name: `${formData?.prefix}. ${formData?.name}`,
+        fields,
+      };
+    }if(isEdit && !projectData?.config?.doctor?.disable_mobile_number){
+      requestBody = {
+        ...requestBody,
+        name: `${formData?.prefix}. ${formData?.name}`,
+        mobile: countryCode + formData?.mobile,
         fields,
       };
     } else {

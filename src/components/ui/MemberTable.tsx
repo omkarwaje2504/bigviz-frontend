@@ -27,6 +27,7 @@ import {
   MemberTableProps,
 } from "utils/types";
 import { FaFilePrescription } from "react-icons/fa";
+import { EncryptData } from "@utils/cryptoUtils";
 
 const ITEMS_PER_PAGE = 4;
 
@@ -899,7 +900,9 @@ const MemberTable: React.FC<MemberTableProps> = ({
                     {projectData?.config?.doctor?.enable_edit_button && (
                       <button
                         className="w-full justify-center flex items-center space-x-1 text-xs text-white bg-purple-600 p-2 rounded-sm"
-                        onClick={() => onEdit(member.doctor_hash)}
+                        onClick={() =>{ 
+                          EncryptData("isEdit","true")
+                          onEdit(member.doctor_hash)}}
                       >
                         <FaEdit />
                         <span>Edit</span>
@@ -1066,7 +1069,9 @@ const MemberTable: React.FC<MemberTableProps> = ({
                         )}
                         {projectData?.config?.doctor?.enable_edit_button && (
                           <button
-                            onClick={() => onEdit(member.doctor_hash)}
+                            onClick={() =>{ 
+                          EncryptData("isEdit","true")
+                          onEdit(member.doctor_hash)}}
                             title="Edit"
                           >
                             <FaEdit className="w-5 h-5 fill-purple-500 hover:fill-purple-600" />
