@@ -121,6 +121,7 @@ export default function RegisterNewCandidate({ projectData, projectId, ui }) {
           if (projectData?.config?.game) {
             router.push("game");
           } else if (projectData?.product_type === "RxPad") {
+            localStorage.removeItem("doctorHash");
             router.push("homepage");
           } else if (projectData?.product_type === "Evideo") {
             router.push(
@@ -131,8 +132,6 @@ export default function RegisterNewCandidate({ projectData, projectId, ui }) {
           }
           setIsSubmitLoading(false);
         }, 2000);
-
-        // localStorage.removeItem("doctorHash");
       }
     } catch (error) {
       console.error(error);
