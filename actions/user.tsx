@@ -2,6 +2,7 @@ import MyError from "@services/MyError";
 import cleanUrls from "@utils/CleanUrl";
 import { DecryptData } from "@utils/cryptoUtils";
 import { FormData, ProjectInfo } from "@utils/types";
+import { config } from "process";
 
 export const FetchDoctors = async (
   projectData: ProjectInfo,
@@ -244,6 +245,14 @@ export const SaveDoctors = async (
     ) {
       requestBody.doctor_hash = doctorCode;
       requestBody.name = `${formData?.prefix}. ${formData?.name}`;
+    }
+    if(projectData?.config?.doctor?.disable_mobile_number){
+      requestBody = {
+        ...requestBody,
+        media: { images: photo, cropped_image },
+        name: `${formData?.prefix}. ${formData?.name}`,
+        fields,
+      };
     } else {
       requestBody = {
         ...requestBody,
