@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { FiLoader, FiDownload, FiArrowLeft, FiVideo } from "react-icons/fi";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import MyError from "@services/MyError";
 
 function GenerateVideo({ ui, projectData,projectId }) {
   const [loading, setLoading] = useState(true);
@@ -130,6 +131,17 @@ function GenerateVideo({ ui, projectData,projectId }) {
         progressVal = Math.min(progressVal + 5, 90);
         setProgress(progressVal);
 
+
+        if(check.isError){
+       
+          let errorMsg = check.errors[0]?.message || "Error during video rendering.";
+          clearInterval(interval);
+          setError(errorMsg);
+          setLoading(false);
+          MyError(errorMsg)
+          return;
+        }
+       
         if (check.success && check.data.postRenderData?.outputFile ) {
           clearInterval(interval);
           setVideoUrl(check.data.postRenderData?.outputFile);
@@ -156,7 +168,7 @@ function GenerateVideo({ ui, projectData,projectId }) {
           }
           setVideoGenerated(true);
           return;
-        }
+        } 
 
         if (attempts >= maxAttempts) {
           clearInterval(interval);
@@ -164,13 +176,11 @@ function GenerateVideo({ ui, projectData,projectId }) {
           setLoading(false);
         }
       } catch (err) {
-        console.error("Polling error:", err);
-        attempts++;
-        if (attempts >= maxAttempts) {
+          console.error("Polling error:", err);
           clearInterval(interval);
           setError("Error while checking video status. Please try again.");
           setLoading(false);
-        }
+        
       }
     }, 2000);
 

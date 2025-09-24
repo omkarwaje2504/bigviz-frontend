@@ -1,3 +1,4 @@
+import MyError from "@services/MyError";
 import { DecryptData } from "@utils/cryptoUtils";
 import data from "@utils/types";
 
@@ -47,7 +48,6 @@ export const VideoRender = async (videoId, videoProps) => {
 };
 
 export const GetRenderStatus = async (id) => {
-
   if (!id) {
     return {
       success: false,
@@ -56,17 +56,28 @@ export const GetRenderStatus = async (id) => {
   }
 
   try {
-    const response = await fetch(`https://remotionlambda-apsouth1-m61gk15thb.s3.ap-south-1.amazonaws.com/renders/${id}/progress.json`, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json",
+    const response = await fetch(
+      `https://remotionlambda-apsouth1-m61gk15thb.s3.ap-south-1.amazonaws.com/renders/${id}/progress.json`,
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
       },
-      
-    });
-    
+    );
+
     const result = await response.json();
-    
+
+    if (result?.errors?.length > 0) {
+      let errorMsg = "Error during video rendering.";
+      
+      return {
+        success: false,
+        isError: result?.errors?.length > 0,
+        message: errorMsg,
+      };
+    }
 
     if (result?.postRenderData?.outputFile) {
       return {
@@ -80,7 +91,7 @@ export const GetRenderStatus = async (id) => {
       };
     }
   } catch (error) {
-   
+
     return {
       success: false,
       message: "Failure occur while generating Ai Video",
@@ -97,9 +108,8 @@ export const GenerateVideoAPI = async (
   cost,
   renderid,
   outputsize,
-  timetaken
+  timetaken,
 ) => {
-
   if (!doctorHash || !type || !projectInfo?.project_hash) {
     return { success: false, message: "Invalid input data" };
   }
@@ -113,16 +123,16 @@ export const GenerateVideoAPI = async (
       project_hash: projectInfo.project_hash,
       data: [
         {
-          doctor_hash: doctorHash, 
+          doctor_hash: doctorHash,
           visitor_hash,
           type,
           timestamp,
           extras: {
-            video_cost:cost,
+            video_cost: cost,
             video_url: videourl,
-            time_taken:timetaken,
-            render_id:renderid,
-            output_size:outputsize
+            time_taken: timetaken,
+            render_id: renderid,
+            output_size: outputsize,
           },
         },
       ],
