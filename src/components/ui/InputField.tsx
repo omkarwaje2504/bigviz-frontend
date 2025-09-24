@@ -425,9 +425,9 @@ const InputField: React.FC<InputFieldProps> = ({
                       e.currentTarget.click();
                     }
                   }}
-                  className={`cursor-pointer px-3 py-2 rounded-md ${
+                  className={`cursor-pointer px-3 py-2 text-black dark:text-white rounded-md ${
                     value === opt.value
-                      ? "bg-indigo-600 text-white"
+                      ? "bg-indigo-600"
                       : "hover:bg-gray-100 dark:hover:bg-gray-700"
                   }`}
                 >
