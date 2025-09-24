@@ -78,11 +78,11 @@ function GenerateVideo({ ui, projectData,projectId }) {
     const startVideoGeneration = async () => {
       try {
         let formData = DecryptData("formData");
-        
+        let prevData = DecryptData("prevData");
         let updatedFormData = {
           ...formData,
           name:`${formData?.prefix} ${formData?.name}`,
-          photo: formData?.photo?.croppedImage || formData?.photo?.originalImage,
+          photo: prevData?.photo?.croppedImage || formData?.photo?.croppedImage || formData?.photo?.originalImage,
         };
 
         const response = await VideoRender(
