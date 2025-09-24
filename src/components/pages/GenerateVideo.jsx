@@ -279,15 +279,14 @@ function GenerateVideo({ ui, projectData,projectId }) {
                   }}
                 />
               </div>
-              <div className="flex justify-between mt-2 text-sm">
-                <span style={{ color: primaryText }}>{progress}%</span>
-                <span style={{ color: primaryText }}>Processing...</span>
+              <div className="flex justify-between mt-2 text-sm text-black dark:text-white">
+                <span>{progress}%</span>
+                <span >Processing...</span>
               </div>
             </div>
 
             <p 
-              className="text-center font-medium"
-              style={{ color: primaryText }}
+              className="text-center font-medium text-black dark:text-white"
             >
               {statusMsg}
             </p>
