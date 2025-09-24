@@ -15,11 +15,12 @@ import { FetchDoctor, FetchDoctors } from "@actions/user";
 import config from "@utils/Config";
 import { useRouter } from "next/navigation";
 import { ApprovalAction } from "@actions/approvalApis";
+import { FaCircleNotch } from "react-icons/fa6";
 
 const HomePage = ({ projectData, projectId, ui }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [members, setMembers] = useState([]);
-  const [doctorList,setDoctorList] = useState([])
+  const [doctorList, setDoctorList] = useState([]);
   const [loadMembers, setLoadMembers] = useState(true);
   const [userInfo, setUserInfo] = useState({
     name: "",
@@ -40,13 +41,21 @@ const HomePage = ({ projectData, projectId, ui }) => {
   });
   const [statistics, setStats] = useState();
   const [approvingStatus, setApprovingStatus] = useState({});
-
+  const [isDark, setIsDark] = useState(false);
   const router = useRouter();
 
-  // Fetch user info and members data
   useEffect(() => {
-    RemoveData("videoUrl")
-    RemoveData("videoGenerated")
+    const media = window.matchMedia("(prefers-color-scheme: dark)");
+    setIsDark(media.matches);
+    const listener = (e) => setIsDark(e.matches);
+    media.addEventListener("change", listener);
+
+    return () => media.removeEventListener("change", listener);
+  }, []);
+
+  useEffect(() => {
+    RemoveData("videoUrl");
+    RemoveData("videoGenerated");
     const getUserInfo = DecryptData("empData");
     if (getUserInfo) {
       if (getUserInfo?.role !== 1) {
@@ -72,7 +81,7 @@ const HomePage = ({ projectData, projectId, ui }) => {
   const getMembers = async (getUserInfo) => {
     const membersData = await FetchDoctors(projectData, getUserInfo?.hash);
     if (membersData) {
-      setDoctorList(membersData.result)
+      setDoctorList(membersData.result);
       setMembers(membersData.data);
       setLoadMembers(false);
       // Recalculate stats after members are fetched
@@ -158,10 +167,15 @@ const HomePage = ({ projectData, projectId, ui }) => {
       />
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2 md:py-8">
         {projectData?.config?.theme?.enable_dashboard === true && (
-          <Dashboard members={doctorList} stats={statistics} ui={ui} projectData={projectData} />
+          <Dashboard
+            members={doctorList}
+            stats={statistics}
+            ui={ui}
+            projectData={projectData}
+          />
         )}
 
-        <div className="flex md:gap-10  md:flex-row justify-center items-start md:items-center mb-6 space-y-4 md:space-y-0">
+        <div className="flex md:gap-10  md:flex-row justify-between items-start md:items-center mb-6 space-y-4 md:space-y-0">
           <div className="w-full md:w-auto">
             <h2 className="text-xl font-semibold">
               {ui.Dashboard.HomePageTitle}
@@ -170,33 +184,48 @@ const HomePage = ({ projectData, projectId, ui }) => {
               {ui.Dashboard.HomePageSubTitle}
             </p>
           </div>
-      
-          <div className="flex flex-col sm:flex-row sm:space-y-0 sm:space-x-3 w-full md:w-auto">
-          
-            {(projectData?.config?.doctor?.enable_add_new_doctor && (userInfo.limit !== members?.length)) && (
-              <Link href="register-new-candidate">
+
+          <div className="flex  md:w-auto">
+            {projectData?.config?.doctor?.enable_add_new_doctor &&
+              userInfo.limit !== members?.length && (
+                <Link href="register-new-candidate">
+                  <Button
+                    type="button"
+                    fullWidth={false}
+                    leftIcon={
+                      <FaUserPlus
+                        style={{
+                          fill: isDark
+                            ? ui?.basic?.secondaryText || "white"
+                            : ui?.basic?.primaryText || "white",
+                        }}
+                      />
+                    }
+                    ui={ui}
+                  >
+                    {ui.Dashboard.HomePageButtonLabel}
+                  </Button>
+                </Link>
+              )}
+            {projectData?.config?.doctor?.enable_add_new_doctor &&
+              userInfo.limit == members?.length && (
                 <Button
                   type="button"
                   fullWidth={false}
-                  leftIcon={<FaUserPlus />}
-                  ui={ui}
-                >
-                  {ui.Dashboard.HomePageButtonLabel}
-                </Button>
-              </Link>
-            )}
-            { (projectData?.config?.doctor?.enable_add_new_doctor && (userInfo.limit == members?.length)) && (
-              <Link href="register-new-candidate">
-                <Button
-                  type="button"
-                  fullWidth={false}
-                  leftIcon={<FaUserPlus />}
+                  leftIcon={
+                    <FaCircleNotch
+                      style={{
+                        fill: isDark
+                          ? ui?.basic?.secondaryText || "white"
+                          : ui?.basic?.primaryText || "white",
+                      }}
+                    />
+                  }
                   ui={ui}
                 >
                   Reached Limit
                 </Button>
-              </Link>
-            )}
+              )}
           </div>
         </div>
         {!loadMembers ? (

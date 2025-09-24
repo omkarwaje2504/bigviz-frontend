@@ -2,14 +2,19 @@
 
 import React, { useEffect, useState } from "react";
 import { DecryptData, EncryptData, RemoveData } from "@utils/cryptoUtils";
-import { VideoRender, GetRenderStatus, GenerateVideoAPI, Download } from "@actions/evideoApis";
+import {
+  VideoRender,
+  GetRenderStatus,
+  GenerateVideoAPI,
+  Download,
+} from "@actions/evideoApis";
 import { useRouter } from "next/navigation";
 import { FiLoader, FiDownload, FiArrowLeft, FiVideo } from "react-icons/fi";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import MyError from "@services/MyError";
 
-function GenerateVideo({ ui, projectData,projectId }) {
+function GenerateVideo({ ui, projectData, projectId }) {
   const [loading, setLoading] = useState(true);
   const [statusMsg, setStatusMsg] = useState("Generating video...");
   const [progress, setProgress] = useState(0);
@@ -19,46 +24,28 @@ function GenerateVideo({ ui, projectData,projectId }) {
   const [doctorHash, setDoctorHash] = useState(null);
   const [videoGenerated, setVideoGenerated] = useState(false);
   const [videoDownloaded, setVideoDownloaded] = useState(false);
-  const [isDark, setIsDark] = useState(false);
-  const primaryColor = isDark 
-    ? ui?.basic?.secondaryColor || "#f5ba01" 
-    : ui?.basic?.primaryColor || "#fb2c36";
-  const primaryText = isDark 
-    ? ui?.basic?.primaryText || "#ffffff" 
-    : ui?.basic?.secondaryText || "#000000";
-  const backgroundColor = isDark ? "#101828" : "#ffffff";
-  const surfaceColor = isDark ? "#101828" : "#f8fafc";
-  const [downloadLoader,setdownloadLoader] = useState(false)
-  const [empData,setempData] = useState(null)
-  
+  const [downloadLoader, setdownloadLoader] = useState(false);
+  const [empData, setempData] = useState(null);
 
   const router = useRouter();
 
   useEffect(() => {
-    const media = window.matchMedia("(prefers-color-scheme: dark)");
-    setIsDark(media.matches);
-    const listener = (e) => setIsDark(e.matches);
-    media.addEventListener("change", listener);
-    return () => media.removeEventListener("change", listener);
-  }, []);
-
-  useEffect(() => {
     const savedUrl = DecryptData("videoUrl");
     const doctorHash = DecryptData("doctorHash");
-    const empData = DecryptData("empData")
-    const formData = DecryptData("formData")
+    const empData = DecryptData("empData");
+    const formData = DecryptData("formData");
     const savedGenerated = DecryptData("videoGenerated");
 
-    if(!doctorHash && !formData){
-      router.back()
+    if (!doctorHash && !formData) {
+      router.back();
     }
 
-    if(projectData?.config?.employee && !empData){
-      router.back()
+    if (projectData?.config?.employee && !empData) {
+      router.back();
     }
 
-    if(empData && projectData?.config?.employee){
-      setempData(empData)
+    if (empData && projectData?.config?.employee) {
+      setempData(empData);
     }
 
     if (doctorHash) {
@@ -82,8 +69,11 @@ function GenerateVideo({ ui, projectData,projectId }) {
         let prevData = DecryptData("prevData");
         let updatedFormData = {
           ...formData,
-          name:`${formData?.prefix} ${formData?.name}`,
-          photo: prevData?.photo?.croppedImage || formData?.photo?.croppedImage || formData?.photo?.originalImage,
+          name: `${formData?.prefix} ${formData?.name}`,
+          photo:
+            prevData?.photo?.croppedImage ||
+            formData?.photo?.croppedImage ||
+            formData?.photo?.originalImage,
         };
 
         const response = await VideoRender(
@@ -102,7 +92,7 @@ function GenerateVideo({ ui, projectData,projectId }) {
           setLoading(false);
           return;
         }
-        
+
         setRenderId(response.data.renderId);
         setStatusMsg("Processing video...");
       } catch (err) {
@@ -126,23 +116,22 @@ function GenerateVideo({ ui, projectData,projectId }) {
       try {
         attempts++;
 
-        const check = await GetRenderStatus(renderId);   
-                  
+        const check = await GetRenderStatus(renderId);
+
         progressVal = Math.min(progressVal + 5, 90);
         setProgress(progressVal);
 
-
-        if(check.isError){
-       
-          let errorMsg = check.errors[0]?.message || "Error during video rendering.";
+        if (check.isError) {
+          let errorMsg =
+            check.errors[0]?.message || "Error during video rendering.";
           clearInterval(interval);
           setError(errorMsg);
           setLoading(false);
-          MyError(errorMsg)
+          MyError(errorMsg);
           return;
         }
-       
-        if (check.success && check.data.postRenderData?.outputFile ) {
+
+        if (check.success && check.data.postRenderData?.outputFile) {
           clearInterval(interval);
           setVideoUrl(check.data.postRenderData?.outputFile);
           setLoading(false);
@@ -151,24 +140,34 @@ function GenerateVideo({ ui, projectData,projectId }) {
           toast.success("Video Generated Successfully!");
           EncryptData("videoUrl", check.data.postRenderData?.outputFile);
           EncryptData("videoGenerated", "true");
-          
-          let outputFile = check.data.postRenderData?.outputFile
-          let empHash = empData?.employee_hash
-          let cost = check.data.postRenderData?.cost?.estimatedCost
-          let timetaken = check?.data?.timeToRenderFrames
-          let renderid  = check?.data?.renderMetadata?.renderId
-          let outputsize = check?.data?.postRenderData?.outputSize
 
-          let response = await GenerateVideoAPI(projectData, doctorHash, 24,outputFile ,empHash,cost,renderid,outputsize,timetaken);
+          let outputFile = check.data.postRenderData?.outputFile;
+          let empHash = empData?.employee_hash;
+          let cost = check.data.postRenderData?.cost?.estimatedCost;
+          let timetaken = check?.data?.timeToRenderFrames;
+          let renderid = check?.data?.renderMetadata?.renderId;
+          let outputsize = check?.data?.postRenderData?.outputSize;
 
-          if(response?.data){
-            if(response?.data?.visitor_hash !== null){
-              EncryptData("visitorHash",response?.data?.visitor_hash)
+          let response = await GenerateVideoAPI(
+            projectData,
+            doctorHash,
+            24,
+            outputFile,
+            empHash,
+            cost,
+            renderid,
+            outputsize,
+            timetaken,
+          );
+
+          if (response?.data) {
+            if (response?.data?.visitor_hash !== null) {
+              EncryptData("visitorHash", response?.data?.visitor_hash);
             }
           }
           setVideoGenerated(true);
           return;
-        } 
+        }
 
         if (attempts >= maxAttempts) {
           clearInterval(interval);
@@ -176,11 +175,10 @@ function GenerateVideo({ ui, projectData,projectId }) {
           setLoading(false);
         }
       } catch (err) {
-          console.error("Polling error:", err);
-          clearInterval(interval);
-          setError("Error while checking video status. Please try again.");
-          setLoading(false);
-        
+        console.error("Polling error:", err);
+        clearInterval(interval);
+        setError("Error while checking video status. Please try again.");
+        setLoading(false);
       }
     }, 2000);
 
@@ -188,27 +186,26 @@ function GenerateVideo({ ui, projectData,projectId }) {
   }, [renderId, projectData, doctorHash, videoGenerated]);
 
   const handleDownload = async () => {
-    await Download(projectData, doctorHash, 25,empData?.employee_hash);
+    await Download(projectData, doctorHash, 25, empData?.employee_hash);
     setVideoDownloaded(true);
   };
 
   const handleGoBack = () => {
-    RemoveData("videoGenerated")
-    RemoveData("videoUrl")
-    RemoveData("formData")
-    RemoveData("doctorHash")
-    if(projectData?.config?.employee){
+    RemoveData("videoGenerated");
+    RemoveData("videoUrl");
+    RemoveData("formData");
+    RemoveData("doctorHash");
+    if (projectData?.config?.employee) {
       router.push(`/${projectId}/homepage`);
-    }else{
-      RemoveData("empData")
+    } else {
+      RemoveData("empData");
       router.back();
     }
-    
   };
 
   const handleFileDownload = async () => {
     try {
-      setdownloadLoader(true)
+      setdownloadLoader(true);
       let data = await Download(projectData, doctorHash, 25);
       let formData = DecryptData("formData");
       const response = await fetch(videoUrl);
@@ -223,7 +220,7 @@ function GenerateVideo({ ui, projectData,projectId }) {
       document.body.removeChild(link);
       toast.success("Video Downloaded Successfully!");
       setVideoDownloaded(true);
-      setdownloadLoader(false)
+      setdownloadLoader(false);
       window.URL.revokeObjectURL(url);
     } catch (err) {
       console.error("Download failed:", err);
@@ -231,115 +228,101 @@ function GenerateVideo({ ui, projectData,projectId }) {
   };
 
   return (
-    <div 
-      className="min-h-screen transition-colors duration-300"
-      style={{ 
-        backgroundColor: backgroundColor,
-        color: primaryText 
-      }}
-    >
+    <div className="min-h-screen bg-white text-gray-800 dark:bg-gray-900 dark:text-white transition-colors duration-300">
       <ToastContainer position="bottom-center" autoClose={3000} />
 
-      <div className="flex flex-col items-center justify-center min-h-[400px] p-6">
-     
+      <div className="flex flex-col items-center justify-center min-h-[400px] p-4">
         {loading && !error && (
-          <div 
-            className="flex flex-col items-center w-full max-w-md p-8 rounded-2xl border-gray-800 dark:border-white shadow-lg transition-all duration-300"
-            style={{ backgroundColor: surfaceColor }}
-          >
+          <div className="flex flex-col items-center w-full max-w-md p-3 rounded-2xl border dark:border-white border-black transition-all duration-300">
             <div className="mb-6">
-              <button style={{
-                display: "flex",
-                justifyContent: "center",
-                color: "#fff",
-                width: "80px",
-                height: "80px",
-                borderRadius: "100%",
-                background: primaryColor,
-                transition: "all 0.3s ease-in-out 0s",
-                boxShadow: "rgba(193, 244, 246, 0.698) 0px 0px 0px 0px",
-                animation: "pulse 1.2s cubic-bezier(0.8, 0, 0, 1) infinite",
-                alignItems: "center",
-                border: "0",
-              }}>
-                <svg viewBox="0 0 448 512" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" width="26px"><path d="M424.4 214.7L72.4 6.6C43.8-10.3 0 6.1 0 47.9V464c0 37.5 40.7 60.1 72.4 41.3l352-208c31.4-18.5 31.5-64.1 0-82.6z" fill="currentColor"></path></svg>
+              <button
+                style={{
+                  display: "flex",
+                  justifyContent: "center",
+                  color: "#fff",
+                  width: "80px",
+                  height: "80px",
+                  borderRadius: "100%",
+                  background: ui.basic.primaryColor,
+                  transition: "all 0.3s ease-in-out 0s",
+                  boxShadow: "rgba(193, 244, 246, 0.698) 0px 0px 0px 0px",
+                  animation: "pulse 1.2s cubic-bezier(0.8, 0, 0, 1) infinite",
+                  alignItems: "center",
+                  border: "0",
+                }}
+              >
+                <svg
+                  viewBox="0 0 448 512"
+                  xmlns="http://www.w3.org/2000/svg"
+                  aria-hidden="true"
+                  width="26px"
+                >
+                  <path
+                    d="M424.4 214.7L72.4 6.6C43.8-10.3 0 6.1 0 47.9V464c0 37.5 40.7 60.1 72.4 41.3l352-208c31.4-18.5 31.5-64.1 0-82.6z"
+                    fill="currentColor"
+                  ></path>
+                </svg>
               </button>
             </div>
 
-            <div className="w-full mb-6">
-              <div 
+            <div className="w-full mb-6 ">
+              <div
                 className="w-full h-3 rounded-full overflow-hidden"
-                style={{ backgroundColor: isDark ? '#404040' : '#e5e7eb' }}
+                style={{
+                  background: ui.basic.SecondaryColor,
+                }}
               >
                 <div
                   className="h-full rounded-full transition-all duration-500 ease-out"
-                  style={{ 
+                  style={{
                     width: `${progress}%`,
-                    backgroundColor: primaryColor
+                    background: ui.basic.SecondaryText,
                   }}
                 />
               </div>
               <div className="flex justify-between mt-2 text-sm text-black dark:text-white">
                 <span>{progress}%</span>
-                <span >Processing...</span>
               </div>
             </div>
 
-            <p 
-              className="text-center font-medium text-black dark:text-white"
-            >
+            <p className="text-center font-medium text-black dark:text-white">
               {statusMsg}
             </p>
           </div>
         )}
 
         {error && (
-          <div 
-            className="flex flex-col items-center p-8 rounded-2xl shadow-lg max-w-md"
-            style={{ backgroundColor: surfaceColor }}
-          >
-            <div 
-              className="w-16 h-16 rounded-full flex items-center justify-center mb-4"
-              style={{ backgroundColor: '#ef4444' }}
-            >
+          <div className="flex flex-col items-center p-8 rounded-2xl shadow-lg max-w-md">
+            <div className="w-16 h-16 rounded-full flex items-center justify-center mb-4">
               <span className="text-white text-2xl">!</span>
             </div>
-            <p 
-              className="text-center mb-6"
-              style={{ color: primaryText }}
-            >
-              {error}
-            </p>
+            <p className="text-center mb-6">{error}</p>
           </div>
         )}
 
-
         {!loading && videoUrl && !error && (
-          <div 
-            className="flex flex-col items-center gap-5"
-          >
+          <div className="flex flex-col items-center gap-5">
             <video
               src={videoUrl}
               controls
               autoPlay
               className="rounded-xl shadow-lg max-w-full w-[600px]"
             />
-            
+
             {videoUrl && (
               <button
                 onClick={handleFileDownload}
                 disabled={downloadLoader}
-                className="flex justify-center items-center gap-3 p-3 w-48 rounded-xl font-semibold transition-all duration-300 cursor-pointer transform h"
-                style={{ 
-                  backgroundColor: primaryColor,
-                  color: isDark ? '#000000' : '#ffffff'
+                className="flex justify-center items-center gap-3 p-3 w-48 rounded-xl font-semibold transition-all duration-300 cursor-pointer"
+                style={{
+                  background: ui.basic.primaryColor,
+                  color: ui.basic.primaryText,
                 }}
               >
                 <FiDownload size={20} />
                 {downloadLoader ? "Downloading" : "Download Video"}
               </button>
             )}
-            
           </div>
         )}
 
@@ -348,17 +331,18 @@ function GenerateVideo({ ui, projectData,projectId }) {
           disabled={loading && !error && !videoGenerated}
           className={`flex items-center gap-3 mt-5 p-3  rounded-xl font-medium transition-all duration-300 cursor-pointer ${
             loading && !error && !videoGenerated
-              ? 'opacity-50 cursor-not-allowed'
-              : 'hover:shadow-lg transform hover:scale-105'
+              ? "opacity-50 cursor-not-allowed"
+              : "hover:shadow-lg transform hover:scale-105"
           }`}
-          style={{ 
-            backgroundColor: (loading && !error && !videoGenerated) ? '#6b7280' : primaryColor,
-            color: isDark ? '#000000' : '#ffffff'
+          style={{
+            backgroundColor:
+              loading && !error && !videoGenerated
+                ? "#6b7280"
+                : ui.basic.primaryColor,
           }}
         >
           Go Back
         </button>
-
       </div>
     </div>
   );
