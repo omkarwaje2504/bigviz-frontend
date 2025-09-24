@@ -32,7 +32,7 @@ const getProjectIcon = (name) => {
 
 const Header = ({ ui, userInfo, projectData, projectHash }) => {
   const { pathnamesArray } = useHeaderData();
-  // console.log(projectData?.config?.employee?.)
+
   const [isDark, setIsDark] = useState(false);
 
   // detect system dark/light

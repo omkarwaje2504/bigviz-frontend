@@ -225,7 +225,7 @@ export const SaveDoctors = async (
     cropped_image = cropped_image.replace(trailingPath, "");
   }
   let isEdit = DecryptData("isEdit")
-  console.log(isEdit)
+
   try {
     let requestBody: any = {
       project_hash: projectData.project_hash,
@@ -236,17 +236,21 @@ export const SaveDoctors = async (
       ...formData,
       name: `${formData.prefix}. ${formData.name}`,
     };
+    
     if (projectData?.config?.employee) {
       requestBody.employee_hash = employeeCode;
     }
+    
     if (
       prevData &&
-      JSON.stringify(prevData) === JSON.stringify(updatedformData)
+      JSON.stringify(prevData) === JSON.stringify(updatedformData) && isEdit
     ) {
+     
       requestBody.doctor_hash = doctorCode;
       requestBody.name = `${formData?.prefix}. ${formData?.name}`;
     }
-    if(projectData?.config?.doctor?.disable_mobile_number){
+    if(!isEdit && JSON.stringify(prevData) !== JSON.stringify(updatedformData) && projectData?.config?.doctor?.disable_mobile_number){
+   
       requestBody = {
         ...requestBody,
         media: { images: photo, cropped_image },
@@ -254,6 +258,7 @@ export const SaveDoctors = async (
         fields,
       };
     }if(isEdit && !projectData?.config?.doctor?.disable_mobile_number){
+      
       requestBody = {
         ...requestBody,
         name: `${formData?.prefix}. ${formData?.name}`,
@@ -261,6 +266,7 @@ export const SaveDoctors = async (
         fields,
       };
     } if(!isEdit && !projectData?.config?.doctor?.disable_mobile_number) {
+      
       requestBody = {
         ...requestBody,
         media: { images: photo, cropped_image },

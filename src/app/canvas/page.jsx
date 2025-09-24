@@ -1,6 +1,9 @@
 "use client";
 
 import React, { useState, useRef, useEffect, useCallback } from "react";
+
+  // Import Papa Parse (make sure it's installed with: npm install papaparse)
+import Papa from 'papaparse';
 import "./App.css"; // For custom styles if needed
 
 const CertificateDesigner = () => {
@@ -698,29 +701,61 @@ const CertificateDesigner = () => {
   };
 
   const handleCSVUpload = async (event) => {
-    const file = event.target.files[0];
-    if (!file) return;
+  const file = event.target.files[0];
+  if (!file) return;
 
-    const text = await file.text();
-    const lines = text.split("\n").filter((line) => line.trim());
 
-    if (lines.length === 0) return;
+  // Read the file as text
+  const text = await file.text();
+  
+  // Parse CSV with Papa Parse
+  const result = Papa.parse(text, {
+    header: true,          // First row is headers
+    skipEmptyLines: true,  // Skip empty rows
+    dynamicTyping: true,   // Convert numeric values automatically
+    trimHeaders: true,     // Trim whitespace from header fields
+    delimitersToGuess: [','], // Auto-detect delimiter
+  });
 
-    const headers = lines[0].split(",").map((h) => h.trim().replace(/"/g, ""));
-    const data = [];
+  // Check for errors
+  if (result.errors.length > 0) {
+    console.error("CSV parsing errors:", result.errors);
+    // Handle errors if needed
+  }
 
-    for (let i = 1; i < lines.length; i++) {
-      const values = lines[i].split(",").map((v) => v.trim().replace(/"/g, ""));
-      const row = {};
-      headers.forEach((header, index) => {
-        row[header] = values[index] || "";
-      });
-      data.push(row);
-    }
+  // Extract headers and data
+  const headers = result.meta.fields || [];
+  const data = result.data || [];
 
-    setCsvHeaders(headers);
-    setCsvData(data);
-  };
+  // Update state
+  setCsvHeaders(headers);
+  setCsvData(data);
+};
+
+  // const handleCSVUpload = async (event) => {
+  //   const file = event.target.files[0];
+  //   if (!file) return;
+
+  //   const text = await file.text();
+  //   const lines = text.split("\n").filter((line) => line.trim());
+
+  //   if (lines.length === 0) return;
+
+  //   const headers = lines[0].split(",").map((h) => h.trim().replace(/"/g, ""));
+  //   const data = [];
+
+  //   for (let i = 1; i < lines.length; i++) {
+  //     const values = lines[i].split(",").map((v) => v.trim().replace(/"/g, ""));
+  //     const row = {};
+  //     headers.forEach((header, index) => {
+  //       row[header] = values[index] || "";
+  //     });
+  //     data.push(row);
+  //   }
+
+  //   setCsvHeaders(headers);
+  //   setCsvData(data);
+  // };
 
   // Element creation functions
   const addTextElement = () => {

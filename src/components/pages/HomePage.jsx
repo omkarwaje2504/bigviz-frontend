@@ -36,6 +36,7 @@ const HomePage = ({ projectData, projectId, ui }) => {
     state: "",
     team: [],
     zone: "",
+    limit: null,
   });
   const [statistics, setStats] = useState();
   const [approvingStatus, setApprovingStatus] = useState({});
@@ -55,6 +56,7 @@ const HomePage = ({ projectData, projectId, ui }) => {
         role: getUserInfo?.role,
         designation: getUserInfo?.role_name,
         hash: getUserInfo?.hash,
+        limit: getUserInfo?.limit,
       });
     }
     if (!getUserInfo) {
@@ -166,9 +168,10 @@ const HomePage = ({ projectData, projectId, ui }) => {
               {ui.Dashboard.HomePageSubTitle}
             </p>
           </div>
-
+      
           <div className="flex flex-col sm:flex-row sm:space-y-0 sm:space-x-3 w-full md:w-auto">
-            {projectData?.config?.doctor?.enable_add_new_doctor && (
+          
+            {(projectData?.config?.doctor?.enable_add_new_doctor && (userInfo.limit !== members?.length)) && (
               <Link href="register-new-candidate">
                 <Button
                   type="button"
@@ -210,16 +213,16 @@ const HomePage = ({ projectData, projectId, ui }) => {
 export default HomePage;
 
 const stats = (members, ui, projectData) => {
-  const total = (members && members.length) || 1;
+  const total = (members && members?.length) || 1;
   const activeMembers =
-    members && members.length > 0
+    members && members?.length > 0
       ? projectData?.config?.employee?.approval_required
         ? members?.filter((member) => member?.download_url !== null)
         : members?.filter((member) => member?.approval_history.length >= 1)
       : 0;
 
   const pendingMembers =
-    members && members.length > 0
+    members && members?.length > 0
       ? projectData?.config?.employee?.approval_required
         ? members?.filter((member) => member?.photo_approval_status == 0)
         : members?.filter((member) => member?.approval_history.length == 0)

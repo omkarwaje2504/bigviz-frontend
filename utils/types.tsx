@@ -60,6 +60,9 @@ export interface Doctor {
   image: string;
   values: Record<string, string>;
   updated_at: string;
+   extras:{
+        video_url: string
+      }
 }
 
 export default function data() {
@@ -104,6 +107,8 @@ export interface ProjectInfo {
       regex: string;
       preview_enabled: boolean;
       download_enabled: boolean;
+      edit_enabled: boolean;
+     
     };
     employee: {
       approval_roles: string[];

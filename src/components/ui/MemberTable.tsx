@@ -240,7 +240,7 @@ const MemberTable: React.FC<MemberTableProps> = ({
     };
   };
   const onDownload = async (member: Doctor) => {
-    const link = member.download_url;
+    const link = member.download_url || member.extras.video_url;
     try {
       const response = await fetch(link, { method: "GET", cache: "no-cache" });
 
@@ -261,7 +261,6 @@ const MemberTable: React.FC<MemberTableProps> = ({
         remove: /[*+~.()'"!:@]/g,
         lower: false,
       });
-
       switch (projectData.product_type) {
         case "PhotoFrame":
           fileName += ".jpg";
@@ -271,7 +270,7 @@ const MemberTable: React.FC<MemberTableProps> = ({
             ? ".pdf"
             : ".jpg";
           break;
-        case "E-Video":
+        case "Evideo":
           fileName += ".mp4";
           break;
         default:
@@ -775,9 +774,7 @@ const MemberTable: React.FC<MemberTableProps> = ({
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder={ui?.HomePageLables?.serachHereLable}
-            icon={
-              <FaSearch className="text-gray-400" projectData={projectData} />
-            }
+            icon={<FaSearch className="text-gray-400" />}
           />
         </div>
         <div className="bg-gray-200 dark:bg-gray-800 rounded-lg inline-flex text-sm h-10 mb-3">
@@ -885,58 +882,61 @@ const MemberTable: React.FC<MemberTableProps> = ({
                 </div>
 
                 <div className="mt-2">
-                  
                   <div className="flex justify-between gap-2">
-     
-                    {projectData?.config?.doctor?.preview_enabled && member.download_url && (
-                      <button
-                        className="w-full justify-center flex items-center space-x-1 text-xs text-white bg-blue-600 p-2 rounded-sm"
-                        onClick={() => onPreview(member, "PREVIEW")}
-                      >
-                        <FaEye />
-                        <span>Preview</span>
-                      </button>
-                    )}
-                    {projectData?.config?.doctor?.enable_edit_button && (
+                    {projectData?.config?.doctor?.preview_enabled &&
+                      member.download_url && (
+                        <button
+                          className="w-full justify-center flex items-center space-x-1 text-xs text-white bg-blue-600 p-2 rounded-sm"
+                          onClick={() => onPreview(member, "PREVIEW")}
+                        >
+                          <FaEye />
+                          <span>Preview</span>
+                        </button>
+                      )}
+
+                    {projectData?.config?.doctor?.edit_enabled && (
                       <button
                         className="w-full justify-center flex items-center space-x-1 text-xs text-white bg-purple-600 p-2 rounded-sm"
-                        onClick={() =>{ 
-                          EncryptData("isEdit","true")
-                          onEdit(member.doctor_hash)}}
+                        onClick={() => {
+                          EncryptData("isEdit", "true");
+                          onEdit(member.doctor_hash);
+                        }}
                       >
                         <FaEdit />
                         <span>Edit</span>
                       </button>
                     )}
-                    {projectData?.config?.doctor?.download_enabled && member.download_url && (
-                      <button
-                        className="w-full justify-center flex items-center space-x-1 text-xs text-white bg-green-600 p-2 rounded-sm"
-                        onClick={() => onDownload(member)}
-                      >
-                        {downloadingStatus.includes(member.doctor_hash) ? (
-                          <FaSpinner className="animate-spin" />
-                        ) : (
-                          <FaDownload />
-                        )}
-                        <span>
-                          {downloadingStatus.includes(member.doctor_hash)
-                            ? "Downloading"
-                            : "Download"}
-                        </span>
-                      </button>
-                    )}
+                    {projectData?.config?.doctor?.download_enabled &&
+                      (member.download_url || member.extras.video_url) && (
+                        <button
+                          className="w-full justify-center flex items-center space-x-1 text-xs text-white bg-green-600 p-2 rounded-sm"
+                          onClick={() => onDownload(member)}
+                        >
+                          {downloadingStatus.includes(member.doctor_hash) ? (
+                            <FaSpinner className="animate-spin" />
+                          ) : (
+                            <FaDownload />
+                          )}
+                          <span>
+                            {downloadingStatus.includes(member.doctor_hash)
+                              ? "Downloading"
+                              : "Download"}
+                          </span>
+                        </button>
+                      )}
                   </div>
-                  {approvalState && member?.download_url && (
-                    <div className="flex-1 mt-1 flex flex-col items-center justify-center space-y-2 w-full">
-                      <div className="w-full">
-                        <div className="mb-3">
-                          {renderApprovalButtons(member)}
+                  {approvalState &&
+                    (member?.download_url || member?.extras?.video_url) && (
+                      <div className="flex-1 mt-1 flex flex-col items-center justify-center space-y-2 w-full">
+                        <div className="w-full">
+                          <div className="mb-3">
+                            {renderApprovalButtons(member)}
+                          </div>
+                          {/* Approval Status Breakdown - Collapsible */}
+                          {renderApprovalProgress(member)}
                         </div>
-                        {/* Approval Status Breakdown - Collapsible */}
-                        {renderApprovalProgress(member)}
                       </div>
-                    </div>
-                  )}
+                    )}
                 </div>
               </div>
             </div>
@@ -1013,7 +1013,8 @@ const MemberTable: React.FC<MemberTableProps> = ({
                       ).toLocaleDateString()}
                     </td>
                     <td className="px-6 py-4 hidden md:table-cell">
-                      {projectData?.config?.employee?.approval_required && member?.download_url &&
+                      {projectData?.config?.employee?.approval_required &&
+                      member?.download_url &&
                       userInfo.role !== 1 ? (
                         <div className="flex flex-col gap-1">
                           {/* Main Status */}
@@ -1058,8 +1059,7 @@ const MemberTable: React.FC<MemberTableProps> = ({
                     </td>
                     <td className="px-6 py-4 text-right">
                       <div className="flex justify-end items-center space-x-2">
-                        {/* Preview/Edit/Download buttons */}
-                        {member.download_url && (
+                        {(member.download_url || member?.extras?.video_url) && (
                           <button
                             onClick={() => onPreview(member, "PREVIEW")}
                             title="Preview"
@@ -1069,29 +1069,35 @@ const MemberTable: React.FC<MemberTableProps> = ({
                         )}
                         {projectData?.config?.doctor?.enable_edit_button && (
                           <button
-                            onClick={() =>{ 
-                          EncryptData("isEdit","true")
-                          onEdit(member.doctor_hash)}}
+                            onClick={() => {
+                              EncryptData("isEdit", "true");
+                              onEdit(member.doctor_hash);
+                            }}
                             title="Edit"
                           >
                             <FaEdit className="w-5 h-5 fill-purple-500 hover:fill-purple-600" />
                           </button>
                         )}
-                        {projectData?.config?.doctor?.download_enabled && member?.download_url && (
-                          <button
-                            onClick={() => onDownload(member)}
-                            title="Download"
-                          >
-                            {downloadingStatus.includes(member.doctor_hash) ? (
-                              <FaSpinner className="animate-spin w-5 h-5 fill-blue-500" />
-                            ) : (
-                              <FaDownload className="w-5 h-5 fill-blue-500 hover:fill-blue-600" />
-                            )}
-                          </button>
-                        )}
+                        {projectData?.config?.doctor?.download_enabled &&
+                          (member?.download_url ||
+                            member?.extras?.video_url) && (
+                            <button
+                              onClick={() => onDownload(member)}
+                              title="Download"
+                            >
+                              {downloadingStatus.includes(
+                                member.doctor_hash,
+                              ) ? (
+                                <FaSpinner className="animate-spin w-5 h-5 fill-blue-500" />
+                              ) : (
+                                <FaDownload className="w-5 h-5 fill-blue-500 hover:fill-blue-600" />
+                              )}
+                            </button>
+                          )}
 
                         {/* Approval buttons */}
-                        { member?.download_url && (renderApprovalButtons(member, true))}
+                        {member?.download_url &&
+                          renderApprovalButtons(member, true)}
                       </div>
                     </td>
                   </tr>

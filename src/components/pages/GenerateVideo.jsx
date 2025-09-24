@@ -8,7 +8,7 @@ import { FiLoader, FiDownload, FiArrowLeft, FiVideo } from "react-icons/fi";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
-function GenerateVideo({ ui, projectData }) {
+function GenerateVideo({ ui, projectData,projectId }) {
   const [loading, setLoading] = useState(true);
   const [statusMsg, setStatusMsg] = useState("Generating video...");
   const [progress, setProgress] = useState(0);
@@ -82,7 +82,7 @@ function GenerateVideo({ ui, projectData }) {
         let updatedFormData = {
           ...formData,
           name:`${formData?.prefix} ${formData?.name}`,
-          photo: formData?.photo?.originalImage || formData?.photo?.croppedImage,
+          photo: formData?.photo?.croppedImage || formData?.photo?.originalImage,
         };
 
         const response = await VideoRender(
@@ -119,7 +119,7 @@ function GenerateVideo({ ui, projectData }) {
 
     let progressVal = 0;
     let attempts = 0;
-    const maxAttempts = 30;
+    const maxAttempts = 120;
 
     const interval = setInterval(async () => {
       try {
@@ -186,9 +186,14 @@ function GenerateVideo({ ui, projectData }) {
     RemoveData("videoGenerated")
     RemoveData("videoUrl")
     RemoveData("formData")
-    RemoveData("empData")
     RemoveData("doctorHash")
-    router.back();
+    if(projectData?.config?.employee){
+      router.push(`/${projectId}/homepage`);
+    }else{
+      RemoveData("empData")
+      router.back();
+    }
+    
   };
 
   const handleFileDownload = async () => {

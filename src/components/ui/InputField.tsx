@@ -26,7 +26,7 @@ type DateValue = { day: string; month: string; year: string };
 type InputFieldProps = {
   ui: any;
   id: string;
-  label: string;
+  label?: string;
   icon?: ReactNode;
   type?:
     | React.HTMLInputTypeAttribute
@@ -58,7 +58,7 @@ type InputFieldProps = {
   onPrefixChange?: (
     e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>,
   ) => void;
-  projectData: any;
+  projectData?: any;
 };
 
 const parseDateString = (dateStr: string): DateValue => {
