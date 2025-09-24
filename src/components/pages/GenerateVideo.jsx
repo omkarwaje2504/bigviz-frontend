@@ -312,6 +312,7 @@ function GenerateVideo({ ui, projectData,projectId }) {
             <video
               src={videoUrl}
               controls
+              autoPlay
               className="rounded-xl shadow-lg max-w-full w-[600px]"
             />
             
