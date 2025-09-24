@@ -24,8 +24,8 @@ function GenerateVideo({ ui, projectData,projectId }) {
     ? ui?.basic?.secondaryColor || "#f5ba01" 
     : ui?.basic?.primaryColor || "#fb2c36";
   const primaryText = isDark 
-    ? ui?.basic?.secondaryText || "#ffffff" 
-    : ui?.basic?.primaryText || "#000000";
+    ? ui?.basic?.primaryText || "#ffffff" 
+    : ui?.basic?.secondaryText || "#000000";
   const backgroundColor = isDark ? "#101828" : "#ffffff";
   const surfaceColor = isDark ? "#101828" : "#f8fafc";
   const [downloadLoader,setdownloadLoader] = useState(false)

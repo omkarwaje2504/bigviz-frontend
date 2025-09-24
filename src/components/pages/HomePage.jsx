@@ -45,6 +45,8 @@ const HomePage = ({ projectData, projectId, ui }) => {
 
   // Fetch user info and members data
   useEffect(() => {
+    RemoveData("videoUrl")
+    RemoveData("videoGenerated")
     const getUserInfo = DecryptData("empData");
     if (getUserInfo) {
       if (getUserInfo?.role !== 1) {

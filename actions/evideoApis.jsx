@@ -40,6 +40,7 @@ export const VideoRender = async (videoId, videoProps) => {
       data: result,
     };
   } catch (e) {
+    MyError(e);
     return {
       success: false,
       message: "Failed to generate Ai Video",
@@ -71,7 +72,7 @@ export const GetRenderStatus = async (id) => {
 
     if (result?.errors?.length > 0) {
       let errorMsg = "Error during video rendering.";
-      
+
       return {
         success: false,
         isError: result?.errors?.length > 0,
@@ -91,7 +92,7 @@ export const GetRenderStatus = async (id) => {
       };
     }
   } catch (error) {
-
+    MyError(error);
     return {
       success: false,
       message: "Failure occur while generating Ai Video",
@@ -162,6 +163,7 @@ export const GenerateVideoAPI = async (
 
     return { success: true, data: response };
   } catch (error) {
+    MyError(error);
     console.error("Analytics error:", error);
     return { success: false, message: error.message };
   }
@@ -219,6 +221,7 @@ export const Download = async (
 
     return { success: true, data: response };
   } catch (error) {
+    MyError(error);
     console.error("Analytics error:", error);
     return { success: false, message: error.message };
   }
