@@ -161,7 +161,7 @@ const HomePage = ({ projectData, projectId, ui }) => {
           <Dashboard members={doctorList} stats={statistics} ui={ui} projectData={projectData} />
         )}
 
-        <div className="flex  md:flex-row justify-center items-start md:items-center mb-6 space-y-4 md:space-y-0">
+        <div className="flex md:gap-10  md:flex-row justify-center items-start md:items-center mb-6 space-y-4 md:space-y-0">
           <div className="w-full md:w-auto">
             <h2 className="text-xl font-semibold">
               {ui.Dashboard.HomePageTitle}
@@ -182,6 +182,18 @@ const HomePage = ({ projectData, projectId, ui }) => {
                   ui={ui}
                 >
                   {ui.Dashboard.HomePageButtonLabel}
+                </Button>
+              </Link>
+            )}
+            { (projectData?.config?.doctor?.enable_add_new_doctor && (userInfo.limit == members?.length)) && (
+              <Link href="register-new-candidate">
+                <Button
+                  type="button"
+                  fullWidth={false}
+                  leftIcon={<FaUserPlus />}
+                  ui={ui}
+                >
+                  Reached Limit
                 </Button>
               </Link>
             )}
