@@ -266,11 +266,8 @@ function GenerateVideo({ ui, projectData, projectId }) {
             </div>
 
             <div className="w-full mb-6 ">
-              <div
-                className="w-full h-3 rounded-full overflow-hidden"
-                style={{
-                  background: ui.basic.SecondaryColor,
-                }}
+              <div 
+                className="w-full h-3 rounded-full overflow-hidden bg-[#e5e7eb] dark:bg-[#404040]"
               >
                 <div
                   className="h-full rounded-full transition-all duration-500 ease-out"
