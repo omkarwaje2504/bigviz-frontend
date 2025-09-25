@@ -15,7 +15,6 @@ import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
 export default function RegisterNewCandidate({ projectData, projectId, ui }) {
-
   const [currentStep, setCurrentStep] = useState(1);
   const [photoUploadStatus, setPhotoUploadStatus] = useState(false);
   const [audioUploadStatus, setAudioUploadStatus] = useState(false);
@@ -36,8 +35,19 @@ export default function RegisterNewCandidate({ projectData, projectId, ui }) {
     photo: null,
   });
   const [doctorHash, setDoctorHash] = useState(null);
+  const [isDark, setIsDark] = useState(false);
 
   const router = useRouter();
+
+  useEffect(() => {
+    const media = window.matchMedia("(prefers-color-scheme: dark)");
+    setIsDark(media.matches);
+
+    const listener = (e) => setIsDark(e.matches);
+    media.addEventListener("change", listener);
+
+    return () => media.removeEventListener("change", listener);
+  }, []);
 
   useEffect(() => {
     const gitFormData = DecryptData("formData");
@@ -101,7 +111,7 @@ export default function RegisterNewCandidate({ projectData, projectId, ui }) {
     }
   };
 
-  const handleSubmit = async (e) => {
+  const handleFormRedirection = async (e) => {
     e.preventDefault();
     setIsSubmitLoading(true);
     try {
@@ -119,15 +129,19 @@ export default function RegisterNewCandidate({ projectData, projectId, ui }) {
 
         setTimeout(() => {
           if (projectData?.config?.game) {
-            router.push("game");
+            if (ui?.DoctorRegistrationForm?.HomeRedirection) {
+              localStorage.removeItem("isEdit");
+              localStorage.removeItem("doctorHash");
+              router.push("homepage");
+            } else {
+              router.push("game");
+            }
           } else if (projectData?.product_type === "RxPad") {
-            localStorage.removeItem("isEdit")
+            localStorage.removeItem("isEdit");
             localStorage.removeItem("doctorHash");
             router.push("homepage");
           } else if (projectData?.product_type === "Evideo") {
-            router.push(
-              `/${projectData.project_hash}/generate-video`,
-            );
+            router.push(`/${projectData.project_hash}/generate-video`);
           } else {
             router.push("homepage");
           }
@@ -179,7 +193,7 @@ export default function RegisterNewCandidate({ projectData, projectId, ui }) {
             currentStep={currentStep}
           />
           <form
-            onSubmit={(e) => handleSubmit(e)}
+            onSubmit={(e) => handleFormRedirection(e)}
             className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4 border border-gray-300 dark:border-gray-800"
           >
             <RenderStepContent

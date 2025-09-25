@@ -2,6 +2,7 @@ import { getAllProjectsCached } from "../../../../utils/projectCache";
 import Config from "../../../../utils/Config";
 import NotFoundPage from "../NotFoundPage";
 import ScratchCard from "../../../components/pages/funzo/ScratchCard";
+import ShalinaNigeriaFlagHosting from "../../../components/pages/funzo/ShalinaNigeriaFlagHosting";
 
 export async function generateStaticParams() {
   const projects = await getAllProjectsCached();
@@ -50,7 +51,15 @@ export default async function Home({ params }) {
   );
   const ui = await Config(projectInfo);
   if (projectInfo) {
-    if (projectInfo?.config?.game?.scratch_card) {
+    if (pathname === "j02y1r2m") {
+      return (
+        <ShalinaNigeriaFlagHosting
+          projectData={projectInfo}
+          projectId={pathname}
+          ui={ui}
+        />
+      );
+    } else if (projectInfo?.config?.game?.scratch_card) {
       return (
         <ScratchCard projectData={projectInfo} projectId={pathname} ui={ui} />
       );

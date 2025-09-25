@@ -10,6 +10,7 @@ import {
   FaSearch,
   FaSpinner,
   FaUser,
+  FaLink,
 } from "react-icons/fa";
 import InputField from "./InputField";
 import { ImCross } from "react-icons/im";
@@ -28,6 +29,8 @@ import {
 } from "utils/types";
 import { FaFilePrescription } from "react-icons/fa";
 import { EncryptData } from "@utils/cryptoUtils";
+import { GiGamepadCross } from "react-icons/gi";
+import Link from "next/link";
 
 const ITEMS_PER_PAGE = 4;
 
@@ -695,9 +698,6 @@ const MemberTable: React.FC<MemberTableProps> = ({
     }
   };
 
-  const bgColor = ui?.basic?.primaryColor || "#fb2c36";
-  const textColor = ui?.basic?.primaryText || "#ffffff";
-
   return (
     <div className="mt-6 text-gray-900 dark:text-white">
       {previewMode && (
@@ -893,6 +893,37 @@ const MemberTable: React.FC<MemberTableProps> = ({
                           <span>Preview</span>
                         </button>
                       )}
+                    {projectData?.config?.doctor &&
+                      ui?.DoctorRegistrationForm?.HomeRedirection && (
+                        <Link
+                          href={`https://platform.informatia.ai/${projectData?.project_hash}/game`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{
+                            backgroundColor: ui.basic.primaryColor,
+                            color: ui.basic.primaryText,
+                          }}
+                          className={`w-full justify-center flex items-center space-x-1 text-xs text-white p-2 rounded-sm`}
+                        >
+                          <FaLink />
+                          <span>Preview link</span>
+                        </Link>
+                      )}
+
+                    {projectData?.config?.doctor &&
+                      ui?.DoctorRegistrationForm?.HomeRedirection && (
+                        <Link
+                          href={`https://wa.me/${`${member.mobile.replace(/^0/, "")}`}?text=${encodeURIComponent(
+                            `https://platform.informatia.ai/${projectData?.project_hash}/game`,
+                          )}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="w-full justify-center flex items-center space-x-1 text-xs text-white bg-blue-600 p-2 rounded-sm"
+                        >
+                          <GiGamepadCross />
+                          <span>Share Link</span>
+                        </Link>
+                      )}
 
                     {projectData?.config?.doctor?.edit_enabled && (
                       <button
@@ -980,7 +1011,7 @@ const MemberTable: React.FC<MemberTableProps> = ({
                           {" "}
                           {member?.image ? (
                             <div
-                              className="relative w-full h-[200px] rounded overflow-hidden cursor-pointer"
+                              className="relative w-14 h-14 rounded overflow-hidden cursor-pointer"
                               onClick={() => onPreview(member, "DOCTOR_IMAGE")}
                             >
                               <Image
@@ -996,11 +1027,12 @@ const MemberTable: React.FC<MemberTableProps> = ({
                           ) : (
                             <></>
                           )}
-                          {member.name}
-                        </p>
-
-                        <p className="text-xs text-gray-600 dark:text-gray-400 block md:hidden">
-                          {member.mobile}
+                          <div>
+                            {member.name}
+                            <p className="text-xs text-gray-600 dark:text-gray-400 block md:hidden">
+                              {member.mobile}
+                            </p>
+                          </div>
                         </p>
                       </div>
                     </td>
@@ -1067,7 +1099,37 @@ const MemberTable: React.FC<MemberTableProps> = ({
                             <FaEye className="w-5 h-5 fill-yellow-500 hover:fill-yellow-600" />
                           </button>
                         )}
-                        {projectData?.config?.doctor?.enable_edit_button && (
+                        {projectData?.config?.game &&
+                          ui?.DoctorRegistrationForm?.HomeRedirection && (
+                            <Link
+                              href={`https://platform.informatia.ai/${projectData?.project_hash}/game`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              style={{
+                                backgroundColor: ui.basic.primaryColor,
+                                color: ui.basic.primaryText,
+                              }}
+                              title="Preview"
+                            >
+                              <FaEye className="w-5 h-5 fill-yellow-500 hover:fill-yellow-600 p-0.5" />
+                            </Link>
+                          )}
+
+                        {projectData?.config?.doctor &&
+                          ui?.DoctorRegistrationForm?.HomeRedirection && (
+                            <Link
+                              href={`https://wa.me/${`${member.mobile.replace(/^0/, "")}`}?text=${encodeURIComponent(
+                                `https://platform.informatia.ai/${projectData?.project_hash}/game`,
+                              )}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="w-full justify-center flex items-center space-x-1 text-xs text-white bg-blue-600 p-2 rounded-sm"
+                            >
+                              <GiGamepadCross />
+                            </Link>
+                          )}
+
+                        {projectData?.config?.doctor?.edit_enabled && (
                           <button
                             onClick={() => {
                               EncryptData("isEdit", "true");
