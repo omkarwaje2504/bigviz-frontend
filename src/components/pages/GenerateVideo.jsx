@@ -142,7 +142,7 @@ function GenerateVideo({ ui, projectData, projectId }) {
           EncryptData("videoGenerated", "true");
 
           let outputFile = check.data.postRenderData?.outputFile;
-          let empHash = empData?.employee_hash;
+          let empHash = empData?.hash;
           let cost = check.data.postRenderData?.cost?.estimatedCost;
           let timetaken = check?.data?.timeToRenderFrames;
           let renderid = check?.data?.renderMetadata?.renderId;
