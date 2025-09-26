@@ -233,42 +233,7 @@ const ShalinaNigeriaFlagHosting = () => {
 
       case "completed":
         return (
-          <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-green-600 via-white to-green-600">
-            <div className="text-center bg-white p-12 rounded-lg shadow-2xl border-4 border-green-600 max-w-2xl">
-              <h1 className="text-5xl font-bold text-green-800 mb-6">
-                🎉 THANK YOU! 🎉
-              </h1>
-              <h2 className="text-3xl font-semibold text-green-700 mb-4">
-                Shalina's Flag Hosting Complete!
-              </h2>
-              <h3 className="text-2xl font-semibold text-green-700 mb-4">
-                Happy 64th Independence Day!
-              </h3>
-              <p className="text-xl text-gray-800 mb-6 leading-relaxed">
-                Thank you for witnessing Shalina's flag hosting ceremony
-                celebrating Nigeria's journey of unity, peace, and progress.
-                Together we honor our nation's heritage.
-              </p>
-
-              <div className="flex justify-center items-center space-x-4 mb-6">
-                <div className="w-8 h-12 bg-green-600 rounded"></div>
-                <div className="w-8 h-12 bg-white border-2 border-green-600 rounded"></div>
-                <div className="w-8 h-12 bg-green-600 rounded"></div>
-              </div>
-
-              <div className="text-green-800 font-bold text-lg mb-4">
-                🇳🇬 One Nation, One Destiny 🇳🇬
-              </div>
-
-              <div className="text-sm text-gray-600">
-                <p>
-                  "Unity and Faith, Peace and Progress" - Nigeria's National
-                  Motto
-                </p>
-                <p className="mt-2">Flag Hosting Ceremony by Shalina</p>
-              </div>
-            </div>
-          </div>
+          <img className="w-full h-56" src="/game/Certificate.png"/>
         );
 
       default:
