@@ -34,7 +34,10 @@ const ShalinaNigeriaFlagHosting = ({ projectData, projectId, ui }) => {
           let doctorData = await FetchDoctor(projectData, dh);
   
           if (doctorData) {
-            if(doctorData?.data?.fields?.[3]?.value === "Male"){
+             const genderField = doctorData?.data?.fields?.find(
+              (f) => f.value === "Male" || f.value === "Female"
+            );
+            if(genderField?.value === "Male"){
               setVideoSrc("/game/male-flag-hosting.mp4")
             }else{
               setVideoSrc("/game/female-flag-hosting.mp4")
