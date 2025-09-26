@@ -339,12 +339,22 @@ export default function PhotoUploadEditor({
             <FaRegImage size={48} />
           </div>
           <p className="text-gray-600 dark:text-gray-300 mb-4 text-lg">
-            Drag and drop your {isRxPadImage ? "RxPad image" : "photo"} here, or
-            click to browse
+            {" "}
+            {projectData?.project_hash === "j02y1r2m"
+              ? "choose photo from gallery or take a photo on the spot from phone"
+              : isRxPadImage
+              ? "Drag and drop your RxPad image here, or click to browse"
+              : "Drag and drop your photo here, or click to browse"}{" "}
+            
           </p>
+
           <p className="text-gray-400 dark:text-gray-500 mb-6 text-sm">
-            Supported formats: JPG, PNG, WEBP
+            Supported formats:{" "}
+            {projectData?.project_hash === "j02y1r2m"
+              ? "PDF, JPG, PNG"
+              : "JPG, PNG, WEBP"}
           </p>
+
         </div>
       ) : (
         <div className="space-y-4">

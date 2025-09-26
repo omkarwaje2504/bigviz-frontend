@@ -165,6 +165,7 @@ const HomePage = ({ projectData, projectId, ui }) => {
         projectData={projectData}
         projectHash={projectId}
       />
+     
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2 md:py-8">
         {projectData?.config?.theme?.enable_dashboard === true && (
           <Dashboard

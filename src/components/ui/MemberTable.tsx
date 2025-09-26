@@ -28,7 +28,7 @@ import {
   MemberTableProps,
 } from "utils/types";
 import { FaFilePrescription } from "react-icons/fa";
-import { EncryptData } from "@utils/cryptoUtils";
+import { DecryptData, EncryptData } from "@utils/cryptoUtils";
 import { GiGamepadCross } from "react-icons/gi";
 import Link from "next/link";
 
@@ -65,8 +65,17 @@ const MemberTable: React.FC<MemberTableProps> = ({
   const [memberToDisapprove, setMemberToDisapprove] = useState<Doctor | null>(
     null,
   );
-
+  const [empData, setempData] = useState<Object>(false);
   const [isDark, setIsDark] = useState(false);
+
+  useEffect(()=>{
+    if(projectData?.config?.employee){
+      let empData = DecryptData("empData")
+      if(empData){
+        setempData(empData)
+      }
+    }
+  },[])
 
   useEffect(() => {
     const media = window.matchMedia("(prefers-color-scheme: dark)");
@@ -896,7 +905,7 @@ const MemberTable: React.FC<MemberTableProps> = ({
                     {projectData?.config?.doctor &&
                       ui?.DoctorRegistrationForm?.HomeRedirection && (
                         <Link
-                          href={`https://platform.informatia.ai/${projectData?.project_hash}/game`}
+                          href={`https://platform.informatia.ai/${projectData?.project_hash}/game?dh=${member?.doctor_hash}&h=${empData?.hash}`}
                           target="_blank"
                           rel="noopener noreferrer"
                           style={{
@@ -909,12 +918,12 @@ const MemberTable: React.FC<MemberTableProps> = ({
                           <span>Preview link</span>
                         </Link>
                       )}
-
+                     
                     {projectData?.config?.doctor &&
                       ui?.DoctorRegistrationForm?.HomeRedirection && (
                         <Link
                           href={`https://wa.me/${`${member?.mobile?.replace(/^0/, "")}`}?text=${encodeURIComponent(
-                            `https://platform.informatia.ai/${projectData?.project_hash}/game`,
+                            `https://platform.informatia.ai/${projectData?.project_hash}/game/?dh=${member?.doctor_hash}?h=${empData?.hash}`,
                           )}`}
                           target="_blank"
                           rel="noopener noreferrer"

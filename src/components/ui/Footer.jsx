@@ -18,11 +18,11 @@ const Footer = ({ projectData }) => {
             </span>
           </div>
           {projectData?.bottom_banner && (
-            <div className="flex space-x-6 p-2 bg-white">
+            <div className="flex space-x-6 p-2">
               <Image
                 src={`https://pub-0b6394cfeda24bf196c98e1746afe09b.r2.dev/${projectData?.bottom_banner}`}
                 alt="Sai Logo"
-                width={250}
+                width={200}
                 height={70}
                 className=""
               />
@@ -31,14 +31,21 @@ const Footer = ({ projectData }) => {
 
           {/* Right: Logo */}
           <div className="flex space-x-6">
-            <Image
-            src="/sai-logo.png"
-              // src={projectData?.company?.logo || "/sai-logo.png"}
-              alt="Sai Logo"
-              width={120}
-              height={50}
-              className=""
-            />
+            {projectData?.project_hash === "j02y1r2m" ? (
+              <Image
+                src="/game/image.png"
+                alt="Different Logo"
+                width={250}
+                height={70}
+              />
+            ) : (
+              <Image
+                src="/sai-logo.png"
+                alt="Sai Logo"
+                width={120}
+                height={50}
+              />
+            )}
           </div>
         </div>
       </div>

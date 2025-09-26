@@ -576,7 +576,8 @@ const InputField: React.FC<InputFieldProps> = ({
               {icon}
             </div>
           )}
-          {id === "name" && prefixOptions && (
+       
+          {id === "name" && prefixOptions && !projectData?.config?.doctor?.disable_doctor_prefix && (
             <select
               id="prefix"
               value={prefix || ""}

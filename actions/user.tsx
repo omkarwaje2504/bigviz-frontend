@@ -236,9 +236,7 @@ export const SaveDoctors = async (
       ...formData,
       name: `${formData.prefix}. ${formData.name}`,
     };
-  //    console.log("prevData", prevData)
-  // console.log("isEdit", isEdit,JSON.stringify(prevData) === JSON.stringify(updatedformData))
-  // console.log("formData", isEdit && !projectData?.config?.doctor?.disable_mobile_number)
+
     if (projectData?.config?.employee) {
       requestBody.employee_hash = employeeCode;
     }
