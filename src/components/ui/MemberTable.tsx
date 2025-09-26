@@ -913,7 +913,7 @@ const MemberTable: React.FC<MemberTableProps> = ({
                     {projectData?.config?.doctor &&
                       ui?.DoctorRegistrationForm?.HomeRedirection && (
                         <Link
-                          href={`https://wa.me/${`${member.mobile.replace(/^0/, "")}`}?text=${encodeURIComponent(
+                          href={`https://wa.me/${`${member?.mobile?.replace(/^0/, "")}`}?text=${encodeURIComponent(
                             `https://platform.informatia.ai/${projectData?.project_hash}/game`,
                           )}`}
                           target="_blank"
@@ -1118,7 +1118,7 @@ const MemberTable: React.FC<MemberTableProps> = ({
                         {projectData?.config?.doctor &&
                           ui?.DoctorRegistrationForm?.HomeRedirection && (
                             <Link
-                              href={`https://wa.me/${`${member.mobile.replace(/^0/, "")}`}?text=${encodeURIComponent(
+                              href={`https://wa.me/${`${member?.mobile?.replace(/^0/, "")}`}?text=${encodeURIComponent(
                                 `https://platform.informatia.ai/${projectData?.project_hash}/game`,
                               )}`}
                               target="_blank"
