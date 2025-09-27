@@ -52,8 +52,10 @@ const FormNavigationButtons = ({
     (currentStep === 3 && projectType !== "Evideo");
 
   const handleNext = async () => {
+    console.log(currentStep)
     if (currentStep === 1) {
       const success = await onSaveDoctor();
+      console.log(success)
       if (!success) {
         return;
       }

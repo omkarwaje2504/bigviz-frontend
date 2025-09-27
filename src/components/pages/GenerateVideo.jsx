@@ -31,9 +31,9 @@ function GenerateVideo({ ui, projectData, projectId }) {
 
   useEffect(() => {
     const savedUrl = DecryptData("videoUrl");
-    const doctorHash = DecryptData("doctorHash");
+    const doctorHash = localStorage.getItem("doctorHash")
     const empData = DecryptData("empData");
-    const formData = DecryptData("formData");
+    const formData = DecryptData(`${doctorHash}-formData`);
     const savedGenerated = DecryptData("videoGenerated");
 
     if (!doctorHash && !formData) {
@@ -65,8 +65,8 @@ function GenerateVideo({ ui, projectData, projectId }) {
 
     const startVideoGeneration = async () => {
       try {
-        let formData = DecryptData("formData");
-        let prevData = DecryptData("prevData");
+        let formData = DecryptData(`${doctorHash}-formData`);
+        let prevData = DecryptData(`${doctorHash}-prevData`);
         let updatedFormData = {
           ...formData,
           name: `${formData?.prefix} ${formData?.name}`,
@@ -207,7 +207,7 @@ function GenerateVideo({ ui, projectData, projectId }) {
     try {
       setdownloadLoader(true);
       let data = await Download(projectData, doctorHash, 25);
-      let formData = DecryptData("formData");
+      let formData = DecryptData(`${doctorHash}-formData`);
       const response = await fetch(videoUrl);
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);

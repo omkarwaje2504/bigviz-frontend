@@ -17,6 +17,17 @@ import { useRouter } from "next/navigation";
 import { ApprovalAction } from "@actions/approvalApis";
 import { FaCircleNotch } from "react-icons/fa6";
 
+function generateRandomString(length) {
+  const characters =
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+  let result = "";
+  const charactersLength = characters.length;
+  for (let i = 0; i < length; i++) {
+    result += characters.charAt(Math.floor(Math.random() * charactersLength));
+  }
+  return result;
+}
+
 const HomePage = ({ projectData, projectId, ui }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [members, setMembers] = useState([]);
@@ -54,21 +65,22 @@ const HomePage = ({ projectData, projectId, ui }) => {
   }, []);
 
   useEffect(() => {
-    RemoveData("videoUrl");
-    RemoveData("videoGenerated");
     const getUserInfo = DecryptData("empData");
+    const visitorHash = DecryptData("visitorHash");
     if (getUserInfo) {
       if (getUserInfo?.role !== 1) {
         localStorage.clear();
         router.push(`/${projectId}`);
+      } else {
+        EncryptData("projectHash", projectId);
+        setUserInfo({
+          name: getUserInfo?.name,
+          role: getUserInfo?.role,
+          designation: getUserInfo?.role_name,
+          hash: getUserInfo?.hash,
+          limit: getUserInfo?.limit,
+        });
       }
-      setUserInfo({
-        name: getUserInfo?.name,
-        role: getUserInfo?.role,
-        designation: getUserInfo?.role_name,
-        hash: getUserInfo?.hash,
-        limit: getUserInfo?.limit,
-      });
     }
     if (!getUserInfo) {
       router.push(`/${projectId}`);
@@ -114,7 +126,6 @@ const HomePage = ({ projectData, projectId, ui }) => {
   };
 
   const editDoctor = async (id) => {
-    EncryptData("doctorHash", id);
     let fetchDoctor = await FetchDoctor(projectData, id);
 
     let tempData = {
@@ -140,9 +151,10 @@ const HomePage = ({ projectData, projectId, ui }) => {
     }
 
     if (tempData) {
-      EncryptData("prevData", tempData);
-      EncryptData("formData", tempData);
-      router.push(`register-new-candidate`);
+      localStorage.setItem("doctorHash", id);
+      EncryptData(`${id}-prevData`, tempData);
+      EncryptData(`${id}-formData`, tempData);
+      router.push(`register-new-candidate?dh=${id}`);
     }
   };
 
@@ -165,7 +177,7 @@ const HomePage = ({ projectData, projectId, ui }) => {
         projectData={projectData}
         projectHash={projectId}
       />
-     
+
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2 md:py-8">
         {projectData?.config?.theme?.enable_dashboard === true && (
           <Dashboard
@@ -189,7 +201,9 @@ const HomePage = ({ projectData, projectId, ui }) => {
           <div className="flex  md:w-auto">
             {projectData?.config?.doctor?.enable_add_new_doctor &&
               userInfo.limit !== members?.length && (
-                <Link href="register-new-candidate">
+                <Link
+                  href={`register-new-candidate?dh=${generateRandomString(8)}-new`}
+                >
                   <Button
                     type="button"
                     fullWidth={false}

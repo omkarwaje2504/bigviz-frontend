@@ -12,8 +12,9 @@ const ShalinaNigeriaFlagHosting = ({ projectData, projectId, ui }) => {
   const [doctorData, setDoctorData] = useState(null);
   const [certificateReady, setCertificateReady] = useState(false);
   const [certificateLoading, setCertificateLoading] = useState(false);
-  const [downlaodLoading,setDownloadLaoding] = useState(false)
-  const [videoSrc,setVideoSrc] = useState()
+  const [downlaodLoading, setDownloadLaoding] = useState(false);
+  const [videoSrc, setVideoSrc] = useState();
+  const [showDoctorName, setShowDoctorName] = useState(true);
 
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
@@ -26,21 +27,21 @@ const ShalinaNigeriaFlagHosting = ({ projectData, projectId, ui }) => {
       const params = url.searchParams;
       const dh = params.get("dh");
       const h = params.get("h");
-  
+
       if (dh && h) {
         setDoctorHash(dh);
         setEmpHash(h);
         try {
           let doctorData = await FetchDoctor(projectData, dh);
-  
+
           if (doctorData) {
-             const genderField = doctorData?.data?.fields?.find(
-              (f) => f.value === "Male" || f.value === "Female"
+            const genderField = doctorData?.data?.fields?.find(
+              (f) => f.value === "Male" || f.value === "Female",
             );
-            if(genderField?.value === "Male"){
-              setVideoSrc("/game/male-flag-hosting.mp4")
-            }else{
-              setVideoSrc("/game/female-flag-hosting.mp4")
+            if (genderField?.value === "Male") {
+              setVideoSrc("/game/male-flag-hosting.mp4");
+            } else {
+              setVideoSrc("/game/female-flag-hosting.mp4");
             }
             setDoctorData(doctorData?.data);
           }
@@ -61,7 +62,7 @@ const ShalinaNigeriaFlagHosting = ({ projectData, projectId, ui }) => {
     setIsVideoLoaded(false);
 
     video.preload = "auto";
-    video.muted = false; 
+    video.muted = false;
     video.playsInline = true;
 
     const handleVideoLoad = () => {
@@ -83,7 +84,7 @@ const ShalinaNigeriaFlagHosting = ({ projectData, projectId, ui }) => {
       const h = params.get("h");
 
       let doctorData = await FetchDoctor(projectData, dh);
- 
+
       if (animationRef.current) {
         cancelAnimationFrame(animationRef.current);
       }
@@ -111,6 +112,20 @@ const ShalinaNigeriaFlagHosting = ({ projectData, projectId, ui }) => {
     };
   }, []);
 
+  const handlePauseFrame = () => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    if (video.currentTime >= 7.8) {
+      video.pause();
+      setStage("paused");
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
+      }
+      video.removeEventListener("timeupdate", handlePauseFrame);
+    }
+  };
+
   const drawVideoFrame = () => {
     const canvas = canvasRef.current;
     const video = videoRef.current;
@@ -119,7 +134,9 @@ const ShalinaNigeriaFlagHosting = ({ projectData, projectId, ui }) => {
     let windowHeight = window.innerHeight;
 
     if (canvas && video && ctx && video.videoWidth && video.videoHeight) {
-
+      if (!isVideoLoaded) {
+        setIsVideoLoaded(true);
+      }
       const aspectRatio = video.videoWidth / video.videoHeight;
       const newHeight = windowHeight;
       const newWidth = newHeight * aspectRatio;
@@ -135,60 +152,61 @@ const ShalinaNigeriaFlagHosting = ({ projectData, projectId, ui }) => {
       ctx.fillRect(0, canvas.height - borderWidth, canvas.width, borderWidth);
       ctx.fillRect(0, 0, borderWidth, canvas.height);
       ctx.fillRect(canvas.width - borderWidth, 0, borderWidth, canvas.height);
+      console.log(video.currentTime);
+      if (showDoctorName && video.currentTime < 18) {
+        const text = doctorData?.name || "";
+        if (text) {
+          const paddingX = 14;
+          const paddingY = 10;
+          const maxWidth = canvas.width * 0.55;
+          let fontSize = 25;
 
-      const text = doctorData?.name || "";
-      if (text) {
-        const paddingX = 14;
-        const paddingY = 10;
-        const maxWidth = canvas.width * 0.55;
-        let fontSize = 25; 
-
-        ctx.font = `bold ${fontSize}px Arial`;
-
-  
-        while (ctx.measureText(text).width > maxWidth && fontSize > 20) {
-          fontSize -= 2;
           ctx.font = `bold ${fontSize}px Arial`;
+
+          while (ctx.measureText(text).width > maxWidth && fontSize > 20) {
+            fontSize -= 2;
+            ctx.font = `bold ${fontSize}px Arial`;
+          }
+
+          const textMetrics = ctx.measureText(text);
+          const textWidth = textMetrics.width;
+          const textHeight =
+            textMetrics.actualBoundingBoxAscent +
+            textMetrics.actualBoundingBoxDescent;
+
+          const boxWidth = textWidth + paddingX * 2;
+          const boxHeight = textHeight + paddingY * 2;
+
+          const rightMargin = 30;
+          const x = canvas.width - boxWidth - rightMargin;
+          const y = 25;
+
+          const radius = 10;
+          ctx.fillStyle = "#fff";
+          ctx.beginPath();
+          ctx.moveTo(x + radius, y);
+          ctx.lineTo(x + boxWidth - radius, y);
+          ctx.quadraticCurveTo(x + boxWidth, y, x + boxWidth, y + radius);
+          ctx.lineTo(x + boxWidth, y + boxHeight - radius);
+          ctx.quadraticCurveTo(
+            x + boxWidth,
+            y + boxHeight,
+            x + boxWidth - radius,
+            y + boxHeight,
+          );
+          ctx.lineTo(x + radius, y + boxHeight);
+          ctx.quadraticCurveTo(x, y + boxHeight, x, y + boxHeight - radius);
+          ctx.lineTo(x, y + radius);
+          ctx.quadraticCurveTo(x, y, x + radius, y);
+          ctx.closePath();
+          ctx.fill();
+
+          ctx.fillStyle = "#1e573f";
+          ctx.textBaseline = "alphabetic";
+          const textX = x + paddingX;
+          const textY = y + paddingY + textMetrics.actualBoundingBoxAscent;
+          ctx.fillText(text, textX, textY);
         }
-
-        const textMetrics = ctx.measureText(text);
-        const textWidth = textMetrics.width;
-        const textHeight =
-          textMetrics.actualBoundingBoxAscent +
-          textMetrics.actualBoundingBoxDescent;
-
-        const boxWidth = textWidth + paddingX * 2;
-        const boxHeight = textHeight + paddingY * 2;
-
-        const rightMargin = 30;
-        const x = canvas.width - boxWidth - rightMargin;
-        const y = 25;
-
-        const radius = 10;
-        ctx.fillStyle = "#fff";
-        ctx.beginPath();
-        ctx.moveTo(x + radius, y);
-        ctx.lineTo(x + boxWidth - radius, y);
-        ctx.quadraticCurveTo(x + boxWidth, y, x + boxWidth, y + radius);
-        ctx.lineTo(x + boxWidth, y + boxHeight - radius);
-        ctx.quadraticCurveTo(
-          x + boxWidth,
-          y + boxHeight,
-          x + boxWidth - radius,
-          y + boxHeight,
-        );
-        ctx.lineTo(x + radius, y + boxHeight);
-        ctx.quadraticCurveTo(x, y + boxHeight, x, y + boxHeight - radius);
-        ctx.lineTo(x, y + radius);
-        ctx.quadraticCurveTo(x, y, x + radius, y);
-        ctx.closePath();
-        ctx.fill();
-
-        ctx.fillStyle = "#1e573f";
-        ctx.textBaseline = "alphabetic";
-        const textX = x + paddingX;
-        const textY = y + paddingY + textMetrics.actualBoundingBoxAscent;
-        ctx.fillText(text, textX, textY);
       }
     }
 
@@ -202,31 +220,24 @@ const ShalinaNigeriaFlagHosting = ({ projectData, projectId, ui }) => {
     if (!video) return;
 
     setStage("playing");
+    setIsVideoLoaded(false);
 
-    video.muted = false;
     const playPromise = video.play();
     if (playPromise !== undefined) {
       playPromise
         .then(() => {
           drawVideoFrame();
+
+          video.addEventListener("timeupdate", handlePauseFrame);
         })
         .catch((error) => {
           video.muted = true;
           video.play().then(() => {
             drawVideoFrame();
+            video.addEventListener("timeupdate", handlePauseFrame);
           });
         });
     }
-
-    setTimeout(() => {
-      if (video && !video.ended) {
-        video.pause();
-        setStage("paused");
-        if (animationRef.current) {
-          cancelAnimationFrame(animationRef.current);
-        }
-      }
-    }, 7800);
   };
 
   const resumeVideo = () => {
@@ -243,16 +254,17 @@ const ShalinaNigeriaFlagHosting = ({ projectData, projectId, ui }) => {
   };
 
   const drawCertificate = async (data) => {
-  
     setCertificateLoading(true);
 
     const canvas = canvasRef.current;
     const ctx = canvas.getContext("2d");
 
+    // Load background
     const bgImg = new Image();
     bgImg.src = "/game/Certificate-Shalina.png";
     await new Promise((resolve) => (bgImg.onload = resolve));
 
+    // Load doctor photo
     let doctorImgUrl = null;
     if (data?.image) {
       try {
@@ -262,7 +274,6 @@ const ShalinaNigeriaFlagHosting = ({ projectData, projectId, ui }) => {
         });
 
         if (!res.ok) throw new Error("Network response not ok");
-
         const blob = await res.blob();
         doctorImgUrl = URL.createObjectURL(blob);
       } catch (err) {
@@ -280,25 +291,77 @@ const ShalinaNigeriaFlagHosting = ({ projectData, projectId, ui }) => {
 
     ctx.drawImage(bgImg, 0, 0, canvas.width, canvas.height);
 
+    // Doctor photo (circle crop, keep aspect ratio)
     const photoSize = 456;
     const photoX = 168;
     const photoY = 95;
     const radius = photoSize / 2;
     ctx.save();
-
     ctx.beginPath();
     ctx.arc(photoX + radius, photoY + radius, radius, 0, Math.PI * 2, true);
     ctx.closePath();
     ctx.clip();
 
-    ctx.drawImage(doctorImg, photoX, photoY, photoSize, photoSize);
-
+    // Keep aspect ratio crop
+    let sx, sy, sSize;
+    if (doctorImg.width > doctorImg.height) {
+      sSize = doctorImg.height;
+      sx = (doctorImg.width - sSize) / 2;
+      sy = 0;
+    } else {
+      sSize = doctorImg.width;
+      sx = 0;
+      sy = (doctorImg.height - sSize) / 2;
+    }
+    ctx.drawImage(
+      doctorImg,
+      sx,
+      sy,
+      sSize,
+      sSize,
+      photoX,
+      photoY,
+      photoSize,
+      photoSize,
+    );
     ctx.restore();
 
-    ctx.font = "bold 60px Arial";
+    ctx.font = "bold 80px Arial";
     ctx.fillStyle = "#3d397b";
     ctx.textAlign = "center";
-    ctx.fillText(data?.name || "Doctor Name", 1045,410);
+
+    const maxWidth = 1000;
+    const lineHeight = 90;
+    const startX = 900;
+    const startY = 410;
+
+    const name = data?.name || "Doctor Name";
+
+    const wrapText = (text, x, y, maxWidth, lineHeight) => {
+      const words = text.split(" ");
+      let line = "";
+      const lines = [];
+
+      for (let n = 0; n < words.length; n++) {
+        const testLine = line + words[n] + " ";
+        const metrics = ctx.measureText(testLine);
+        const testWidth = metrics.width;
+
+        if (testWidth > maxWidth && n > 0) {
+          lines.push(line);
+          line = words[n] + " ";
+        } else {
+          line = testLine;
+        }
+      }
+      lines.push(line);
+
+      lines.forEach((l, i) => {
+        ctx.fillText(l.trim(), x, y + i * lineHeight);
+      });
+    };
+
+    wrapText(name, startX, startY, maxWidth, lineHeight);
 
     setCertificateLoading(false);
     setCertificateReady(true);
@@ -306,17 +369,50 @@ const ShalinaNigeriaFlagHosting = ({ projectData, projectId, ui }) => {
     if (doctorImgUrl) URL.revokeObjectURL(doctorImgUrl);
   };
 
-  const downloadCertificate = async() => {
-    setDownloadLaoding(true)
+  const downloadCertificate = async () => {
+    setDownloadLaoding(true);
     const canvas = canvasRef.current;
-    let downlaod = await Download(projectData,doctorHash,25,empHash)
-   
+    let downlaod = await Download(projectData, doctorHash, 25, empHash);
+
     const link = document.createElement("a");
     link.download = "certificate.png";
     link.href = canvas.toDataURL("image/png");
     link.click();
-    setDownloadLaoding(false)
+    setDownloadLaoding(false);
   };
+
+  // const shareCertificate = async () => {
+  //   const canvas = canvasRef.current;
+  //   if (!canvas) return;
+
+  //   canvas.toBlob(async (blob) => {
+  //     const file = new File([blob], "certificate.png", { type: "image/png" });
+
+  //     // 👉 Check if Web Share API with files is supported (mostly mobile)
+  //     if (navigator.canShare && navigator.canShare({ files: [file] })) {
+  //       try {
+  //         await navigator.share({
+  //           files: [file],
+  //           title: "Shalina Certificate",
+  //           text: "Here’s my certificate 🎉",
+  //         });
+  //         console.log("✅ Shared successfully with file");
+  //       } catch (err) {
+  //         console.error("❌ Share failed:", err);
+  //       }
+  //     } else {
+  //       // 👉 Desktop fallback: upload image, share link via WhatsApp Web
+  //       const imageUrl = canvas.toDataURL("image/png");
+
+  //       // ⚠️ Ideally: Upload imageUrl to your server and replace with real link
+  //       const text = encodeURIComponent(
+  //         "Here’s my certificate 🎉\n\nDownload/View here: " + imageUrl
+  //       );
+
+  //       window.open(`https://wa.me/?text=${text}`, "_blank");
+  //     }
+  //   });
+  // };
 
   const renderContent = () => {
     switch (stage) {
@@ -387,13 +483,11 @@ const ShalinaNigeriaFlagHosting = ({ projectData, projectId, ui }) => {
       case "paused":
         return (
           <div className="flex items-center justify-center min-h-screen bg-green-600 relative">
-            {/* Canvas stays visible - not hidden */}
             <canvas
               ref={canvasRef}
               className="max-w-full max-h-full object-contain shadow-2xl"
             />
 
-            {/* Pause button overlay on top of the video */}
             <div className="absolute inset-0 flex items-center justify-center">
               <button
                 onClick={resumeVideo}
@@ -420,13 +514,21 @@ const ShalinaNigeriaFlagHosting = ({ projectData, projectId, ui }) => {
             )}
 
             {!certificateLoading && certificateReady && (
-              <button
-                onClick={downloadCertificate}
-                className="mt-6 px-8 py-4 cursor-pointer bg-green-600 text-white rounded-lg text-lg font-bold hover:bg-green-700 transition-all duration-300 shadow-lg border-2 border-white transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
-                disabled={!certificateReady||downlaodLoading}
-              >
-                {downlaodLoading?"Downlaoding...":"Download Certificate"}
-              </button>
+              <div className="flex flex-col sm:flex-row gap-4 mt-6">
+                <button
+                  onClick={downloadCertificate}
+                  className="px-8 py-4 cursor-pointer bg-green-600 text-white rounded-lg text-lg font-bold hover:bg-green-700 transition-all duration-300 shadow-lg border-2 border-white transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={!certificateReady || downlaodLoading}
+                >
+                  {downlaodLoading ? "Downloading..." : "Download Certificate"}
+                </button>
+                {/* <button
+                  onClick={shareCertificate}
+                  className="px-8 py-4 cursor-pointer bg-blue-600 text-white rounded-lg text-lg font-bold hover:bg-blue-700 transition-all duration-300 shadow-lg border-2 border-white transform hover:scale-105"
+                >
+                  Share on WhatsApp
+                </button> */}
+              </div>
             )}
           </div>
         );

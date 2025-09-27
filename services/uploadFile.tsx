@@ -47,7 +47,7 @@ const s3 = new S3Client({
 
 async function GenerateFilePath(fileName: string, projectInfo: any) {
 
-  let doctorHash = DecryptData('doctorHash');
+  let doctorHash = localStorage.getItem("doctorHash")
 
   if (!doctorHash) {
     const employeeInfo = DecryptData("empData");

@@ -8,8 +8,6 @@ import { FaSpinner } from "react-icons/fa";
 import { convertOffsetToTimes, motion } from "framer-motion";
 import { DecryptData, EncryptData } from "@utils/cryptoUtils";
 import { SaveDoctors } from "@actions/user";
-import { IoChatboxOutline } from "react-icons/io5";
-import { MdCelebration } from "react-icons/md";
 
 extend({ Sprite, AnimatedSprite });
 
@@ -104,7 +102,8 @@ function ScratchCard({ projectData, projectId, ui }) {
     "scratch-card-zambia": {
       title: (
         <>
-          Decode the vaginal care {" "}<span className="text-yellow-200">with Gogynax</span>
+          Decode the vaginal care{" "}
+          <span className="text-yellow-200">with Gogynax</span>
         </>
       ),
       tagline: "Restores comfort and confidence",
@@ -123,7 +122,8 @@ function ScratchCard({ projectData, projectId, ui }) {
     "scratch-card-ghana": {
       title: (
         <>
-          Decode the vaginal care {" "}<span className="text-yellow-200">with Gogynax</span>
+          Decode the vaginal care{" "}
+          <span className="text-yellow-200">with Gogynax</span>
         </>
       ),
       tagline: "Restores comfort and confidence",
@@ -665,7 +665,8 @@ function ScratchCard({ projectData, projectId, ui }) {
   }, [showScratchCard, scratchImage]);
 
   const handleGoBack = async () => {
-    let formData = DecryptData("formData");
+    let doctorHash = localStorage.getItem("doctorHash");
+    let formData = DecryptData(`${doctorHash}-formData`);
     const endTime = Date.now();
     const durationMs = endTime - startTime;
     const durationMinutes = Number((durationMs / 60000).toFixed(2));
@@ -685,8 +686,8 @@ function ScratchCard({ projectData, projectId, ui }) {
     };
 
     localStorage.setItem("scratchCardDuration", durationMinutes);
-  
-    const save = await SaveDoctors(projectData, userInfo.hash, updatedformData);
+
+    await SaveDoctors(projectData, userInfo.hash, updatedformData);
 
     localStorage.removeItem("formData");
     router.push(`/${projectData?.project_hash}/homepage`);
@@ -874,7 +875,6 @@ function ScratchCard({ projectData, projectId, ui }) {
                             </p>
                           </div>
                         </div>
-                      
                       </div>
                     </div>
 

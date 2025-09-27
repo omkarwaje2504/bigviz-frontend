@@ -170,9 +170,15 @@ export const FetchDoctor = async (
 
 function mapFormDataToFields(formData: FormData, project: ProjectInfo) {
   return project?.config?.field?.map((field, index) => {
+    let value = formData[field.name] ?? field.default_value ?? "";
+
+    if (value === "Other" && formData?.[`other-${field.name}`]) {
+      value = formData[`other-${field.name}`];
+    }
+    console.log(value);
     return {
       id: field.id ?? index + 1,
-      value: formData[field.name] ?? field.default_value ?? "",
+      value: value,
     };
   });
 }
@@ -183,7 +189,10 @@ export const SaveDoctors = async (
   formData: any,
   doctorCode: string,
 ) => {
-  let prevData = DecryptData("prevData");
+  let prevData;
+  if (doctorCode) {
+    prevData = DecryptData(`${doctorCode}-prevData`);
+  }
 
   if (!projectData?.project_hash) {
     return {
@@ -212,9 +221,11 @@ export const SaveDoctors = async (
   }
 
   const fields = mapFormDataToFields(formData, projectData);
+
   const countryCode = projectData?.config?.doctor?.country_codes?.[0] || +91;
 
-  const trailingPath = "https://pub-0b6394cfeda24bf196c98e1746afe09b.r2.dev/production";
+  const trailingPath =
+    "https://pub-0b6394cfeda24bf196c98e1746afe09b.r2.dev/production";
   let photo = formData?.photo?.originalImage || "";
   if (photo.startsWith(trailingPath)) {
     photo = photo.replace(trailingPath, "");
@@ -224,14 +235,14 @@ export const SaveDoctors = async (
   if (cropped_image.startsWith(trailingPath)) {
     cropped_image = cropped_image.replace(trailingPath, "");
   }
-  let isEdit = DecryptData("isEdit")
-  
+  let isEdit = DecryptData("isEdit");
+
   try {
     let requestBody: any = {
       project_hash: projectData.project_hash,
       doctor_hash: doctorCode,
     };
-   
+
     let updatedformData = {
       ...formData,
       name: `${formData.prefix}. ${formData.name}`,
@@ -240,25 +251,60 @@ export const SaveDoctors = async (
     if (projectData?.config?.employee) {
       requestBody.employee_hash = employeeCode;
     }
-    
+
     if (
       prevData &&
-      JSON.stringify(prevData) === JSON.stringify(updatedformData) && isEdit
+      JSON.stringify(prevData) === JSON.stringify(updatedformData) &&
+      isEdit
     ) {
-     
       requestBody.doctor_hash = doctorCode;
       requestBody.name = `${formData?.prefix}. ${formData?.name}`;
     }
-    if(!isEdit && JSON.stringify(prevData) !== JSON.stringify(updatedformData) && projectData?.config?.doctor?.disable_mobile_number){
 
+    // If newUse  and formData has change and mobile number is disable
+    if (
+      !isEdit &&
+      JSON.stringify(prevData) !== JSON.stringify(updatedformData) &&
+      projectData?.config?.doctor?.disable_mobile_number
+    ) {
       requestBody = {
         ...requestBody,
         media: { images: photo, cropped_image },
         name: `${formData?.prefix}. ${formData?.name}`,
         fields,
       };
-    }if(isEdit && !projectData?.config?.doctor?.disable_mobile_number){
-   
+    }
+    // If edit and formData has change and mobile number is disable
+
+    if (
+      isEdit &&
+      JSON.stringify(prevData.photo) !==
+        JSON.stringify(updatedformData.photo) &&
+      projectData?.config?.doctor?.disable_mobile_number
+    ) {
+      requestBody = {
+        ...requestBody,
+        media: { images: photo, cropped_image },
+        name: `${formData?.prefix}. ${formData?.name}`,
+        fields,
+      };
+    }
+
+    if (
+      isEdit &&
+      JSON.stringify(prevData) !== JSON.stringify(updatedformData) &&
+      JSON.stringify(prevData.photo) ===
+        JSON.stringify(updatedformData.photo) &&
+      projectData?.config?.doctor?.disable_mobile_number
+    ) {
+      requestBody = {
+        ...requestBody,
+        name: `${formData?.prefix}. ${formData?.name}`,
+        fields,
+      };
+    }
+
+    if (isEdit && !projectData?.config?.doctor?.disable_mobile_number) {
       requestBody = {
         ...requestBody,
         name: `${formData?.prefix}. ${formData?.name}`,
@@ -266,15 +312,15 @@ export const SaveDoctors = async (
         fields,
       };
     }
-    if(isEdit && projectData?.config?.doctor?.disable_mobile_number){
- 
+    
+    if (isEdit && projectData?.config?.doctor?.disable_mobile_number) {
       requestBody = {
         ...requestBody,
         name: `${formData?.prefix}. ${formData?.name}`,
         fields,
       };
-    } if(!isEdit && !projectData?.config?.doctor?.disable_mobile_number) {
-
+    }
+    if (!isEdit && !projectData?.config?.doctor?.disable_mobile_number) {
       requestBody = {
         ...requestBody,
         media: { images: photo, cropped_image },
@@ -322,7 +368,11 @@ export const SaveDoctors = async (
   }
 };
 
- export const CheckMobile = async (projectData: ProjectInfo, mobile: string, employeeHash: string) => {
+export const CheckMobile = async (
+  projectData: ProjectInfo,
+  mobile: string,
+  employeeHash: string,
+) => {
   if (!projectData?.project_hash) {
     return {
       success: false,
@@ -342,9 +392,9 @@ export const SaveDoctors = async (
   if (!apiUrl) {
     throw new Error("API url is missing. Please check");
   }
-  
+
   const countryCode = projectData?.config?.doctor?.country_codes?.[0] || "+91";
-  
+
   try {
     const response = await fetch(`${apiUrl}/doctor/mobile/check`, {
       method: "POST",

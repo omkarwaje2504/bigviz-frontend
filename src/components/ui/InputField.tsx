@@ -11,6 +11,7 @@ import inputStyles from "styles/inputStyles";
 import UploadFile from "../../../services/uploadFile";
 import { CiFileOn } from "react-icons/ci";
 import { DecryptData } from "@utils/cryptoUtils";
+import { FormData } from "@utils/types";
 
 type ValidationRule = {
   regex?: RegExp;
@@ -45,6 +46,7 @@ type InputFieldProps = {
   validation?: ValidationRule;
   placeholder?: string;
   autoFocus?: boolean;
+  formData?: FormData;
   required?: boolean;
   disabled?: boolean;
   customError?: string;
@@ -93,6 +95,7 @@ const InputField: React.FC<InputFieldProps> = ({
   validation = {},
   placeholder = "",
   autoFocus = false,
+  formData,
   required = false,
   disabled = false,
   customError = "",
@@ -114,13 +117,17 @@ const InputField: React.FC<InputFieldProps> = ({
   const [uploading, setUploading] = useState(false);
   const [uploadedUrl, setUploadedUrl] = useState<string | null>(null);
   const [uploadError, setUploadError] = useState<string>("");
+  const [fileName, setFileName] = useState<string | null>(null); // 👈 new state
 
   useEffect(() => {
-    let fomrData = DecryptData("formData");
+    if (
+      formData?.photo &&
+      (formData?.photo?.croppedImage !== "" ||
+        formData?.photo?.croppedImage !== null)
+    ) {
+      setUploadedUrl(formData?.photo?.croppedImage);
 
-    if (fomrData?.file_upload !== "" || fomrData?.file_upload !== null) {
-      setUploadedUrl(fomrData?.file_upload);
-      setFileName(getFileNameFromUrl(fomrData?.file_upload));
+      setFileName(getFileNameFromUrl(formData?.photo?.croppedImage));
     }
   }, []);
 
@@ -176,11 +183,12 @@ const InputField: React.FC<InputFieldProps> = ({
     if (validation.maxLength && val.length > validation.maxLength) {
       return;
     }
-    const syntheticEvent = { ...e, target: { ...e.target, value: val } };
+    const syntheticEvent = {
+      ...e,
+      target: { ...e.target, name: e.target.name, value: val },
+    };
     onChange(syntheticEvent);
   };
-
-  const [fileName, setFileName] = useState<string | null>(null); // 👈 new state
 
   const handleFileChange = async (
     e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>,
@@ -436,6 +444,46 @@ const InputField: React.FC<InputFieldProps> = ({
               ))}
             </ul>
           )}
+          {normalizedOptions.find((option) => option.value === "Other") &&
+            value === "Other" && (
+              <div className="mt-2">
+                <label
+                  htmlFor={id}
+                  className={`
+                    ${inputStyles.label}
+                    ${label === "RxPad Pdf/File Upload" ? "text-xl font-bold text-gray-800 dark:text-white px-4" : ""}
+                  `}
+                >
+                  {required && <span className="text-red-500">*</span>} Add your
+                  own {label}
+                </label>
+
+                <input
+                  id={`other-${id}`}
+                  name={`other-${id}`}
+                  type="text"
+                  value={formData?.[`other-${id}`] || ""}
+                  onChange={(e) => {
+                    let val = e.target.value;
+                    setDetectChange(1);
+                    const syntheticEvent = {
+                      ...e,
+                      target: { ...e.target, name: e.target.name, value: val },
+                    };
+                    onChange(syntheticEvent);
+                  }}
+                  placeholder={placeholder}
+                  disabled={disabled}
+                  autoFocus={autoFocus}
+                  required={required}
+                  maxLength={maxLength}
+                  aria-invalid={!!errorMessage}
+                  className={`${inputStyles.baseInput} ${
+                    icon ? inputStyles.inputWithIcon : inputStyles.inputNoIcon
+                  } ${errorMessage ? inputStyles.ringError : inputStyles.ringDefault}`}
+                />
+              </div>
+            )}
         </div>
       ) : // TEXTAREA
       type === "textarea" ? (
@@ -576,26 +624,28 @@ const InputField: React.FC<InputFieldProps> = ({
               {icon}
             </div>
           )}
-       
-          {id === "name" && prefixOptions && !projectData?.config?.doctor?.disable_doctor_prefix && (
-            <select
-              id="prefix"
-              value={prefix || ""}
-              onChange={onPrefixChange}
-              disabled={disabled}
-              className={`${inputStyles.selectBase} ${
-                errorMessage
-                  ? inputStyles.selectErrorRing
-                  : inputStyles.selectDefaultRing
-              } !w-16 appearance-none`}
-            >
-              {prefixOptions.map((opt) => (
-                <option key={opt} value={opt}>
-                  {opt}
-                </option>
-              ))}
-            </select>
-          )}
+
+          {id === "name" &&
+            prefixOptions &&
+            !projectData?.config?.doctor?.disable_doctor_prefix && (
+              <select
+                id="prefix"
+                value={prefix || ""}
+                onChange={onPrefixChange}
+                disabled={disabled}
+                className={`${inputStyles.selectBase} ${
+                  errorMessage
+                    ? inputStyles.selectErrorRing
+                    : inputStyles.selectDefaultRing
+                } !w-16 appearance-none`}
+              >
+                {prefixOptions.map((opt) => (
+                  <option key={opt} value={opt}>
+                    {opt}
+                  </option>
+                ))}
+              </select>
+            )}
 
           <input
             id={id}

@@ -1,7 +1,7 @@
 "use client";
 import CryptoJS from "crypto-js";
 
-const SECRET_KEY = "aslcryywt6964897324bcw9@7439&*0#jbkhv5"; // keep this secure
+const SECRET_KEY = "aslcryywt6964897324bcw9@7439&*0#jbkhv5";
 
 export const EncryptData = (key, data) => {
   const encryptData = CryptoJS.AES.encrypt(
