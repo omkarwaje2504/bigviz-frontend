@@ -56,6 +56,7 @@ const HomePage = ({ projectData, projectId, ui }) => {
   useEffect(() => {
     RemoveData("videoUrl");
     RemoveData("videoGenerated");
+    RemoveData("doctorHash");
     const getUserInfo = DecryptData("empData");
     if (getUserInfo) {
       if (getUserInfo?.role !== 1) {
