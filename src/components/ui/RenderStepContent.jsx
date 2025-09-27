@@ -54,6 +54,7 @@ const RenderStepContent = ({
   setPhotoUploadStatus,
   setAudioUploadStatus,
   setValidationStatus,
+  doctorHash,
 }) => {
   const [audioName, setAudioName] = useState("");
   const dynamicFields = projectData?.config?.field || [];
@@ -63,8 +64,8 @@ const RenderStepContent = ({
   const isRxPadImage = projectData?.product_type === "RxPad" ? true : false;
   const [showMobileModal, setShowMobileModal] = useState(false);
   const [existingDoctor, setExistingDoctor] = useState(null);
-  const [mobileCheckMessage,setMobileCheckMessage] = useState()
-  const [useSameMobile,setUseSameMobile] = useState()
+  const [mobileCheckMessage, setMobileCheckMessage] = useState();
+  const [useSameMobile, setUseSameMobile] = useState();
 
   useEffect(() => {
     if (formData?.name?.length > 5) {
@@ -79,24 +80,27 @@ const RenderStepContent = ({
   const handleMobileCheck = async (mobile) => {
     try {
       let empdata = DecryptData("empData");
-      
+
       const result = await CheckMobile(projectData, mobile, empdata.hash);
 
-      if (  
+      if (
         result?.exists &&
         !result?.other_employee &&
         result?.message === "Doctor with this mobile already exists."
       ) {
         setExistingDoctor(result?.data);
-        setMobileCheckMessage("Doctor with this mobile number already exists. Do you want to use the same details or enter a new contact?")
-        setUseSameMobile(true)
+        setMobileCheckMessage(
+          "Doctor with this mobile number already exists. Do you want to use the same details or enter a new contact?",
+        );
+        setUseSameMobile(true);
         setShowMobileModal(true);
-      }else if( result?.exists &&
-        result?.other_employee ){
-          setExistingDoctor(result?.data);
-          setMobileCheckMessage("Doctor with this mobile number already exists for another employee.")
-          setUseSameMobile(false)
-          setShowMobileModal(true);
+      } else if (result?.exists && result?.other_employee) {
+        setExistingDoctor(result?.data);
+        setMobileCheckMessage(
+          "Doctor with this mobile number already exists for another employee.",
+        );
+        setUseSameMobile(false);
+        setShowMobileModal(true);
       }
     } catch (err) {
       MyError(err);
@@ -130,8 +134,8 @@ const RenderStepContent = ({
 
       setFormData(tempData);
 
-      EncryptData("prevData", tempData);
-      EncryptData("formData", tempData);
+      EncryptData(`${tempData.hash}-prevData`, tempData);
+      EncryptData(`${tempData.hash}-formData`, tempData);
     }
     setShowMobileModal(false);
   };
@@ -173,7 +177,6 @@ const RenderStepContent = ({
     }
     return [];
   };
-
   switch (currentStep) {
     case 1:
       return (
@@ -199,6 +202,7 @@ const RenderStepContent = ({
                   setFormData({ ...formData, prefix: e.target.value })
                 }
                 projectData={projectData}
+                doctorHash={doctorHash}
               />
             </div>
 
@@ -215,6 +219,7 @@ const RenderStepContent = ({
                       ? countryCode
                       : undefined
                   }
+                  doctorHash={doctorHash}
                   onChange={(e) => {
                     let val = e.target.value;
 
@@ -287,17 +292,30 @@ const RenderStepContent = ({
                 ui={ui}
                 projectData={projectData}
                 id={field.name}
+                doctorHash={doctorHash}
                 label={
                   field.display_name + (field.validations?.required ? " *" : "")
                 }
                 type={field.type}
+                formData={formData}
                 value={String(formData[field.name] ?? "")}
-                onChange={(e) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    [field.name]: e.target.value,
-                  }))
-                }
+                onChange={(e) => {
+                  if (
+                    field.type === "dropdown" &&
+                    formData?.[field.name] === "Other" &&
+                    e.target.name === `other-${field.name}`
+                  ) {
+                    setFormData((prev) => ({
+                      ...prev,
+                      [`other-${field.name}`]: e.target.value,
+                    }));
+                  } else {
+                    setFormData((prev) => ({
+                      ...prev,
+                      [field.name]: e.target.value,
+                    }));
+                  }
+                }}
                 required={field?.additional_config?.includes("is_required")}
                 placeholder={field.placeholder}
                 options={field.options || []}
@@ -332,16 +350,14 @@ const RenderStepContent = ({
                   >
                     New Contact
                   </button>
-                  {
-                    useSameMobile && (
-                      <button
-                        className="px-4 py-2 cursor-pointer bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-                        onClick={handleUseSameDoctor}
-                      >
-                        Use Same
-                      </button>
-                    )
-                  }
+                  {useSameMobile && (
+                    <button
+                      className="px-4 py-2 cursor-pointer bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                      onClick={handleUseSameDoctor}
+                    >
+                      Use Same
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
@@ -375,6 +391,7 @@ const RenderStepContent = ({
                       setPhotoUploadStatus={setPhotoUploadStatus}
                       formData={formData}
                       setFormData={setFormData}
+                      doctorHash={doctorHash}
                     />
                   )}
 
@@ -386,6 +403,7 @@ const RenderStepContent = ({
                           ui={ui}
                           projectData={projectData}
                           id={field.name}
+                          doctorHash={doctorHash}
                           label={
                             field.display_name +
                             (field.validations?.required ? " *" : "")

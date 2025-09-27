@@ -26,9 +26,10 @@ import {
   ApprovalLogic,
   RoleNames,
   MemberTableProps,
+  UserInfo,
 } from "utils/types";
 import { FaFilePrescription } from "react-icons/fa";
-import { EncryptData } from "@utils/cryptoUtils";
+import { DecryptData, EncryptData } from "@utils/cryptoUtils";
 import { GiGamepadCross } from "react-icons/gi";
 import Link from "next/link";
 
@@ -65,8 +66,17 @@ const MemberTable: React.FC<MemberTableProps> = ({
   const [memberToDisapprove, setMemberToDisapprove] = useState<Doctor | null>(
     null,
   );
-
+  const [empData, setempData] = useState<UserInfo>();
   const [isDark, setIsDark] = useState(false);
+
+  useEffect(() => {
+    if (projectData?.config?.employee) {
+      let empData = DecryptData("empData");
+      if (empData) {
+        setempData(empData);
+      }
+    }
+  }, []);
 
   useEffect(() => {
     const media = window.matchMedia("(prefers-color-scheme: dark)");
@@ -858,12 +868,12 @@ const MemberTable: React.FC<MemberTableProps> = ({
                     {!projectData?.config?.game && (
                       <span
                         className={`text-xs font-medium px-1 py-0.5 rounded ${
-                          member.download_url
+                          member.download_url || member.extras.video_url
                             ? "bg-green-500/20 text-green-600 dark:text-green-400"
                             : "bg-gray-500/20 text-gray-600 dark:text-gray-400"
                         }`}
                       >
-                        {member.download_url
+                        {member.download_url || member.extras.video_url
                           ? "Artwork Generated"
                           : "Artwork Pending"}
                       </span>
@@ -884,7 +894,7 @@ const MemberTable: React.FC<MemberTableProps> = ({
                 <div className="mt-2">
                   <div className="flex justify-between gap-2">
                     {projectData?.config?.doctor?.preview_enabled &&
-                      member.download_url && (
+                      (member.download_url || member.extras.video_url) && (
                         <button
                           className="w-full justify-center flex items-center space-x-1 text-xs text-white bg-blue-600 p-2 rounded-sm"
                           onClick={() => onPreview(member, "PREVIEW")}
@@ -896,7 +906,7 @@ const MemberTable: React.FC<MemberTableProps> = ({
                     {projectData?.config?.doctor &&
                       ui?.DoctorRegistrationForm?.HomeRedirection && (
                         <Link
-                          href={`https://platform.informatia.ai/${projectData?.project_hash}/game`}
+                          href={`https://platform.informatia.ai/${projectData?.project_hash}/game?dh=${member?.doctor_hash}&h=${empData?.hash}`}
                           target="_blank"
                           rel="noopener noreferrer"
                           style={{
@@ -913,8 +923,8 @@ const MemberTable: React.FC<MemberTableProps> = ({
                     {projectData?.config?.doctor &&
                       ui?.DoctorRegistrationForm?.HomeRedirection && (
                         <Link
-                          href={`https://wa.me/${`${member.mobile.replace(/^0/, "")}`}?text=${encodeURIComponent(
-                            `https://platform.informatia.ai/${projectData?.project_hash}/game`,
+                          href={`https://wa.me/${`${member?.mobile?.replace(/^0/, "")}`}?text=${encodeURIComponent(
+                            `https://platform.informatia.ai/${projectData?.project_hash}/game?dh=${member?.doctor_hash}&h=${empData?.hash}`,
                           )}`}
                           target="_blank"
                           rel="noopener noreferrer"

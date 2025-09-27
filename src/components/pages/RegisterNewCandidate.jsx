@@ -32,7 +32,6 @@ export default function RegisterNewCandidate({ projectData, projectId, ui }) {
   const [formData, setFormData] = useState({
     name: "",
     prefix: "Dr",
-    photo: null,
   });
   const [doctorHash, setDoctorHash] = useState(null);
   const [isDark, setIsDark] = useState(false);
@@ -50,10 +49,19 @@ export default function RegisterNewCandidate({ projectData, projectId, ui }) {
   }, []);
 
   useEffect(() => {
-    const gitFormData = DecryptData("formData");
+    const url = new URL(window.location.href);
+    const params = url.searchParams;
+    const dh = params.get("dh");
+    setDoctorHash(dh);
+
+    if (dh) {
+      setDoctorHash(dh);
+    }
+    const getFormData = DecryptData(`${dh}-formData`);
+
     const getUserInfo = DecryptData("empData");
-    if (gitFormData) {
-      setFormData(gitFormData);
+    if (getFormData) {
+      setFormData(getFormData);
     }
     if (getUserInfo) {
       setUserInfo({
@@ -64,36 +72,42 @@ export default function RegisterNewCandidate({ projectData, projectId, ui }) {
         hash: getUserInfo?.hash,
       });
     }
-
-    const storedDoctorHash = localStorage.getItem("doctorHash");
-    if (storedDoctorHash) {
-      setDoctorHash(storedDoctorHash);
-    }
   }, []);
 
   useEffect(() => {
+    const url = new URL(window.location.href);
+    const params = url.searchParams;
+    const dh = params.get("dh");
     if (formData) {
-      EncryptData("formData", formData);
+      EncryptData(`${dh}-formData`, formData);
     }
   }, [formData]);
 
   const handleSaveDoctor = async () => {
-    let doctorHash = DecryptData("doctorHash");
-    if (doctorHash) {
-      return true;
-    }
+    const url = new URL(window.location.href);
+    const params = url.searchParams;
+    const doctorHash = params.get("dh");
+
     setIsSaveLoading(true);
     try {
-      let doctorCode = DecryptData("doctorHash");
       const save = await SaveDoctors(
         projectData,
         userInfo?.hash,
         formData,
-        doctorCode,
+        doctorHash.includes("-new") ? null : doctorHash,
       );
       if (save.success) {
-        EncryptData("doctorHash", save.doctorHash);
+        localStorage.setItem("doctorHash", save.doctorHash);
         setDoctorHash(save.doctorHash);
+        localStorage.removeItem(`${doctorHash}-formData`);
+        localStorage.removeItem(`null-formData`);
+        EncryptData(`${save.doctorHash}-formData`);
+
+        const url = new URL(window.location.href);
+        const params = url.searchParams;
+        params.set("dh", save.doctorHash);
+        window.history.replaceState({}, "", url.toString());
+
         setIsSaveLoading(false);
         return true;
       } else {
@@ -111,11 +125,20 @@ export default function RegisterNewCandidate({ projectData, projectId, ui }) {
     }
   };
 
+  const handleExtraGameButton = async () => {
+    const url = new URL(window.location.href);
+    const params = url.searchParams;
+    const dh = params.get("dh");
+
+    router.push(
+      `https://platform.informatia.ai/${projectId}/game?dh=${dh}&h=${userInfo?.hash}`,
+    );
+  };
   const handleFormRedirection = async (e) => {
     e.preventDefault();
     setIsSubmitLoading(true);
     try {
-      let doctorCode = DecryptData("doctorHash");
+      let doctorCode = localStorage.getItem("doctorHash");
       const save = await SaveDoctors(
         projectData,
         userInfo.hash,
@@ -160,6 +183,7 @@ export default function RegisterNewCandidate({ projectData, projectId, ui }) {
       <ToastContainer position="bottom-center" autoClose={3000} />
 
       <Header
+        isHomePage={true}
         ui={ui}
         userInfo={userInfo}
         projectData={projectData}
@@ -168,26 +192,6 @@ export default function RegisterNewCandidate({ projectData, projectId, ui }) {
 
       <div className="container mx-auto px-4 py-3">
         <div className="max-w-3xl mx-auto">
-          <div className="flex gap-1">
-            {projectData?.config?.employee && (
-              <Link
-                className="text-xl font-bold flex gap-2 items-center text-gray-800 dark:text-white"
-                href={`/${projectId}/homepage`}
-              >
-                <IoArrowBackCircleSharp
-                  className="w-10 h-10"
-                  style={{ fill: ui?.basic?.secondaryColor || "white" }}
-                />
-              </Link>
-            )}
-            <h1 className="text-xl font-bold flex gap-2 items-center text-gray-800 dark:text-white">
-              {ui?.DoctorRegistrationForm?.FormHeading}
-            </h1>
-          </div>
-          <p className="text-gray-400 mb-4 text-sm md:text-md">
-            {ui?.DoctorRegistrationForm?.FormSubHeading}
-          </p>
-
           <RenderStepIndicator
             projectData={projectData}
             currentStep={currentStep}
@@ -217,6 +221,7 @@ export default function RegisterNewCandidate({ projectData, projectId, ui }) {
               isSubmitLoading={isSubmitLoading}
               onSaveDoctor={handleSaveDoctor}
               isSaveLoading={isSaveLoading}
+              handleExtraGameButton={handleExtraGameButton}
             />
           </form>
         </div>

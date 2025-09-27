@@ -15,9 +15,12 @@ import {
   FaSyncAlt,
   FaSave,
   FaSlidersH,
+  FaBackward,
+  FaEdit,
 } from "react-icons/fa";
 import Button from "./Button";
 import UploadFile from "@services/uploadFile";
+import { FaCamera } from "react-icons/fa6";
 
 const getPhotoDims = (projectData) => {
   try {
@@ -31,6 +34,7 @@ const getPhotoDims = (projectData) => {
 };
 
 export default function PhotoUploadEditor({
+  doctorHash,
   ui,
   projectData,
   setPhotoUploadStatus,
@@ -72,7 +76,7 @@ export default function PhotoUploadEditor({
       if (currentImageData?.croppedImage) {
         setIsCropperLoading(true);
         try {
-          const response = await fetch(currentImageData.croppedImage, {
+          const response = await fetch(currentImageData?.croppedImage, {
             cache: "no-store",
           });
           const blob = await response.blob();
@@ -80,7 +84,7 @@ export default function PhotoUploadEditor({
 
           setImage({
             src: objectURL,
-            type: blob.type || "image/png",
+            type: blob.type || "image/jpg",
           });
         } catch (err) {
           console.error("Failed to load cropped image:", err);
@@ -89,16 +93,18 @@ export default function PhotoUploadEditor({
       } else {
         setIsCropperLoading(true);
         try {
-          const response = await fetch(currentImageData.originalImage, {
-            cache: "no-store",
-          });
-          const blob = await response.blob();
-          const objectURL = URL.createObjectURL(blob);
+          if (currentImageData?.originalImage) {
+            const response = await fetch(currentImageData?.originalImage, {
+              cache: "no-store",
+            });
+            const blob = await response.blob();
+            const objectURL = URL.createObjectURL(blob);
 
-          setImage({
-            src: objectURL,
-            type: blob.type || "image/png",
-          });
+            setImage({
+              src: objectURL,
+              type: blob.type || "image/jpg",
+            });
+          }
         } catch (err) {
           console.error("Failed to load cropped image:", err);
           setIsCropperLoading(false);
@@ -111,7 +117,7 @@ export default function PhotoUploadEditor({
     if (currentImageData?.originalImage) {
       const fetchAndConvertToBlob = async () => {
         try {
-          const response = await fetch(currentImageData.originalImage, {
+          const response = await fetch(currentImageData?.originalImage, {
             cache: "no-store",
           });
           const blob = await response.blob();
@@ -193,8 +199,8 @@ export default function PhotoUploadEditor({
   };
 
   const toggleCropMode = () => {
-    setEditMode((prev) => (prev === "crop" ? null : null));
     setUnsavedChanges(true);
+    setEditMode((prev) => (prev === "crop" ? null : "crop"));
   };
 
   const handleRemoveImage = () => {
@@ -230,8 +236,9 @@ export default function PhotoUploadEditor({
       const size = Math.max(imgElement.naturalWidth, imgElement.naturalHeight);
       tempCanvas.width = size;
       tempCanvas.height = size;
-
-      ctx.clearRect(0, 0, size, size);
+      // 🟢 Fill background with white
+      ctx.fillStyle = "white";
+      ctx.fillRect(0, 0, size, size);
       ctx.save();
       ctx.translate(size / 2, size / 2);
       ctx.rotate((rotation * Math.PI) / 180);
@@ -255,12 +262,13 @@ export default function PhotoUploadEditor({
 
     if (canvas) {
       const now = new Date();
-      const blobName = `image-${now.toLocaleString("en-GB").replace(/[/, ]/g, "_").replace(/:/g, "-")}.png`;
+      const blobName = `image-${now.toLocaleString("en-GB").replace(/[/, ]/g, "_").replace(/:/g, "-")}.jpg`;
       const dataUrl = canvas.toDataURL("image");
       const imageBlob = dataURLToBlob(dataUrl);
       let uploadedCroppedFileUrl;
       if (!projectData?.config?.doctor?.disable_photo_cropper) {
         uploadedCroppedFileUrl = await UploadFile(
+          doctorHash,
           projectData,
           imageBlob,
           `cropped_${blobName}`,
@@ -268,6 +276,7 @@ export default function PhotoUploadEditor({
         );
       }
       const uploadedOriginalFileUrl = await UploadFile(
+        doctorHash,
         projectData,
         originalFile,
         `original_${blobName}`,
@@ -320,274 +329,373 @@ export default function PhotoUploadEditor({
       />
 
       {!image ? (
-        <div
-          className="relative border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-8 text-center h-80 flex flex-col items-center justify-center cursor-pointer"
-          onClick={onUpload}
-          onDragOver={(e) => e.preventDefault()}
-          onDrop={(e) => {
-            e.preventDefault();
-            const file = e.dataTransfer.files?.[0];
-            if (file) {
-              onLoadImage({
-                target: { files: [file] },
-                preventDefault: () => {},
-              });
-            }
-          }}
-        >
-          <div className="text-gray-400 mb-4 bg-gray-100 dark:bg-gray-800 p-4 rounded-full">
-            <FaRegImage size={48} />
-          </div>
-          <p className="text-gray-600 dark:text-gray-300 mb-4 text-lg">
-            Drag and drop your {isRxPadImage ? "RxPad image" : "photo"} here, or
-            click to browse
-          </p>
-          <p className="text-gray-400 dark:text-gray-500 mb-6 text-sm">
-            Supported formats: JPG, PNG, WEBP
-          </p>
-        </div>
-      ) : (
-        <div className="space-y-4">
-          {/* 🔹 Toolbar */}
-          <div className="bg-gray-100 dark:bg-gray-800 rounded-lg p-4 flex flex-wrap gap-4 justify-between items-center">
-            <div className="flex flex-wrap gap-1">
-              <button
-                type="button"
-                onClick={() => rotateImage(1)}
-                className="bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 p-2 rounded-lg text-gray-900 dark:text-white"
-                title="Rotate"
-              >
-                <FaRedo size={20} />
-              </button>
-              <button
-                type="button"
-                onClick={() => handleZoom(1)}
-                className="bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 p-2 rounded-lg text-gray-900 dark:text-white"
-                title="Zoom In"
-              >
-                <FaSearchPlus size={20} />
-              </button>
-              <button
-                type="button"
-                onClick={() => handleZoom(-1)}
-                className="bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 p-2 rounded-lg text-gray-900 dark:text-white"
-                title="Zoom Out"
-              >
-                <FaSearchMinus size={20} />
-              </button>
-              <button
-                type="button"
-                onClick={toggleCropMode}
-                className={`p-2 rounded-lg text-gray-900 dark:text-white ${
-                  editMode === "crop"
-                    ? "bg-red-500 hover:bg-red-600"
-                    : "bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600"
-                }`}
-                title="Crop"
-              >
-                <FaCrop size={20} />
-              </button>
+        <>
+          <label
+            htmlFor="fileUploadCamera"
+            style={{
+              background: ui.basic.primaryColor,
+              color: ui.basic.primaryText,
+            }}
+            className="group relative flex justify-center items-center gap-2 py-3 px-4 border border-transparent text-md font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 transition"
+          >
+            <FaCamera />
+            Open Camera
+          </label>
 
-              {/* 🔹 Filters */}
-              <div className="relative inline-block">
-                <button
-                  type="button"
-                  onClick={() =>
-                    setEditMode((prev) => (prev === "filter" ? null : "filter"))
-                  }
-                  className={`p-2 rounded-lg text-gray-900 dark:text-white ${
-                    editMode === "filter"
-                      ? "bg-red-500 hover:bg-red-600"
-                      : "bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600"
-                  }`}
-                  title="Filters"
-                >
-                  <FaSlidersH size={20} />
-                </button>
-                {editMode === "filter" && (
-                  <div className="absolute top-full left-0 mt-2 bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4 z-50 w-64">
-                    <h3 className="text-gray-900 dark:text-white font-medium mb-2">
-                      Adjust Filters
-                    </h3>
-                    <div className="mb-2">
-                      <label className="text-gray-700 dark:text-gray-300 text-sm">
-                        Contrast: {contrast}%
-                      </label>
-                      <input
-                        type="range"
-                        min="50"
-                        max="200"
-                        value={contrast}
-                        onChange={(e) => setContrast(e.target.value)}
-                        className="w-full"
-                      />
-                    </div>
-                    <div className="mb-2">
-                      <label className="text-gray-700 dark:text-gray-300 text-sm">
-                        Brightness: {brightness}%
-                      </label>
-                      <input
-                        type="range"
-                        min="50"
-                        max="200"
-                        value={brightness}
-                        onChange={(e) => setBrightness(e.target.value)}
-                        className="w-full"
-                      />
-                    </div>
-                    <div className="mb-2">
-                      <label className="text-gray-700 dark:text-gray-300 text-sm">
-                        Saturation: {saturate}%
-                      </label>
-                      <input
-                        type="range"
-                        min="50"
-                        max="200"
-                        value={saturate}
-                        onChange={(e) => setSaturate(e.target.value)}
-                        className="w-full"
-                      />
-                    </div>
+          <input
+            id="fileUploadCamera"
+            type="file"
+            accept="image/*"
+            capture="environment"
+            className="hidden"
+            onChange={(e) => {
+              e.preventDefault();
+              const file = e.target.files?.[0];
+              if (file) {
+                onLoadImage({
+                  target: { files: [file] },
+                  preventDefault: () => {},
+                });
+              }
+            }}
+          />
+          <div
+            className="relative border-2 mt-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-8 text-center h-80 flex flex-col items-center justify-center cursor-pointer"
+            onClick={onUpload}
+            onDragOver={(e) => e.preventDefault()}
+            onDrop={(e) => {
+              e.preventDefault();
+              const file = e.dataTransfer.files?.[0];
+              if (file) {
+                onLoadImage({
+                  target: { files: [file] },
+                  preventDefault: () => {},
+                });
+              }
+            }}
+          >
+            <div className="text-gray-400 mb-4 bg-gray-100 dark:bg-gray-800 p-4 rounded-full">
+              <FaRegImage size={48} />
+            </div>
+            <p className="text-gray-600 dark:text-gray-300 mb-4 text-lg">
+              {" "}
+              {projectData?.project_hash === "j02y1r2m"
+                ? "choose photo from gallery or take a photo on the spot from phone"
+                : isRxPadImage
+                  ? "Drag and drop your RxPad image here, or click to browse"
+                  : "Drag and drop your photo here, or click to browse"}{" "}
+            </p>
+
+            <p className="text-gray-400 dark:text-gray-500 mb-6 text-sm">
+              Supported formats:{" "}
+              {projectData?.project_hash === "j02y1r2m"
+                ? "PDF, JPG, PNG"
+                : "JPG, PNG, WEBP"}
+            </p>
+          </div>
+        </>
+      ) : (
+        <>
+          {unsavedChanges ? (
+            <div className="space-y-4 fixed top-0 left-0 w-full h-full p-4 bg-black/40">
+              {/* 🔹 Toolbar */}
+              <div className="bg-gray-100 dark:bg-gray-800 rounded-lg p-4 flex flex-wrap gap-4 justify-between items-center">
+                <div className="flex flex-wrap gap-1">
+                  <button
+                    type="button"
+                    onClick={() => rotateImage(1)}
+                    className="bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 p-2 rounded-lg text-gray-900 dark:text-white"
+                    title="Rotate"
+                  >
+                    <FaRedo size={20} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleZoom(1)}
+                    className="bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 p-2 rounded-lg text-gray-900 dark:text-white"
+                    title="Zoom In"
+                  >
+                    <FaSearchPlus size={20} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleZoom(-1)}
+                    className="bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 p-2 rounded-lg text-gray-900 dark:text-white"
+                    title="Zoom Out"
+                  >
+                    <FaSearchMinus size={20} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={toggleCropMode}
+                    className={`p-2 rounded-lg text-gray-900 dark:text-white ${
+                      editMode === "crop"
+                        ? "bg-red-500 hover:bg-red-600"
+                        : "bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600"
+                    }`}
+                    title="Crop"
+                  >
+                    <FaCrop size={20} />
+                  </button>
+
+                  {/* 🔹 Filters */}
+                  <div className="relative inline-block">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setEditMode((prev) =>
+                          prev === "filter" ? null : "filter",
+                        )
+                      }
+                      className={`p-2 rounded-lg text-gray-900 dark:text-white ${
+                        editMode === "filter"
+                          ? "bg-red-500 hover:bg-red-600"
+                          : "bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600"
+                      }`}
+                      title="Filters"
+                    >
+                      <FaSlidersH size={20} />
+                    </button>
+                    {editMode === "filter" && (
+                      <div className="absolute top-full left-0 mt-2 bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4 z-50 w-64">
+                        <h3 className="text-gray-900 dark:text-white font-medium mb-2">
+                          Adjust Filters
+                        </h3>
+                        <div className="mb-2">
+                          <label className="text-gray-700 dark:text-gray-300 text-sm">
+                            Contrast: {contrast}%
+                          </label>
+                          <input
+                            type="range"
+                            min="50"
+                            max="200"
+                            value={contrast}
+                            onChange={(e) => setContrast(e.target.value)}
+                            className="w-full"
+                          />
+                        </div>
+                        <div className="mb-2">
+                          <label className="text-gray-700 dark:text-gray-300 text-sm">
+                            Brightness: {brightness}%
+                          </label>
+                          <input
+                            type="range"
+                            min="50"
+                            max="200"
+                            value={brightness}
+                            onChange={(e) => setBrightness(e.target.value)}
+                            className="w-full"
+                          />
+                        </div>
+                        <div className="mb-2">
+                          <label className="text-gray-700 dark:text-gray-300 text-sm">
+                            Saturation: {saturate}%
+                          </label>
+                          <input
+                            type="range"
+                            min="50"
+                            max="200"
+                            value={saturate}
+                            onChange={(e) => setSaturate(e.target.value)}
+                            className="w-full"
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* 🔹 Reset / Remove (mobile) */}
+                  <button
+                    type="button"
+                    onClick={resetEdits}
+                    className="bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 p-2 rounded-lg text-gray-900 dark:text-white md:hidden"
+                    title="Reset Edits"
+                  >
+                    <FaSyncAlt size={20} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleRemoveImage}
+                    className="bg-red-500 hover:bg-red-600 p-2 rounded-lg text-white md:hidden"
+                    title="Remove Image"
+                  >
+                    <FaTrashAlt size={20} />
+                  </button>
+                </div>
+
+                {/* 🔹 Reset / Remove (desktop) */}
+                <div className="gap-3 hidden md:flex">
+                  <button
+                    type="button"
+                    onClick={resetEdits}
+                    className="bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 p-2 rounded-lg text-gray-900 dark:text-white"
+                    title="Reset Edits"
+                  >
+                    <FaSyncAlt size={20} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleRemoveImage}
+                    className="bg-red-500 hover:bg-red-600 p-2 rounded-lg text-white"
+                    title="Remove Image"
+                  >
+                    <FaTrashAlt size={20} />
+                  </button>
+                </div>
+              </div>
+
+              {/* 🔹 Image Preview */}
+              <div className="relative bg-gray-100 dark:bg-gray-800 rounded-lg overflow-hidden flex items-center justify-center h-80">
+                {isCropperLoading && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-gray-200 dark:bg-gray-900 bg-opacity-70 z-50">
+                    <FaSyncAlt className="animate-spin text-gray-800 dark:text-white text-3xl" />
+                  </div>
+                )}
+
+                {isSaving && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-60 z-50">
+                    <FaSyncAlt className="animate-spin text-white text-3xl" />
+                    <span className="ml-3 text-white font-medium">
+                      Saving...
+                    </span>
+                  </div>
+                )}
+
+                <canvas
+                  id="preview-bg"
+                  className="absolute inset-0 w-full h-full bg-white"
+                ></canvas>
+
+                {image?.src && (
+                  <img
+                    ref={imageRef}
+                    src={image?.src || image}
+                    alt="Preview"
+                    className="max-h-80 transition-all duration-200"
+                    onLoad={() => setIsCropperLoading(false)}
+                    onError={() => setIsCropperLoading(false)}
+                    style={{
+                      transform: `rotate(${rotation}deg) scale(${zoom})`,
+                      transformOrigin: "center",
+                      ...currentFilterStyle,
+                      marginLeft: `${position.x}px`,
+                      marginTop: `${position.y}px`,
+                    }}
+                  />
+                )}
+                {editMode === "crop" && (
+                  <div className="absolute inset-0 h-full bg-white flex items-center justify-center w-full">
+                    <Cropper
+                      ref={cropperRef}
+                      src={image?.src}
+                      stencilComponent={RectangleStencil}
+                      stencilProps={{
+                        stencilSize: { width: cropWidth, height: cropHeight },
+                        movable: true,
+                        resizable: true,
+                      }}
+                      aspectRatio={ratio}
+                      imageClassName="cropper-image"
+                      className="cropper w-full h-full"
+                      backgroundClassName="cropper-bg"
+                      canvas={true}
+                      checkOrientation={true}
+                      imageRestriction="stencil"
+                      priority="coordinates"
+                      transformImage={{ adjustStencil: true }}
+                      transitions={true}
+                    />
                   </div>
                 )}
               </div>
 
-              {/* 🔹 Reset / Remove (mobile) */}
-              <button
-                type="button"
-                onClick={resetEdits}
-                className="bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 p-2 rounded-lg text-gray-900 dark:text-white md:hidden"
-                title="Reset Edits"
-              >
-                <FaSyncAlt size={20} />
-              </button>
-              <button
-                type="button"
-                onClick={handleRemoveImage}
-                className="bg-red-500 hover:bg-red-600 p-2 rounded-lg text-white md:hidden"
-                title="Remove Image"
-              >
-                <FaTrashAlt size={20} />
-              </button>
-            </div>
+              {/* 🔹 Footer */}
+              <div className="bg-gray-100 dark:bg-gray-800 rounded-lg p-4 flex flex-col md:flex-row justify-between items-center gap-3">
+                <div className="text-gray-800 dark:text-white w-full md:w-auto overflow-hidden">
+                  <p className="text-sm text-gray-500 dark:text-gray-400 truncate max-w-full">
+                    Filename: {filename}
+                  </p>
+                  <div className="flex flex-wrap items-center mt-1 text-sm text-gray-700 dark:text-gray-300">
+                    <span className="mr-2">Zoom: {zoom.toFixed(1)}x</span>
+                    <span>Rotation: {rotation}°</span>
+                  </div>
+                </div>
 
-            {/* 🔹 Reset / Remove (desktop) */}
-            <div className="gap-3 hidden md:flex">
-              <button
-                type="button"
-                onClick={resetEdits}
-                className="bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 p-2 rounded-lg text-gray-900 dark:text-white"
-                title="Reset Edits"
-              >
-                <FaSyncAlt size={20} />
-              </button>
-              <button
-                type="button"
-                onClick={handleRemoveImage}
-                className="bg-red-500 hover:bg-red-600 p-2 rounded-lg text-white"
-                title="Remove Image"
-              >
-                <FaTrashAlt size={20} />
-              </button>
-            </div>
-          </div>
-
-          {/* 🔹 Image Preview */}
-          <div className="relative bg-gray-100 dark:bg-gray-800 rounded-lg overflow-hidden flex items-center justify-center h-80">
-            {isCropperLoading && (
-              <div className="absolute inset-0 flex items-center justify-center bg-gray-200 dark:bg-gray-900 bg-opacity-70 z-50">
-                <FaSyncAlt className="animate-spin text-gray-800 dark:text-white text-3xl" />
-              </div>
-            )}
-
-            {isSaving && (
-              <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-60 z-50">
-                <FaSyncAlt className="animate-spin text-white text-3xl" />
-                <span className="ml-3 text-white font-medium">Saving...</span>
-              </div>
-            )}
-
-            {image?.src && (
-              <img
-                ref={imageRef}
-                src={image?.src || image}
-                alt="Preview"
-                className="max-h-80 transition-all duration-200"
-                onLoad={() => setIsCropperLoading(false)}
-                onError={() => setIsCropperLoading(false)}
-                style={{
-                  transform: `rotate(${rotation}deg) scale(${zoom})`,
-                  transformOrigin: "center",
-                  ...currentFilterStyle,
-                  marginLeft: `${position.x}px`,
-                  marginTop: `${position.y}px`,
-                }}
-              />
-            )}
-
-            {editMode === "crop" && (
-              <div className="absolute inset-0">
-                <Cropper
-                  ref={cropperRef}
-                  src={image?.src}
-                  stencilComponent={RectangleStencil}
-                  stencilProps={{
-                    stencilSize: { width: cropWidth, height: cropHeight },
-                    movable: true,
-                    resizable: true,
-                  }}
-                  aspectRatio={ratio}
-                  imageClassName="cropper-image"
-                  className="cropper"
-                  backgroundClassName="cropper-bg"
-                  canvas={true}
-                  checkOrientation={true}
-                  imageRestriction="stencil"
-                  priority="coordinates"
-                  transformImage={{ adjustStencil: true }}
-                  transitions={true}
-                />
-              </div>
-            )}
-          </div>
-
-          {/* 🔹 Footer */}
-          <div className="bg-gray-100 dark:bg-gray-800 rounded-lg p-4 flex flex-col md:flex-row justify-between items-center gap-3">
-            <div className="text-gray-800 dark:text-white w-full md:w-auto overflow-hidden">
-              <p className="text-sm text-gray-500 dark:text-gray-400 truncate max-w-full">
-                Filename: {filename}
-              </p>
-              <div className="flex flex-wrap items-center mt-1 text-sm text-gray-700 dark:text-gray-300">
-                <span className="mr-2">Zoom: {zoom.toFixed(1)}x</span>
-                <span>Rotation: {rotation}°</span>
+                <div className="flex flex-col items-center md:items-end w-full md:w-auto">
+                  <Button
+                    ui={ui}
+                    type="button"
+                    fullWidth={false}
+                    leftIcon={
+                      isSaving ? (
+                        <FaSyncAlt className="animate-spin mr-2" />
+                      ) : (
+                        <FaSave size={20} className="mr-2" />
+                      )
+                    }
+                    onClick={saveCroppedImage}
+                    disabled={isSaving}
+                  >
+                    {isSaving ? "Saving..." : "Save Changes"}
+                  </Button>
+                  {unsavedChanges && (
+                    <p className="text-yellow-500 text-xs mt-1 text-center">
+                      Unsaved Changes
+                    </p>
+                  )}
+                </div>
               </div>
             </div>
+          ) : (
+            <div className="space-y-4">
+              {/* 🔹 Toolbar */}
+              <div className="bg-gray-100 dark:bg-gray-800 rounded-lg p-4 flex flex-wrap gap-4 justify-between items-center">
+                <button
+                  type="button"
+                  onClick={toggleCropMode}
+                  className={`p-2 rounded-lg w-full justify-center text-gray-900 dark:text-white flex items-center gap-2 font-semibold bg-red-500 hover:bg-red-600`}
+                  title="Crop"
+                >
+                  <FaEdit size={20} /> ReEdit
+                </button>
+              </div>
 
-            <div className="flex flex-col items-center md:items-end w-full md:w-auto">
-              <Button
-                ui={ui}
-                type="button"
-                fullWidth={false}
-                leftIcon={
-                  isSaving ? (
-                    <FaSyncAlt className="animate-spin mr-2" />
-                  ) : (
-                    <FaSave size={20} className="mr-2" />
-                  )
-                }
-                onClick={saveCroppedImage}
-                disabled={isSaving}
-              >
-                {isSaving ? "Saving..." : "Save Changes"}
-              </Button>
-              {unsavedChanges && (
-                <p className="text-yellow-500 text-xs mt-1 text-center">
-                  Unsaved Changes
-                </p>
-              )}
+              {/* 🔹 Image Preview */}
+              <div className="relative bg-gray-100 dark:bg-gray-800 rounded-lg overflow-hidden flex items-center justify-center h-80">
+                {image?.src && (
+                  <img
+                    ref={imageRef}
+                    src={image?.src || image}
+                    alt="Preview"
+                    className="max-h-80 transition-all duration-200"
+                    onLoad={() => setIsCropperLoading(false)}
+                    onError={() => setIsCropperLoading(false)}
+                    style={{
+                      transform: `rotate(${rotation}deg) scale(${zoom})`,
+                      transformOrigin: "center",
+                      ...currentFilterStyle,
+                      marginLeft: `${position.x}px`,
+                      marginTop: `${position.y}px`,
+                    }}
+                  />
+                )}
+              </div>
+
+              {/* 🔹 Footer */}
+              <div className="bg-gray-100 dark:bg-gray-800 rounded-lg p-4 flex flex-col md:flex-row justify-between items-center gap-3">
+                <div className="text-gray-800 dark:text-white w-full md:w-auto overflow-hidden">
+                  <p className="text-sm text-gray-500 dark:text-gray-400 truncate max-w-full">
+                    Filename: {filename}
+                  </p>
+                  <div className="flex flex-wrap items-center mt-1 text-sm text-gray-700 dark:text-gray-300">
+                    <span className="mr-2">Zoom: {zoom.toFixed(1)}x</span>
+                    <span>Rotation: {rotation}°</span>
+                  </div>
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
+          )}
+        </>
       )}
     </div>
   );
@@ -595,7 +703,7 @@ export default function PhotoUploadEditor({
 
 function dataURLToBlob(dataUrl) {
   const [header, base64] = dataUrl.split(",");
-  const mime = header.match(/:(.*?);/)?.[1] || "image/png";
+  const mime = header.match(/:(.*?);/)?.[1] || "image/jpg";
   const binary = atob(base64);
   const array = new Uint8Array(binary.length);
   for (let i = 0; i < binary.length; i++) array[i] = binary.charCodeAt(i);

@@ -11,6 +11,7 @@ const FormNavigationButtons = ({
   projectData,
   isSubmitLoading,
   onSaveDoctor,
+  handleExtraGameButton
 }) => {
   const projectType = projectData?.product_type;
   const disablePhotoUpload = projectData?.config?.doctor?.disable_photo_upload;
@@ -52,8 +53,10 @@ const FormNavigationButtons = ({
     (currentStep === 3 && projectType !== "Evideo");
 
   const handleNext = async () => {
+    console.log(currentStep);
     if (currentStep === 1) {
       const success = await onSaveDoctor();
+      console.log(success);
       if (!success) {
         return;
       }
@@ -71,12 +74,12 @@ const FormNavigationButtons = ({
   };
 
   return (
-    <div className="mt-8 flex justify-between">
+    <div className="mt-8 flex flex-wrap justify-between">
       {currentStep > 1 && currentStep !== 99 && (
         <button
           type="button"
           onClick={handleBack}
-          className="flex items-center bg-gray-700 hover:bg-gray-600 text-white py-2 px-4 rounded"
+          className="flex items-center bg-gray-700 hover:bg-gray-600 text-white py-2 px-4 rounded h-fit"
         >
           <FaChevronLeft size={16} className="mr-1" />
           Back
@@ -93,6 +96,26 @@ const FormNavigationButtons = ({
           <FaChevronRight size={16} className="ml-1" />
         </button>
       )}
+      <div className="md:flex gap-2">
+
+    
+      {
+       ui?.DoctorRegistrationForm?.HomeRedirection &&  isLastStepForProject &&
+        <button
+          type="button"
+          onClick={handleExtraGameButton}
+          className="flex items-center ml-auto bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded mb-2"
+          disabled={isSubmitLoading}
+        >
+         Start Flag Hosting
+          {isSubmitLoading ? (
+            <FaSpinner className="gap-2 w-4 h-4 animate-spin fill-white" />
+          ) : (
+            <FaChevronRight size={16} className="ml-1" />
+          )}
+        </button>
+
+      }
 
       {isLastStepForProject && (
         <button
@@ -108,6 +131,7 @@ const FormNavigationButtons = ({
           )}
         </button>
       )}
+        </div>
     </div>
   );
 };
