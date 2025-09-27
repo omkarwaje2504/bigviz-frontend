@@ -79,6 +79,8 @@ const UploadFile = async (
 
   const filePath = await GenerateFilePath(fileName, projectData);
 
+  console.log(filePath)
+
   let buffer: Buffer;
   if (file instanceof Blob) {
     const arrayBuffer = await file.arrayBuffer();
@@ -88,21 +90,45 @@ const UploadFile = async (
   } else {
     throw new Error("Unsupported file type");
   }
+  const uploadUrl = new URL("https://odd-shadow-b47f.rohansakhale-d48.workers.dev");
+  uploadUrl.searchParams.set("filename", filePath);
+  
+  const fileBlob = new Blob([buffer], { type: contentType });
 
-  const command = new PutObjectCommand({
-    Bucket: bucketName,
-    Key: filePath,
-    Body: buffer,
-    ACL: "public-read",
-    ContentType: contentType,
-    CacheControl: "public, max-age=31536000",
-    Metadata: {
-      "Access-Control-Allow-Origin": "*",
-    },
-  });
+  try {
+    const response = await fetch(uploadUrl.toString(), {
+      method: "POST",
+      headers: {
+        "Content-Type": contentType,
+        ...(contentType === "application/pdf" && {
+          "Content-Disposition": "inline",
+        }),
+      },
+      body: fileBlob,
+    });
 
-  await s3.send(command);
-  return createS3Url({ name: filePath });
+    if (!response.ok) {
+      throw new Error(
+        `Upload failed: ${response.status} ${response.statusText}`
+      );
+    }
+
+    const result = await response.json();
+
+    if (!result.success) {
+      throw new Error("Upload was not successful");
+    }
+
+    return createS3Url({ name: filePath });
+  } catch (error) {
+    console.error("Upload error:", error);
+    throw new Error(
+      `Failed to upload file: ${
+        error instanceof Error ? error.message : String(error)
+      }`
+    );
+  }
+
 };
 
 
