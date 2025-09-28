@@ -86,6 +86,8 @@ const HomePage = ({ projectData, projectId, ui }) => {
       router.push(`/${projectId}`);
     }
     RemoveData("doctorHash");
+    RemoveData("videoGenerated");
+    RemoveData("videoUrl");
     getMembers(getUserInfo);
   }, []);
 

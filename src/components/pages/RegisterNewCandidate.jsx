@@ -1,7 +1,7 @@
 "use client";
 import Footer from "@components/ui/Footer";
 import Header from "@components/ui/Header";
-import { DecryptData, EncryptData } from "@utils/cryptoUtils";
+import { DecryptData, EncryptData, RemoveData } from "@utils/cryptoUtils";
 import FormNavigationButtons from "@components/ui/FormNavigationButtons";
 import RenderStepContent from "@components/ui/RenderStepContent";
 import RenderStepIndicator from "@components/ui/RenderStepIndicator";
@@ -49,6 +49,8 @@ export default function RegisterNewCandidate({ projectData, projectId, ui }) {
   }, []);
 
   useEffect(() => {
+    RemoveData("videoGenerated");
+    RemoveData("videoUrl");
     const url = new URL(window.location.href);
     const params = url.searchParams;
     const dh = params.get("dh");
@@ -101,7 +103,7 @@ export default function RegisterNewCandidate({ projectData, projectId, ui }) {
         setDoctorHash(save.doctorHash);
         localStorage.removeItem(`${doctorHash}-formData`);
         localStorage.removeItem(`null-formData`);
-        EncryptData(`${save.doctorHash}-formData`);
+        EncryptData(`${save.doctorHash}-formData`, formData);
 
         const url = new URL(window.location.href);
         const params = url.searchParams;

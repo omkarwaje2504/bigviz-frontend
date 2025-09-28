@@ -31,9 +31,10 @@ function GenerateVideo({ ui, projectData, projectId }) {
 
   useEffect(() => {
     const savedUrl = DecryptData("videoUrl");
-    const doctorHash = localStorage.getItem("doctorHash")
+    const doctorHash = localStorage.getItem("doctorHash");
     const empData = DecryptData("empData");
     const formData = DecryptData(`${doctorHash}-formData`);
+  
     const savedGenerated = DecryptData("videoGenerated");
 
     if (!doctorHash && !formData) {
@@ -65,36 +66,41 @@ function GenerateVideo({ ui, projectData, projectId }) {
 
     const startVideoGeneration = async () => {
       try {
-        let formData = DecryptData(`${doctorHash}-formData`);
-        let prevData = DecryptData(`${doctorHash}-prevData`);
-        let updatedFormData = {
-          ...formData,
-          name: `${formData?.prefix} ${formData?.name}`,
-          photo:
-            prevData?.photo?.croppedImage ||
-            formData?.photo?.croppedImage ||
-            formData?.photo?.originalImage,
-        };
+        const dh = localStorage.getItem("doctorHash");
+ 
+        let formData = DecryptData(`${dh}-formData`);
+        let prevData = DecryptData(`${dh}-prevData`);
+        console.log(formData,prevData)
+        if (formData && prevData) {
+          let updatedFormData = {
+            ...formData,
+            name: `${formData?.prefix} ${formData?.name}`,
+            photo:
+              prevData?.photo?.croppedImage ||
+              formData?.photo?.croppedImage ||
+              formData?.photo?.originalImage,
+          };
 
-        const response = await VideoRender(
-          projectData?.artworks[0]?.name,
-          updatedFormData,
-        );
+          const response = await VideoRender(
+            projectData?.artworks[0]?.name,
+            updatedFormData,
+          );
 
-        if (!response.success) {
-          setError(response.message || "Video generation failed.");
-          setLoading(false);
-          return;
+          if (!response.success) {
+            setError(response.message || "Video generation failed.");
+            setLoading(false);
+            return;
+          }
+
+          if (!response.data?.renderId) {
+            setError("Render ID not returned.");
+            setLoading(false);
+            return;
+          }
+
+          setRenderId(response.data.renderId);
+          setStatusMsg("Processing video...");
         }
-
-        if (!response.data?.renderId) {
-          setError("Render ID not returned.");
-          setLoading(false);
-          return;
-        }
-
-        setRenderId(response.data.renderId);
-        setStatusMsg("Processing video...");
       } catch (err) {
         console.error(err);
         setError("Something went wrong while generating video.");
@@ -266,9 +272,7 @@ function GenerateVideo({ ui, projectData, projectId }) {
             </div>
 
             <div className="w-full mb-6 ">
-              <div 
-                className="w-full h-3 rounded-full overflow-hidden bg-[#e5e7eb] dark:bg-[#404040]"
-              >
+              <div className="w-full h-3 rounded-full overflow-hidden bg-[#e5e7eb] dark:bg-[#404040]">
                 <div
                   className="h-full rounded-full transition-all duration-500 ease-out"
                   style={{
