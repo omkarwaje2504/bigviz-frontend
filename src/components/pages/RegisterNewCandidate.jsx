@@ -96,7 +96,7 @@ export default function RegisterNewCandidate({ projectData, projectId, ui }) {
         projectData,
         userInfo?.hash,
         formData,
-        doctorHash.includes("-new") ? null : doctorHash,
+        doctorHash?.includes("-new") ? null : doctorHash,
       );
       if (save.success) {
         localStorage.setItem("doctorHash", save.doctorHash);
