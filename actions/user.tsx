@@ -247,7 +247,11 @@ export const SaveDoctors = async (
       project_hash: projectData.project_hash,
       doctor_hash: doctorCode,
     };
-    let name = projectData?.config?.doctor?.disable_doctor_prefix ? `${formData?.name}`:`${formData?.prefix}. ${formData?.name}`
+    
+    let name = projectData?.config?.doctor?.disable_doctor_prefix 
+      ? `${formData?.name}`
+      : `${formData?.prefix}. ${formData?.name}`;
+    
     let updatedformData = {
       ...formData,
       name: `${formData.prefix}. ${formData.name}`,
@@ -257,79 +261,32 @@ export const SaveDoctors = async (
       requestBody.employee_hash = employeeCode;
     }
 
-    if (
-      prevData &&
-      JSON.stringify(prevData) === JSON.stringify(updatedformData) &&
-      isEdit
-    ) {
-      requestBody.doctor_hash = doctorCode;
-      requestBody.name =  projectData?.config?.doctor?.disable_doctor_prefix ? `${formData?.name}`:`${formData?.prefix}. ${formData?.name}`;
+    const hasPhotoChanged = prevData && 
+      JSON.stringify(prevData?.photo) !== JSON.stringify(updatedformData?.photo);
+
+    requestBody = {
+      ...requestBody,
+      name: name,
+      fields,
+    };
+
+
+    if (!projectData?.config?.doctor?.disable_mobile_number) {
+      requestBody.mobile = countryCode + formData?.mobile;
     }
 
-    if (
-      !isEdit &&
-      JSON.stringify(prevData) !== JSON.stringify(updatedformData) &&
-      projectData?.config?.doctor?.disable_mobile_number
-    ) {
-      requestBody = {
-        ...requestBody,
-        media: { images: photo, cropped_image },
-        name: name,
-        fields,
-      };
-    }
-   
-    if (
-      isEdit &&
-      JSON.stringify(prevData?.photo) !==
-        JSON.stringify(updatedformData?.photo) &&
-      projectData?.config?.doctor?.disable_mobile_number
-    ) {
-      requestBody = {
-        ...requestBody,
-        media: { images: photo, cropped_image },
-        name: name,
-        fields,
+    if (!isEdit || (isEdit && hasPhotoChanged)) {
+      requestBody.media = { 
+        images: photo, 
+        cropped_image 
       };
     }
 
-    if (
-      isEdit &&
-      JSON.stringify(prevData) !== JSON.stringify(updatedformData) &&
-      JSON.stringify(prevData?.photo) ===
-        JSON.stringify(updatedformData?.photo) &&
-      projectData?.config?.doctor?.disable_mobile_number
-    ) {
-      requestBody = {
-        ...requestBody,
-        name: name,
-        fields,
-      };
-    }
 
-    if (isEdit && !projectData?.config?.doctor?.disable_mobile_number) {
+    if (isEdit && prevData && JSON.stringify(prevData) === JSON.stringify(updatedformData)) {
       requestBody = {
-        ...requestBody,
+        doctor_hash: doctorCode,
         name: name,
-        mobile: countryCode + formData?.mobile,
-        fields,
-      };
-    }
-    
-    if (isEdit && projectData?.config?.doctor?.disable_mobile_number) {
-      requestBody = {
-        ...requestBody,
-        name: name,
-        fields,
-      };
-    }
-    if (!isEdit && !projectData?.config?.doctor?.disable_mobile_number) {
-      requestBody = {
-        ...requestBody,
-        media: { images: photo, cropped_image },
-        name: name,
-        mobile: countryCode + formData?.mobile,
-        fields,
       };
     }
 
