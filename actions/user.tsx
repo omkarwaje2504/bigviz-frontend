@@ -285,9 +285,13 @@ export const SaveDoctors = async (
 
     if (isEdit && prevData && JSON.stringify(prevData) === JSON.stringify(updatedformData)) {
       requestBody = {
+        project_hash: projectData.project_hash,
         doctor_hash: doctorCode,
         name: name,
       };
+      if (projectData?.config?.employee) {
+      requestBody.employee_hash = employeeCode;
+    }
     }
 
     const response = await fetch(`${apiUrl}/doctor/save`, {

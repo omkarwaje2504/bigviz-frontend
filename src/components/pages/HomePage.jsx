@@ -88,6 +88,9 @@ const HomePage = ({ projectData, projectId, ui }) => {
     RemoveData("doctorHash");
     RemoveData("videoGenerated");
     RemoveData("videoUrl");
+    RemoveData("isEdit");
+    RemoveData("formData");
+    RemoveData("prevData");
     getMembers(getUserInfo);
   }, []);
 
