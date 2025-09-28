@@ -34,7 +34,7 @@ function GenerateVideo({ ui, projectData, projectId }) {
     const doctorHash = localStorage.getItem("doctorHash");
     const empData = DecryptData("empData");
     const formData = DecryptData(`${doctorHash}-formData`);
-  
+
     const savedGenerated = DecryptData("videoGenerated");
 
     if (!doctorHash && !formData) {
@@ -67,18 +67,15 @@ function GenerateVideo({ ui, projectData, projectId }) {
     const startVideoGeneration = async () => {
       try {
         const dh = localStorage.getItem("doctorHash");
- 
+
         let formData = DecryptData(`${dh}-formData`);
-        let prevData = DecryptData(`${dh}-prevData`);
-        console.log(formData,prevData)
-        if (formData && prevData) {
+        console.log(formData);
+        if (formData) {
           let updatedFormData = {
             ...formData,
             name: `${formData?.prefix} ${formData?.name}`,
             photo:
-              prevData?.photo?.croppedImage ||
-              formData?.photo?.croppedImage ||
-              formData?.photo?.originalImage,
+              formData?.photo?.croppedImage || formData?.photo?.originalImage,
           };
 
           const response = await VideoRender(
