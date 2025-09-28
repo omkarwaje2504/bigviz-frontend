@@ -69,7 +69,7 @@ function GenerateVideo({ ui, projectData, projectId }) {
         const dh = localStorage.getItem("doctorHash");
 
         let formData = DecryptData(`${dh}-formData`);
-   
+
         if (formData) {
           let updatedFormData = {
             ...formData,
@@ -183,7 +183,7 @@ function GenerateVideo({ ui, projectData, projectId }) {
         setError("Error while checking video status. Please try again.");
         setLoading(false);
       }
-    }, 2000);
+    }, 5000);
 
     return () => clearInterval(interval);
   }, [renderId, projectData, doctorHash, videoGenerated]);
@@ -275,6 +275,7 @@ function GenerateVideo({ ui, projectData, projectId }) {
                   style={{
                     width: `${progress}%`,
                     background: ui.basic.SecondaryText,
+                    color: ui.basic.SecondaryText,
                   }}
                 />
               </div>
