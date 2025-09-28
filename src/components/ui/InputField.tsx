@@ -10,7 +10,6 @@ import React, {
 import inputStyles from "styles/inputStyles";
 import UploadFile from "../../../services/uploadFile";
 import { CiFileOn } from "react-icons/ci";
-import { DecryptData } from "@utils/cryptoUtils";
 import { FormData } from "@utils/types";
 
 type ValidationRule = {

@@ -58,7 +58,7 @@ const RenderStepContent = ({
 }) => {
   const [audioName, setAudioName] = useState("");
   const dynamicFields = projectData?.config?.field || [];
-  const prefixOptions = projectData?.config?.doctor?.prefix || ["Dr"];
+  const prefixOptions = projectData?.config?.doctor?.prefix;
   const countryCode = projectData?.config?.doctor?.country_codes?.[0] || +91;
   const [showStep2Confirm, setShowStep2Confirm] = useState(true);
   const isRxPadImage = projectData?.product_type === "RxPad" ? true : false;

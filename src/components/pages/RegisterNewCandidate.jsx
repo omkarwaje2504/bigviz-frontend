@@ -113,7 +113,6 @@ export default function RegisterNewCandidate({ projectData, projectId, ui }) {
         setIsSaveLoading(false);
         return true;
       } else {
-        console.log(save.message);
         toast.error(save.message || "Failed to save doctor");
         setIsSaveLoading(false);
         return false;

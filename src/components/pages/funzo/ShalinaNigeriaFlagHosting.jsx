@@ -284,14 +284,12 @@ const ShalinaNigeriaFlagHosting = ({ projectData, projectId, ui }) => {
     const canvas = canvasRef.current;
     const ctx = canvas.getContext("2d");
 
-    // Load background
     const bgImg = new Image();
     bgImg.src = "/game/Certificate-Shalina.png";
     await new Promise((resolve) => (bgImg.onload = resolve));
 
-    // Load doctor photo
     let doctorImgUrl = null;
-    console.log(data);
+
     if (data?.cropped_image) {
       try {
         const res = await fetch(data?.cropped_image, {
@@ -356,7 +354,7 @@ const ShalinaNigeriaFlagHosting = ({ projectData, projectId, ui }) => {
     ctx.fillStyle = "#3d397b";
     ctx.textAlign = "left";
 
-    const maxWidth = 700;
+    const maxWidth = 1300;
     const lineHeight = 70;
     const startX = 700;
     const startY = 410;
@@ -425,7 +423,6 @@ const ShalinaNigeriaFlagHosting = ({ projectData, projectId, ui }) => {
 
       const file = new File([blob], "certificate.png", { type: "image/png" });
 
-      // ✅ Mobile share (Web Share API)
       if (navigator.canShare && navigator.canShare({ files: [file] })) {
         try {
           await navigator.share({
@@ -433,12 +430,12 @@ const ShalinaNigeriaFlagHosting = ({ projectData, projectId, ui }) => {
             title: "Shalina Certificate",
             text: "🎉 I just received my Shalina Certificate! #Shalina #Achievement",
           });
-          console.log("✅ Shared successfully");
+  
         } catch (err) {
           console.error("❌ Share failed:", err);
         }
       } else {
-        // ✅ WhatsApp fallback
+    
         const text = encodeURIComponent(
           "🎉 I just received my Shalina Certificate!\n\n#Shalina #Achievement",
         );

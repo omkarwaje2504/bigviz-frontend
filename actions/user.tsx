@@ -190,6 +190,7 @@ export const SaveDoctors = async (
   doctorCode: string,
 ) => {
   let prevData;
+
   if (doctorCode) {
     prevData = DecryptData(`${doctorCode}-prevData`);
   }
@@ -216,6 +217,7 @@ export const SaveDoctors = async (
   }
 
   const apiUrl = process.env.NEXT_PUBLIC_PROJECT_URL;
+  
   if (!apiUrl) {
     throw new Error("API url is missing. Please check");
   }
@@ -227,7 +229,7 @@ export const SaveDoctors = async (
   const trailingPath =
     "https://pub-0b6394cfeda24bf196c98e1746afe09b.r2.dev/production";
   
-    let photo = formData?.photo?.originalImage || "";
+  let photo = formData?.photo?.originalImage || "";
 
   if (photo.startsWith(trailingPath)) {
     photo = photo.replace(trailingPath, "");
@@ -237,6 +239,7 @@ export const SaveDoctors = async (
   if (cropped_image.startsWith(trailingPath)) {
     cropped_image = cropped_image.replace(trailingPath, "");
   }
+  
   let isEdit = DecryptData("isEdit");
 
   try {
@@ -244,7 +247,7 @@ export const SaveDoctors = async (
       project_hash: projectData.project_hash,
       doctor_hash: doctorCode,
     };
-
+    let name = projectData?.config?.doctor?.disable_doctor_prefix ? `${formData?.name}`:`${formData?.prefix}. ${formData?.name}`
     let updatedformData = {
       ...formData,
       name: `${formData.prefix}. ${formData.name}`,
@@ -260,10 +263,9 @@ export const SaveDoctors = async (
       isEdit
     ) {
       requestBody.doctor_hash = doctorCode;
-      requestBody.name = `${formData?.prefix}. ${formData?.name}`;
+      requestBody.name =  projectData?.config?.doctor?.disable_doctor_prefix ? `${formData?.name}`:`${formData?.prefix}. ${formData?.name}`;
     }
 
-    // If newUse  and formData has change and mobile number is disable
     if (
       !isEdit &&
       JSON.stringify(prevData) !== JSON.stringify(updatedformData) &&
@@ -272,13 +274,11 @@ export const SaveDoctors = async (
       requestBody = {
         ...requestBody,
         media: { images: photo, cropped_image },
-        name: `${formData?.prefix}. ${formData?.name}`,
+        name: name,
         fields,
       };
     }
-    // If edit and formData has change and mobile number is disable
-
-    
+   
     if (
       isEdit &&
       JSON.stringify(prevData?.photo) !==
@@ -288,7 +288,7 @@ export const SaveDoctors = async (
       requestBody = {
         ...requestBody,
         media: { images: photo, cropped_image },
-        name: `${formData?.prefix}. ${formData?.name}`,
+        name: name,
         fields,
       };
     }
@@ -302,7 +302,7 @@ export const SaveDoctors = async (
     ) {
       requestBody = {
         ...requestBody,
-        name: `${formData?.prefix}. ${formData?.name}`,
+        name: name,
         fields,
       };
     }
@@ -310,7 +310,7 @@ export const SaveDoctors = async (
     if (isEdit && !projectData?.config?.doctor?.disable_mobile_number) {
       requestBody = {
         ...requestBody,
-        name: `${formData?.prefix}. ${formData?.name}`,
+        name: name,
         mobile: countryCode + formData?.mobile,
         fields,
       };
@@ -319,7 +319,7 @@ export const SaveDoctors = async (
     if (isEdit && projectData?.config?.doctor?.disable_mobile_number) {
       requestBody = {
         ...requestBody,
-        name: `${formData?.prefix}. ${formData?.name}`,
+        name: name,
         fields,
       };
     }
@@ -327,7 +327,7 @@ export const SaveDoctors = async (
       requestBody = {
         ...requestBody,
         media: { images: photo, cropped_image },
-        name: `${formData?.prefix}. ${formData?.name}`,
+        name: name,
         mobile: countryCode + formData?.mobile,
         fields,
       };
