@@ -125,14 +125,29 @@ export default function RegisterNewCandidate({ projectData, projectId, ui }) {
     }
   };
 
-  const handleExtraGameButton = async () => {
+  const handleExtraGameButton = async (e) => {
+    e.preventDefault();
+    setIsSubmitLoading(true);
     const url = new URL(window.location.href);
     const params = url.searchParams;
     const dh = params.get("dh");
 
-    router.push(
-      `https://platform.informatia.ai/${projectId}/game?dh=${dh}&h=${userInfo?.hash}`,
-    );
+    try {
+      const save = await SaveDoctors(projectData, userInfo.hash, formData, dh);
+      if (!save.success) {
+        toast.error("Submission failed");
+      } else {
+        toast.success("Doctor Added Successfully!");
+
+        router.push(
+          `https://platform.informatia.ai/${projectId}/game?dh=${dh}&h=${userInfo?.hash}`,
+        );
+      }
+    } catch (error) {
+      console.error(error);
+      MyError(error);
+      toast.error("Unexpected error occurred");
+    }
   };
   const handleFormRedirection = async (e) => {
     e.preventDefault();

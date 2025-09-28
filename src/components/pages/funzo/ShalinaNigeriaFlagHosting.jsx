@@ -2,6 +2,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { FetchDoctor } from "../../../../actions/user";
 import { Download } from "@actions/evideoApis";
+import { useRouter } from "next/navigation";
 
 const ShalinaNigeriaFlagHosting = ({ projectData, projectId, ui }) => {
   const [stage, setStage] = useState("loading");
@@ -15,7 +16,7 @@ const ShalinaNigeriaFlagHosting = ({ projectData, projectId, ui }) => {
   const [downlaodLoading, setDownloadLaoding] = useState(false);
   const [videoSrc, setVideoSrc] = useState();
   const [showDoctorName, setShowDoctorName] = useState(true);
-
+  const router = useRouter();
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const animationRef = useRef(null);
@@ -27,27 +28,28 @@ const ShalinaNigeriaFlagHosting = ({ projectData, projectId, ui }) => {
       const params = url.searchParams;
       const dh = params.get("dh");
       const h = params.get("h");
+      if (!dh || !h) {
+        router.push(`/${projectId}/homepage`);
+      }
 
-      if (dh && h) {
-        setDoctorHash(dh);
-        setEmpHash(h);
-        try {
-          let doctorData = await FetchDoctor(projectData, dh);
+      setDoctorHash(dh);
+      setEmpHash(h);
+      try {
+        let doctorData = await FetchDoctor(projectData, dh);
 
-          if (doctorData) {
-            const genderField = doctorData?.data?.fields?.find(
-              (f) => f.value === "Male" || f.value === "Female",
-            );
-            if (genderField?.value === "Male") {
-              setVideoSrc("/game/male-flag-hosting.mp4");
-            } else {
-              setVideoSrc("/game/female-flag-hosting.mp4");
-            }
-            setDoctorData(doctorData?.data);
+        if (doctorData) {
+          const genderField = doctorData?.data?.fields?.find(
+            (f) => f.value === "Male" || f.value === "Female",
+          );
+          if (genderField?.value === "Male") {
+            setVideoSrc("/game/male-flag-hosting.mp4");
+          } else {
+            setVideoSrc("/game/female-flag-hosting.mp4");
           }
-        } catch (error) {
-          console.log(error);
+          setDoctorData(doctorData?.data);
         }
+      } catch (error) {
+        console.log(error);
       }
     };
     fetDoctor();
@@ -289,9 +291,10 @@ const ShalinaNigeriaFlagHosting = ({ projectData, projectId, ui }) => {
 
     // Load doctor photo
     let doctorImgUrl = null;
-    if (data?.image) {
+    console.log(data);
+    if (data?.cropped_image) {
       try {
-        const res = await fetch(data?.image, {
+        const res = await fetch(data?.cropped_image, {
           method: "GET",
           cache: "no-store",
         });
@@ -351,11 +354,11 @@ const ShalinaNigeriaFlagHosting = ({ projectData, projectId, ui }) => {
 
     ctx.font = "bold 80px Arial";
     ctx.fillStyle = "#3d397b";
-    ctx.textAlign = "center";
+    ctx.textAlign = "left";
 
-    const maxWidth = 1000;
-    const lineHeight = 90;
-    const startX = 1000;
+    const maxWidth = 700;
+    const lineHeight = 70;
+    const startX = 700;
     const startY = 410;
 
     const name = data?.name || "Doctor Name";
