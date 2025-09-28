@@ -69,7 +69,7 @@ function GenerateVideo({ ui, projectData, projectId }) {
         const dh = localStorage.getItem("doctorHash");
 
         let formData = DecryptData(`${dh}-formData`);
-        console.log(formData);
+   
         if (formData) {
           let updatedFormData = {
             ...formData,
