@@ -92,7 +92,6 @@ export const GetRenderStatus = async (id) => {
       };
     }
   } catch (error) {
-    MyError(error);
     return {
       success: false,
       message: "Failure occur while generating Ai Video",

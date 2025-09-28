@@ -1,5 +1,6 @@
 "use client";
 
+import MyError from "@services/MyError";
 import { FaChevronLeft, FaChevronRight, FaSpinner } from "react-icons/fa";
 
 const FormNavigationButtons = ({
@@ -11,7 +12,7 @@ const FormNavigationButtons = ({
   projectData,
   isSubmitLoading,
   onSaveDoctor,
-  handleExtraGameButton
+  handleExtraGameButton,
 }) => {
   const projectType = projectData?.product_type;
   const disablePhotoUpload = projectData?.config?.doctor?.disable_photo_upload;
@@ -53,12 +54,14 @@ const FormNavigationButtons = ({
     (currentStep === 3 && projectType !== "Evideo");
 
   const handleNext = async () => {
-
     if (currentStep === 1) {
-      const success = await onSaveDoctor();
- 
-      if (!success) {
-        return;
+      try {
+        const success = await onSaveDoctor();
+        if (!success) {
+          return;
+        }
+      } catch (e) {
+        MyError(e);
       }
     }
 
@@ -97,41 +100,38 @@ const FormNavigationButtons = ({
         </button>
       )}
       <div className="md:flex gap-2">
-
-    
-      {
-       ui?.DoctorRegistrationForm?.HomeRedirection &&  isLastStepForProject &&
-        <button
-          type="button"
-          onClick={handleExtraGameButton}
-          className="flex items-center ml-auto bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded mb-2"
-          disabled={isSubmitLoading}
-        >
-         Start Flag Hosting
-          {isSubmitLoading ? (
-            <FaSpinner className="gap-2 w-4 h-4 animate-spin fill-white" />
-          ) : (
-            <FaChevronRight size={16} className="ml-1" />
+        {ui?.DoctorRegistrationForm?.HomeRedirection &&
+          isLastStepForProject && (
+            <button
+              type="button"
+              onClick={handleExtraGameButton}
+              className="flex items-center ml-auto bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded mb-2"
+              disabled={isSubmitLoading}
+            >
+              Start Flag Hosting
+              {isSubmitLoading ? (
+                <FaSpinner className="gap-2 w-4 h-4 animate-spin fill-white" />
+              ) : (
+                <FaChevronRight size={16} className="ml-1" />
+              )}
+            </button>
           )}
-        </button>
 
-      }
-
-      {isLastStepForProject && (
-        <button
-          type="submit"
-          className="flex items-center ml-auto bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded"
-          disabled={isSubmitLoading}
-        >
-          {ui?.DoctorRegistrationForm?.SubmitButtonLable}
-          {isSubmitLoading ? (
-            <FaSpinner className="gap-2 w-4 h-4 animate-spin fill-white" />
-          ) : (
-            <FaChevronRight size={16} className="ml-1" />
-          )}
-        </button>
-      )}
-        </div>
+        {isLastStepForProject && (
+          <button
+            type="submit"
+            className="flex items-center ml-auto bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded"
+            disabled={isSubmitLoading}
+          >
+            {ui?.DoctorRegistrationForm?.SubmitButtonLable}
+            {isSubmitLoading ? (
+              <FaSpinner className="gap-2 w-4 h-4 animate-spin fill-white" />
+            ) : (
+              <FaChevronRight size={16} className="ml-1" />
+            )}
+          </button>
+        )}
+      </div>
     </div>
   );
 };

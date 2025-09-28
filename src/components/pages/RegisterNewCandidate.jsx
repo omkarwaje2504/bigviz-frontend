@@ -90,13 +90,17 @@ export default function RegisterNewCandidate({ projectData, projectId, ui }) {
     const params = url.searchParams;
     const doctorHash = params.get("dh");
 
+    if (!doctorHash) {
+      toast.error("Id is missing. Please go to homepage and try again.");
+      return;
+    }
     setIsSaveLoading(true);
     try {
       const save = await SaveDoctors(
         projectData,
         userInfo?.hash,
         formData,
-        doctorHash.includes("-new") ? null : doctorHash,
+        doctorHash?.includes("-new") ? null : doctorHash,
       );
       if (save.success) {
         localStorage.setItem("doctorHash", save.doctorHash);
@@ -120,7 +124,9 @@ export default function RegisterNewCandidate({ projectData, projectId, ui }) {
     } catch (error) {
       console.error(error);
       MyError(error);
-      toast.error("An error occurred while saving doctor");
+      toast.error(
+        "An error occurred while saving doctor. Please logout and try again.",
+      );
       setIsSaveLoading(false);
       return false;
     }
