@@ -2,6 +2,7 @@ import { getAllProjectsCached } from "../../../../utils/projectCache";
 import Config from "../../../../utils/Config";
 import NotFoundPage from "../NotFoundPage";
 import ScratchCard from "../../../components/pages/funzo/ScratchCard";
+import VideoArtworkFlow from "@components/pages/VideoArtworkFlow";
 
 export async function generateStaticParams() {
   const projects = await getAllProjectsCached();
@@ -50,11 +51,12 @@ export default async function Home({ params }) {
   );
   const ui = await Config(projectInfo);
   if (projectInfo) {
-    if (projectInfo?.config?.game?.scratch_card) {
+    if (projectInfo?.config?.game?.scratch_card && projectInfo?.project_hash !== "v42062x3") {
+      console.log("Rendering ScratchCard for project:", projectInfo.project_hash);
       return (
         <ScratchCard projectData={projectInfo} projectId={pathname} ui={ui} />
       );
-    } else return <div>Game Page</div>;
+    } else return <VideoArtworkFlow projectData={projectInfo} projectId={pathname} ui={ui} />;
   } else {
     <NotFoundPage />;
   }
