@@ -397,7 +397,10 @@ export default function PhotoUploadEditor({
       ) : (
         <>
           {unsavedChanges ? (
-            <div className="space-y-4 fixed top-0 left-0 w-full h-full p-4 bg-black/40">
+            <div className="space-y-4 fixed top-0 left-0 w-full h-full p-4 bg-black/40"
+            style={{
+              zIndex:9999
+            }}>
               {/* 🔹 Toolbar */}
               <div className="bg-gray-100 dark:bg-gray-800 rounded-lg p-4 flex flex-wrap gap-4 justify-between items-center">
                 <div className="flex flex-wrap gap-1">
