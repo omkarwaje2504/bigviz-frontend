@@ -41,17 +41,17 @@ const FormNavigationButtons = ({
       formData.calendarData.every((item) => !!item.images[0]?.croppedImage));
 
   const isLastStepForProject =
-    (projectType === "Evideo" && currentStep === 2 && formData.photo) ||
+    (projectType === "EVideo" && currentStep === 2 && formData.photo) ||
     (projectType === "RxPad" && currentStep === 2 && formData.photo) ||
     (disablePhotoUpload && currentStep === 1 && isPage1Valid) ||
     (projectType === "DeskCalendar" && currentStep === 2 && isPage2Valid) ||
     (projectType === "PhotoFrame" && currentStep === 2 && isPage2Valid) ||
-    (projectType !== "Evideo" && currentStep === 4);
+    (projectType !== "EVideo" && currentStep === 4);
 
   const canProceed =
     (currentStep === 1 && isPage1Valid) ||
     (currentStep === 2 && isPage2Valid) ||
-    (currentStep === 3 && projectType !== "Evideo");
+    (currentStep === 3 && projectType !== "EVideo");
 
   const handleNext = async () => {
     if (currentStep === 1) {
