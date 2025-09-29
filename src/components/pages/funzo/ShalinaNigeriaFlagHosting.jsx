@@ -114,34 +114,7 @@ const ShalinaNigeriaFlagHosting = ({ projectData, projectId, ui }) => {
     };
   }, []);
 
-  const handlePauseFrame = () => {
-    const video = videoRef.current;
-    if (!video) return;
-    const genderField = doctorData?.data?.fields?.find(
-      (f) => f.value === "Male" || f.value === "Female",
-    );
-
-    if (genderField === "Male") {
-      if (video.currentTime >= 7.8) {
-        video.pause();
-        setStage("paused");
-        if (animationRef.current) {
-          cancelAnimationFrame(animationRef.current);
-        }
-        video.removeEventListener("timeupdate", handlePauseFrame);
-      }
-    } else {
-      if (video.currentTime >= 9) {
-        video.pause();
-        setStage("paused");
-        if (animationRef.current) {
-          cancelAnimationFrame(animationRef.current);
-        }
-        video.removeEventListener("timeupdate", handlePauseFrame);
-      }
-    }
-  };
-
+  
   const drawVideoFrame = () => {
     const canvas = canvasRef.current;
     const video = videoRef.current;
@@ -252,14 +225,11 @@ const ShalinaNigeriaFlagHosting = ({ projectData, projectId, ui }) => {
       playPromise
         .then(() => {
           drawVideoFrame();
-
-          video.addEventListener("timeupdate", handlePauseFrame);
         })
         .catch((error) => {
           video.muted = true;
           video.play().then(() => {
             drawVideoFrame();
-            video.addEventListener("timeupdate", handlePauseFrame);
           });
         });
     }
@@ -450,51 +420,7 @@ const ShalinaNigeriaFlagHosting = ({ projectData, projectId, ui }) => {
         return (
           <div className="flex flex-col items-center justify-center min-h-screen bg-[#018652] p-4">
             <div className="h-full p-8 rounded-2xl shadow-2xl text-center bg-gradient-to-br from-white via-green-50/30 to-white max-w-md backdrop-blur-sm border border-green-100">
-              {/* Enhanced Loading Animation Container */}
-              <div className="flex justify-center mb-8 relative">
-                {/* Main Spinner with Multiple Layers */}
-                <div className="relative">
-                  {/* Outer Ring */}
-                  <div className="w-20 h-20 border-4 border-green-100 rounded-full animate-pulse absolute"></div>
-
-                  {/* Middle Ring */}
-                  <div className="w-16 h-16 border-4 border-green-300 border-t-transparent rounded-full animate-spin"></div>
-
-                  {/* Inner Ring */}
-                  <div
-                    className="w-12 h-12 border-2 border-green-600 border-r-transparent rounded-full animate-spin absolute top-2 left-2"
-                    style={{
-                      animationDirection: "reverse",
-                      animationDuration: "1s",
-                    }}
-                  ></div>
-
-                  {/* Center Dot */}
-                  <div className="w-6 h-6 bg-gradient-to-br from-green-400 to-green-600 rounded-full absolute top-5 left-5 animate-pulse"></div>
-
-                  {/* Orbiting Dots */}
-                  <div className="absolute inset-0">
-                    {[...Array(3)].map((_, index) => (
-                      <div
-                        key={index}
-                        className="absolute w-2 h-2 bg-green-500 rounded-full animate-bounce"
-                        style={{
-                          top: "50%",
-                          left: "50%",
-                          transformOrigin: "0 0",
-                          transform: `rotate(${index * 120}deg) translateX(35px) translateY(-1px)`,
-                          animationDelay: `${index * 0.2}s`,
-                          animationDuration: "1.5s",
-                        }}
-                      />
-                    ))}
-                  </div>
-                </div>
-
-                {/* Background Glow Effect */}
-                <div className="absolute inset-0 bg-green-100/20 rounded-full blur-xl animate-pulse -z-10"></div>
-              </div>
-
+            
               {/* Enhanced Title with Animation */}
               <div className="space-y-4 ">
                 <h2 className="text-2xl font-bold text-white mb-2 relative z-20">
@@ -647,15 +573,8 @@ const ShalinaNigeriaFlagHosting = ({ projectData, projectId, ui }) => {
                 onClick={startVideo}
                 className="group relative overflow-hidden px-3 py-5 bg-gradient-to-br from-green-500 via-green-600 to-green-700 text-white rounded-2xl text-2xl font-bold transition-all duration-500 shadow-2xl border-2 border-green-400 transform hover:scale-105 hover:shadow-3xl"
               >
-                {/* Animated Background Ripple */}
+             
                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-out"></div>
-
-                {/* Pulsing Energy Rings */}
-                <div className="absolute inset-0 pointer-events-none">
-                  <div className="energy-ring absolute top-1/2 left-1/2 w-4 h-4 border-2 border-yellow-300 rounded-full -translate-x-1/2 -translate-y-1/2 group-hover:animate-pulse"></div>
-                  <div className="energy-ring absolute top-1/2 left-1/2 w-8 h-8 border border-yellow-200 rounded-full -translate-x-1/2 -translate-y-1/2 opacity-60 group-hover:animate-ping"></div>
-                  <div className="energy-ring absolute top-1/2 left-1/2 w-12 h-12 border border-yellow-100 rounded-full -translate-x-1/2 -translate-y-1/2 opacity-40 group-hover:animate-bounce"></div>
-                </div>
 
                 {/* Spark Particles */}
                 <div className="absolute inset-0 pointer-events-none overflow-hidden opacity-0 group-hover:opacity-100 transition-opacity duration-300">
@@ -675,7 +594,7 @@ const ShalinaNigeriaFlagHosting = ({ projectData, projectId, ui }) => {
                 {/* Button Content */}
                 <span className="relative z-10 flex items-center justify-center gap-4 font-extrabold tracking-wide">
                   {/* Animated Play Icon */}
-                  Start Flag Hosting Celebration
+                  Click here to Start Flag Hosting Celebration
                   {/* Animated Arrow */}
                 </span>
 
@@ -683,10 +602,10 @@ const ShalinaNigeriaFlagHosting = ({ projectData, projectId, ui }) => {
                 <div className="absolute inset-0 bg-green-400 opacity-0 group-hover:opacity-20 blur-xl transition-all duration-500 -z-10"></div>
 
                 {/* Corner Highlights */}
-                <div className="absolute top-2 left-2 w-2 h-2 bg-white/40 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                {/* <div className="absolute top-2 left-2 w-2 h-2 bg-white/40 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                 <div className="absolute top-2 right-2 w-2 h-2 bg-white/40 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300 delay-100"></div>
                 <div className="absolute bottom-2 left-2 w-2 h-2 bg-white/40 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300 delay-200"></div>
-                <div className="absolute bottom-2 right-2 w-2 h-2 bg-white/40 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300 delay-300"></div>
+                <div className="absolute bottom-2 right-2 w-2 h-2 bg-white/40 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300 delay-300"></div> */}
               </button>
 
               <style jsx>{`
@@ -715,23 +634,7 @@ const ShalinaNigeriaFlagHosting = ({ projectData, projectId, ui }) => {
                   }
                 }
 
-                /* Energy Ring Animations */
-                .energy-ring {
-                  animation: energyPulse 3s infinite ease-in-out;
-                }
-
-                @keyframes energyPulse {
-                  0%,
-                  100% {
-                    transform: translate(-50%, -50%) scale(1);
-                    opacity: 1;
-                  }
-                  50% {
-                    transform: translate(-50%, -50%) scale(1.5);
-                    opacity: 0.3;
-                  }
-                }
-
+               
                 /* Enhanced Shadow */
                 .group:hover {
                   box-shadow:
@@ -761,24 +664,24 @@ const ShalinaNigeriaFlagHosting = ({ projectData, projectId, ui }) => {
           </div>
         );
 
-      case "paused":
-        return (
-          <div className="flex justify-center min-h-[100dvh] relative bg-white w-full lg:max-w-3xl mx-auto">
-            <canvas
-              ref={canvasRef}
-              className="max-w-full max-h-full object-contain shadow-2xl"
-            />
+      // case "paused":
+      //   return (
+      //     <div className="flex justify-center min-h-[100dvh] relative bg-white w-full lg:max-w-3xl mx-auto">
+      //       <canvas
+      //         ref={canvasRef}
+      //         className="max-w-full max-h-full object-contain shadow-2xl"
+      //       />
 
-            <div className="absolute inset-0 flex items-center justify-center">
-              <button
-                onClick={resumeVideo}
-                className="px-8 cursor-pointer py-4 bg-green-600 text-white rounded-lg text-lg font-bold hover:bg-green-700 transition-all duration-300 shadow-lg border-2 border-white transform hover:scale-105"
-              >
-                Host Flag
-              </button>
-            </div>
-          </div>
-        );
+      //       <div className="absolute inset-0 flex items-center justify-center">
+      //         <button
+      //           onClick={resumeVideo}
+      //           className="px-8 cursor-pointer py-4 bg-green-600 text-white rounded-lg text-lg font-bold hover:bg-green-700 transition-all duration-300 shadow-lg border-2 border-white transform hover:scale-105"
+      //         >
+      //           Host Flag
+      //         </button>
+      //       </div>
+      //     </div>
+      //   );
 
       case "completed":
         return (
