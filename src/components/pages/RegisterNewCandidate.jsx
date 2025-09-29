@@ -185,7 +185,7 @@ export default function RegisterNewCandidate({ projectData, projectId, ui }) {
             localStorage.removeItem("isEdit");
             localStorage.removeItem("doctorHash");
             router.push("homepage");
-          } else if (projectData?.product_type === "Evideo") {
+          } else if (projectData?.product_type === "EVideo") {
             router.push(`/${projectData.project_hash}/generate-video`);
           } else {
             router.push("homepage");
