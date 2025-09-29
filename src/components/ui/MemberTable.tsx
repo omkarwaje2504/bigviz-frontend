@@ -283,7 +283,7 @@ const MemberTable: React.FC<MemberTableProps> = ({
             ? ".pdf"
             : ".jpg";
           break;
-        case "Evideo":
+        case "EVideo":
           fileName += ".mp4";
           break;
         default:
