@@ -72,6 +72,17 @@ export default function PhotoUploadEditor({
   }, [unsavedChanges]);
 
   useEffect(() => {
+    if (unsavedChanges) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [unsavedChanges]);
+
+  useEffect(() => {
     const loadCroppedImage = async () => {
       if (currentImageData?.croppedImage) {
         setIsCropperLoading(true);
@@ -397,7 +408,7 @@ export default function PhotoUploadEditor({
       ) : (
         <>
           {unsavedChanges ? (
-            <div className="space-y-4 fixed top-0 left-0 w-full h-full p-4 bg-black/40"
+            <div className="space-y-4 fixed top-0 left-0 w-full h-[100dvh] p-4 bg-black/40"
             style={{
               zIndex:9999
             }}>
