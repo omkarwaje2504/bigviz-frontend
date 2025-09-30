@@ -69,7 +69,7 @@ const RenderStepContent = ({
 
   useEffect(() => {
     if (formData?.name?.length > 5) {
-      setFormData({ ...formData, name: cleanName(formData?.name) });
+      setFormData({ ...formData, name: !projectData?.config?.doctor?.disable_doctor_prefix ?cleanName(formData?.name): formData?.name});
     }
   }, [formData?.name]);
 
