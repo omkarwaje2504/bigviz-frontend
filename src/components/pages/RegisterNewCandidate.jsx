@@ -14,6 +14,18 @@ import { SaveDoctors } from "@actions/user";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
+function generateRandomString(length) {
+  const characters =
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+  let result = "";
+  const charactersLength = characters.length;
+  for (let i = 0; i < length; i++) {
+    result += characters.charAt(Math.floor(Math.random() * charactersLength));
+  }
+  return result;
+}
+
+
 export default function RegisterNewCandidate({ projectData, projectId, ui }) {
   const [currentStep, setCurrentStep] = useState(1);
   const [photoUploadStatus, setPhotoUploadStatus] = useState(false);
@@ -37,6 +49,16 @@ export default function RegisterNewCandidate({ projectData, projectId, ui }) {
   const [isDark, setIsDark] = useState(false);
 
   const router = useRouter();
+
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    const params = url.searchParams;
+    const urlCheck = params.get("dh");
+    if (!projectData?.config?.employee && !urlCheck) {
+      params.set("dh",`${generateRandomString(8)}-new` );
+      window.history.replaceState({}, "", url.toString());
+    }
+  });
 
   useEffect(() => {
     const media = window.matchMedia("(prefers-color-scheme: dark)");

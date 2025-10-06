@@ -10,6 +10,17 @@ import { DecryptData, EncryptData } from "@utils/cryptoUtils";
 import { useRouter } from "next/navigation";
 import { GenerateCardImage } from "@services/GenerateCardImage";
 
+function generateRandomString(length) {
+  const characters =
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+  let result = "";
+  const charactersLength = characters.length;
+  for (let i = 0; i < length; i++) {
+    result += characters.charAt(Math.floor(Math.random() * charactersLength));
+  }
+  return result;
+}
+
 export default function LoginPage({ projectData, projectId, ui }) {
 
   const [loading, setLoading] = useState(true);
@@ -18,7 +29,7 @@ export default function LoginPage({ projectData, projectId, ui }) {
 
   useEffect(() => {
     if(!projectData?.config?.employee){
-      router.push(`${projectId}/register-new-candidate`);
+      router.push(`register-new-candidate?dh=${generateRandomString(8)}-new`);
     }
     let getUserData = DecryptData("empData");
     const getProjectHash = localStorage.getItem("projectHash");
