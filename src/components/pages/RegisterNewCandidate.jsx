@@ -76,6 +76,9 @@ export default function RegisterNewCandidate({ projectData, projectId, ui }) {
     const url = new URL(window.location.href);
     const params = url.searchParams;
     const dh = params.get("dh");
+    if(!projectData?.config?.employee){
+      RemoveData(`${dh}-formData`)
+    }
     setDoctorHash(dh);
 
     if (dh) {
