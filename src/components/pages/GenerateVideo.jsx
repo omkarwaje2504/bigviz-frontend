@@ -29,21 +29,21 @@ function GenerateVideo({ ui, projectData, projectId }) {
 
   const router = useRouter();
 
-  // function getVoiceId(lang, gender,voice_model) {
-  //   const languageKey = Object.keys(voice_model.language).find(
-  //     (l) => l.toLowerCase() === lang.toLowerCase()
-  //   );
-  //   if (!languageKey) return null;
+  function getVoiceId(lang, gender,voice_model) {
+    const languageKey = Object.keys(voice_model.language).find(
+      (l) => l.toLowerCase() === lang.toLowerCase()
+    );
+    if (!languageKey) return null;
 
-  //   const genderKey = Object.keys(voice_model.language[languageKey]).find(
-  //     (g) => g.toLowerCase() === gender.toLowerCase()
-  //   );
-  //   if (!genderKey) return null;
+    const genderKey = Object.keys(voice_model.language[languageKey]).find(
+      (g) => g.toLowerCase() === gender.toLowerCase()
+    );
+    if (!genderKey) return null;
 
-  //   const voiceEntries = voice_model.language[languageKey][genderKey];
-  //   const firstVoiceId = Object.values(voiceEntries)[0];
-  //   return firstVoiceId || null;
-  // }
+    const voiceEntries = voice_model.language[languageKey][genderKey];
+    const firstVoiceId = Object.values(voiceEntries)[0];
+    return firstVoiceId || null;
+  }
 
   useEffect(() => {
     const savedUrl = DecryptData("videoUrl");
@@ -87,11 +87,16 @@ function GenerateVideo({ ui, projectData, projectId }) {
         let formData = DecryptData(`${dh}-formData`);
 
         if (formData) {
+          let language = formData?.language ? formData?.language:"English"
+          let data = getVoiceId(language,formData?.gender,projectData?.config?.["voice-model"]?.[0])
+          let engine = projectData?.config?.["voice-model"]?.[0]?.engine
           let updatedFormData = {
             ...formData,
             name: formData?.prefix==="Dr" ?`${formData?.prefix}. ${formData?.name}`:`${formData?.prefix} ${formData?.name}`,
             photo:
               formData?.photo?.croppedImage || formData?.photo?.originalImage,
+            voiceId:data,
+            engine:engine
           };
 
           const response = await VideoRender(
