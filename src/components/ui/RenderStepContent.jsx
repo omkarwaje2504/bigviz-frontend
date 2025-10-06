@@ -381,6 +381,7 @@ const RenderStepContent = ({
                   formData={formData}
                   setFormData={setFormData}
                   ui={ui}
+                  doctorHash={doctorHash}
                 />
               ) : (
                 <>

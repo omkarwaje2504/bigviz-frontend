@@ -35,7 +35,6 @@ jobs:
           bun-version: latest
       - name: Create .env file from GitHub Secrets
         run: |
-          echo "NEXT_PUBLIC_HOST=${{ secrets.NEXT_PUBLIC_HOST }}" >> .env
           echo "NEXT_PUBLIC_PROJECT_URL=${{ secrets.NEXT_PUBLIC_PROJECT_URL }}" >> .env
 
           echo "NEXT_PUBLIC_AWS_S3_BUCKET_NAME=${{ secrets.NEXT_PUBLIC_AWS_S3_BUCKET_NAME }}" >> .env

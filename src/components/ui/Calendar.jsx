@@ -18,11 +18,13 @@ import {
   FaTimes,
 } from "react-icons/fa";
 import UploadFile from "@services/uploadFile";
+import CalendarPreviewKonva from "./CalendarPreviewKonva";
+import { ImageCropper } from "./ImageCropper";
 
 const CONFIG = {
   maxImages: 12,
   acceptedFormats: "image/*",
-  maxFileSize: 5 * 1024 * 1024,
+  maxFileSize: 10 * 1024 * 1024,
 };
 
 const MONTH_NAMES = [
@@ -67,6 +69,7 @@ const getPhotoDims = (projectData) => {
 
 // Crop Modal Component - Updated to match PhotoUpload styling
 const CropModal = ({
+  doctorHash,
   image,
   onSave,
   onCancel,
@@ -177,6 +180,7 @@ const CropModal = ({
         const originalFileName = `original_${monthName}_${blobName}`;
 
         const uploadedCroppedFileUrl = await UploadFile(
+          doctorHash,
           projectData,
           imageBlob,
           cropperFileName,
@@ -184,6 +188,7 @@ const CropModal = ({
         );
 
         const uploadedOriginalFileUrl = await UploadFile(
+          doctorHash,
           projectData,
           image.file,
           originalFileName,
@@ -193,6 +198,8 @@ const CropModal = ({
         onSave({
           croppedImage: uploadedCroppedFileUrl,
           originalImage: uploadedOriginalFileUrl,
+          name: image.name,
+          id: image.replaceId || image.id,
         });
       }
     } catch (error) {
@@ -309,7 +316,13 @@ const CropModal = ({
 };
 
 // Main ImageCaptureComponent
-const ImageCaptureComponent = ({ projectData }) => {
+const ImageCaptureComponent = ({
+  projectData,
+  formData,
+  setFormData,
+  ui,
+  doctorHash,
+}) => {
   const [selectedImages, setSelectedImages] = useState([]);
   const [error, setError] = useState("");
   const [draggedItem, setDraggedItem] = useState(null);
@@ -317,17 +330,16 @@ const ImageCaptureComponent = ({ projectData }) => {
   const [pendingImages, setPendingImages] = useState([]);
   const [currentCropIndex, setCurrentCropIndex] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
-
+  const [previewData, setPreviewData] = useState(null);
   const fileInputRef = useRef(null);
   const cameraInputRef = useRef(null);
 
   // Load saved images from localStorage on component mount
   useEffect(() => {
-    const savedImages = localStorage.getItem("calendar_images");
+    const savedImages = formData?.calendar_images;
     if (savedImages) {
       try {
-        const parsed = JSON.parse(savedImages);
-        setSelectedImages(parsed);
+        setSelectedImages(savedImages);
       } catch (e) {
         console.error("Error loading saved images:", e);
       }
@@ -336,7 +348,7 @@ const ImageCaptureComponent = ({ projectData }) => {
 
   // Save to localStorage whenever selectedImages changes
   useEffect(() => {
-    localStorage.setItem("calendar_images", JSON.stringify(selectedImages));
+    setFormData((prev) => ({ ...prev, calendar_images: selectedImages }));
   }, [selectedImages]);
 
   const cropDimensions = getPhotoDims(projectData);
@@ -455,7 +467,6 @@ const ImageCaptureComponent = ({ projectData }) => {
           prev.map((img) =>
             img.id === currentPendingImage.replaceId
               ? {
-                  ...currentPendingImage,
                   ...croppedData,
                   needsCropping: false,
                   id: currentPendingImage.replaceId, // Keep original ID
@@ -468,8 +479,8 @@ const ImageCaptureComponent = ({ projectData }) => {
         setSelectedImages((prev) => [
           ...prev,
           {
-            ...currentPendingImage,
             ...croppedData,
+
             needsCropping: false,
           },
         ]);
@@ -526,7 +537,7 @@ const ImageCaptureComponent = ({ projectData }) => {
       event.stopPropagation();
     }
     setSelectedImages([]);
-    localStorage.removeItem("calendar_images");
+    setFormData((prev) => ({ ...prev, calendar_images: [] }));
     setError("");
   }, []);
 
@@ -560,8 +571,13 @@ const ImageCaptureComponent = ({ projectData }) => {
   const handleDragStart = useCallback((e, index) => {
     setDraggedItem(index);
     e.dataTransfer.effectAllowed = "move";
-    e.dataTransfer.setData("text/html", e.target.parentNode);
-    e.dataTransfer.setDragImage(e.target.parentNode, 60, 40);
+
+    // Only set the current element as the drag image
+    const dragElement = e.currentTarget; // this div represents one image card
+    const rect = dragElement.getBoundingClientRect();
+
+    // Use a small offset to make it feel natural
+    e.dataTransfer.setDragImage(dragElement, rect.width / 2, rect.height / 2);
   }, []);
 
   const handleDragOver = useCallback((e, index) => {
@@ -585,13 +601,11 @@ const ImageCaptureComponent = ({ projectData }) => {
       }
 
       const updatedImages = [...selectedImages];
-      const draggedImage = updatedImages[draggedItem];
 
-      updatedImages.splice(draggedItem, 1);
-
-      const actualDropIndex =
-        draggedItem < dropIndex ? dropIndex - 1 : dropIndex;
-      updatedImages.splice(actualDropIndex, 0, draggedImage);
+      // 🔄 Swap the two images instead of shifting
+      const temp = updatedImages[draggedItem];
+      updatedImages[draggedItem] = updatedImages[dropIndex];
+      updatedImages[dropIndex] = temp;
 
       setSelectedImages(updatedImages);
       setDraggedItem(null);
@@ -605,6 +619,28 @@ const ImageCaptureComponent = ({ projectData }) => {
     setDragOverIndex(null);
   }, []);
 
+  const handlePreviewOpen = (image, index) => {
+    setPreviewData({
+      previewImageSrc: image.croppedImage || image.src,
+      monthName: MONTH_NAMES[index], // e.g., ["January", "February", ...]
+      calendarPreviewConfig: {
+        baseImageUrl: "/calendar.png", // your mockup image path
+        x: 716.5, // example placement
+        y: 265,
+        width: 184,
+        height: 177,
+        borderRadius: 10,
+        perspective: {
+          skewX: 0,
+          skewY: 0,
+          scaleX: 1,
+          scaleY: 1,
+          rotation: 0,
+        },
+      },
+    });
+  };
+
   const remainingSlots = CONFIG.maxImages - selectedImages.length;
 
   const getMonthName = (index) => {
@@ -613,6 +649,15 @@ const ImageCaptureComponent = ({ projectData }) => {
 
   return (
     <div className="bg-gray-900">
+      {previewData && (
+        <CalendarPreviewKonva
+          previewImageSrc={previewData.previewImageSrc}
+          monthName={previewData.monthName}
+          calendarPreviewConfig={previewData.calendarPreviewConfig}
+          onClose={() => setPreviewData(null)}
+          isDarkMode={true}
+        />
+      )}
       <h2 className="text-2xl font-bold text-white mb-6">Calendar Images</h2>
 
       {error && (
@@ -726,7 +771,10 @@ const ImageCaptureComponent = ({ projectData }) => {
                 </div>
 
                 {/* Image Preview */}
-                <div className="relative w-full h-20 overflow-hidden">
+                <div
+                  className="relative w-full h-20 overflow-hidden"
+                  onClick={() => handlePreviewOpen(image, index)}
+                >
                   <img
                     src={image.croppedImage || image.src}
                     alt={`${getMonthName(index)} - ${image.name}`}
@@ -808,21 +856,65 @@ const ImageCaptureComponent = ({ projectData }) => {
 
       {/* Crop Modal */}
       {currentCropIndex !== null && pendingImages[currentCropIndex] && (
-        <CropModal
-          image={pendingImages[currentCropIndex]}
-          onSave={handleCropSave}
-          onCancel={handleCropCancel}
+        <ImageCropper
+          image={{
+            src: pendingImages[currentCropIndex].src,
+            type: pendingImages[currentCropIndex].file?.type || "image/jpeg",
+          }}
+          setImage={(newImage) => {
+            setPendingImages((prev) => {
+              const updated = [...prev];
+              updated[currentCropIndex] = {
+                ...updated[currentCropIndex],
+                src: newImage.src,
+              };
+              return updated;
+            });
+          }}
+          originalFile={pendingImages[currentCropIndex].file}
+          filename={pendingImages[currentCropIndex].name}
+          unsavedChanges={true}
+          setUnsavedChanges={() => {}}
+          isRxPadImage={false}
+          formData={formData}
+          setFormData={(updater) => {
+            const result =
+              typeof updater === "function" ? updater(formData) : updater;
+
+            // Extract the saved photo data and trigger handleCropSave
+            if (result.photo) {
+              handleCropSave({
+                croppedImage: result.photo.croppedImage,
+                originalImage: result.photo.originalImage,
+                name: pendingImages[currentCropIndex].name,
+                id:
+                  pendingImages[currentCropIndex].replaceId ||
+                  pendingImages[currentCropIndex].id,
+              });
+            }
+          }}
+          onClose={handleCropCancel}
+          ui={ui}
+          doctorHash={doctorHash}
           projectData={projectData}
-          monthName={getMonthName(
-            pendingImages[currentCropIndex].replaceId
-              ? selectedImages.findIndex(
-                  (img) => img.id === pendingImages[currentCropIndex].replaceId,
-                )
-              : selectedImages.length + currentCropIndex,
-          )}
-          cropDimensions={cropDimensions}
-          currentIndex={currentCropIndex}
-          totalImages={pendingImages.length}
+          cropWidth={cropDimensions.w}
+          cropHeight={cropDimensions.h}
+          ratio={cropDimensions.w / cropDimensions.h}
+          onRemove={() => {
+            const currentPending = pendingImages[currentCropIndex];
+            if (currentPending.replaceId) {
+              // If replacing, cancel the replacement
+              handleCropCancel();
+            } else {
+              // If new image, skip this one
+              const nextIndex = currentCropIndex + 1;
+              if (nextIndex < pendingImages.length) {
+                setCurrentCropIndex(nextIndex);
+              } else {
+                handleCropCancel();
+              }
+            }
+          }}
         />
       )}
     </div>

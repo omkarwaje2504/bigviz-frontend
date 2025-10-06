@@ -10,9 +10,12 @@ export async function getDataSingleton() {
         "Content-Type": "application/json",
         Accept: "application/json",
       },
-      // cache: "no-cache",
+      cache: "no-cache",
     },
   );
+  if(response.status !== 200) {
+    throw new Error('Failed to fetch data');
+  }
   dataCache = await response.json();
   return dataCache;
 }

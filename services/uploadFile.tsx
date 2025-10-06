@@ -82,7 +82,7 @@ const UploadFile = async (
   }
 
   const filePath = await GenerateFilePath(doctorHash, fileName, projectData);
-
+console.log(typeof file,file)
   let buffer: Buffer;
   if (file instanceof Blob) {
     const arrayBuffer = await file.arrayBuffer();
