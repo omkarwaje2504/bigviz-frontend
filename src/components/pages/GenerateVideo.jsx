@@ -89,7 +89,7 @@ function GenerateVideo({ ui, projectData, projectId }) {
         if (formData) {
           let updatedFormData = {
             ...formData,
-            name: `${formData?.prefix} ${formData?.name}`,
+            name: formData?.prefix==="Dr" ?`${formData?.prefix}. ${formData?.name}`:`${formData?.prefix} ${formData?.name}`,
             photo:
               formData?.photo?.croppedImage || formData?.photo?.originalImage,
           };
