@@ -144,8 +144,7 @@ function GenerateVideo({ ui, projectData, projectId }) {
 
         let totalframes = check?.data?.renderMetadata?.frameRange?.[1];
         let framesrender = check?.data?.framesRendered;
-        console.log(totalframes,framesrender,check,check?.data?.renderMetadata)
-
+        
         if (totalframes && framesrender >= 0) {
           progressVal = Math.min(
             Math.round((framesrender / totalframes) * 100),
@@ -219,8 +218,7 @@ function GenerateVideo({ ui, projectData, projectId }) {
   }, [renderId, projectData, doctorHash, videoGenerated]);
 
   const handleDownload = async () => {
-    
-    await Download(projectData, doctorHash, 25, empData?.hash);
+    await Download(projectData, doctorHash, 25,empData?.hash);
     setVideoDownloaded(true);
   };
 
@@ -240,7 +238,7 @@ function GenerateVideo({ ui, projectData, projectId }) {
   const handleFileDownload = async () => {
     try {
       setdownloadLoader(true);
-      let data = await Download(projectData, doctorHash, 25);
+      let data = await Download(projectData, doctorHash, 25,empData?.hash);
       let formData = DecryptData(`${doctorHash}-formData`);
       const response = await fetch(videoUrl);
       const blob = await response.blob();
