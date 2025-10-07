@@ -219,7 +219,8 @@ function GenerateVideo({ ui, projectData, projectId }) {
   }, [renderId, projectData, doctorHash, videoGenerated]);
 
   const handleDownload = async () => {
-    await Download(projectData, doctorHash, 25, empData?.employee_hash);
+    
+    await Download(projectData, doctorHash, 25, empData?.hash);
     setVideoDownloaded(true);
   };
 
