@@ -67,9 +67,7 @@ export default function LoginPage({ projectData, projectId, ui }) {
       <Banner
         bannerImage={`${process.env.NEXT_PUBLIC_R2_PUBLIC_URL}/${projectData?.top_banner}`}
       />
-
-      <div className="flex-grow flex flex-col items-center justify-center px-4">
-         
+      <div className="flex-grow flex flex-col items-center mt-10 lg:mt-0 lg:justify-center px-4">
         <div className="max-w-md w-full space-y-8 p-8 rounded-lg shadow-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 transition-all">
           <div className="text-center">
             <h2
