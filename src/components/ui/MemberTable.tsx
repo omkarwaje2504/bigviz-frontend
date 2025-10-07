@@ -873,9 +873,13 @@ const MemberTable: React.FC<MemberTableProps> = ({
                             : "bg-gray-500/20 text-gray-600 dark:text-gray-400"
                         }`}
                       >
-                        {member.download_url || member.extras.video_url
-                          ? "Artwork Generated"
-                          : "Artwork Pending"}
+                        {
+                          member.download_url || member.extras.video_url
+                            ? projectData?.product_type === "EVideo"
+                              ? "Video Generated"
+                              : "Artwork Generated"
+                            : "Artwork Pending"
+                        }
                       </span>
                     )}
                     <h3 className="font-bold text-lg">{member.name}</h3>
@@ -1093,15 +1097,19 @@ const MemberTable: React.FC<MemberTableProps> = ({
                               : "bg-gray-500/20 text-gray-600 dark:text-gray-400"
                           }`}
                         >
-                          {member.download_url
-                            ? "Artwork Generated"
-                            : "Artwork Pending"}
+                          {
+                            member.download_url || member.extras.video_url
+                              ? projectData?.product_type === "EVideo"
+                                ? "Video Generated"
+                                : "Artwork Generated"
+                              : "Artwork Pending"
+                          }
                         </span>
                       )}
                     </td>
                     <td className="px-6 py-4 text-right">
                       <div className="flex justify-end items-center space-x-2">
-                        {(member.download_url || member?.extras?.video_url) && (
+                        {(member.download_url || member?.extras?.video_url) && projectData?.config?.doctor?.preview_enabled && (
                           <button
                             onClick={() => onPreview(member, "PREVIEW")}
                             title="Preview"
