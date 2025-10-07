@@ -29,6 +29,22 @@ function GenerateVideo({ ui, projectData, projectId }) {
 
   const router = useRouter();
 
+  function getVoiceId(lang, gender,voice_model) {
+    const languageKey = Object.keys(voice_model.language).find(
+      (l) => l.toLowerCase() === lang.toLowerCase()
+    );
+    if (!languageKey) return null;
+
+    const genderKey = Object.keys(voice_model.language[languageKey]).find(
+      (g) => g.toLowerCase() === gender.toLowerCase()
+    );
+    if (!genderKey) return null;
+
+    const voiceEntries = voice_model.language[languageKey][genderKey];
+    const firstVoiceId = Object.values(voiceEntries)[0];
+    return firstVoiceId || null;
+  }
+
   useEffect(() => {
     const savedUrl = DecryptData("videoUrl");
     const doctorHash = localStorage.getItem("doctorHash");
@@ -71,11 +87,16 @@ function GenerateVideo({ ui, projectData, projectId }) {
         let formData = DecryptData(`${dh}-formData`);
 
         if (formData) {
+          let language = formData?.language ? formData?.language:"English"
+          let data = getVoiceId(language,formData?.gender,projectData?.config?.["voice-model"]?.[0])
+          let engine = projectData?.config?.["voice-model"]?.[0]?.engine
           let updatedFormData = {
             ...formData,
-            name: `${formData?.prefix} ${formData?.name}`,
+            name: formData?.prefix==="Dr" ?`${formData?.prefix}. ${formData?.name}`:`${formData?.prefix} ${formData?.name}`,
             photo:
               formData?.photo?.croppedImage || formData?.photo?.originalImage,
+            voiceId:data,
+            engine:engine
           };
 
           const response = await VideoRender(
@@ -121,8 +142,16 @@ function GenerateVideo({ ui, projectData, projectId }) {
 
         const check = await GetRenderStatus(renderId);
 
-        progressVal = Math.min(progressVal + 5, 90);
-        setProgress(progressVal);
+        let totalframes = check?.data?.renderMetadata?.frameRange?.[1];
+        let framesrender = check?.data?.framesRendered;
+        
+        if (totalframes && framesrender >= 0) {
+          progressVal = Math.min(
+            Math.round((framesrender / totalframes) * 100),
+            99,
+          );
+          setProgress(progressVal);
+        }
 
         if (check.isError) {
           let errorMsg =
@@ -134,7 +163,7 @@ function GenerateVideo({ ui, projectData, projectId }) {
           return;
         }
 
-        if (check.success && check.data.postRenderData?.outputFile) {
+        if (check.success && check?.data?.postRenderData?.outputFile) {
           clearInterval(interval);
           setVideoUrl(check.data.postRenderData?.outputFile);
           setLoading(false);
@@ -189,7 +218,7 @@ function GenerateVideo({ ui, projectData, projectId }) {
   }, [renderId, projectData, doctorHash, videoGenerated]);
 
   const handleDownload = async () => {
-    await Download(projectData, doctorHash, 25, empData?.employee_hash);
+    await Download(projectData, doctorHash, 25,empData?.hash);
     setVideoDownloaded(true);
   };
 
@@ -209,7 +238,7 @@ function GenerateVideo({ ui, projectData, projectId }) {
   const handleFileDownload = async () => {
     try {
       setdownloadLoader(true);
-      let data = await Download(projectData, doctorHash, 25);
+      let data = await Download(projectData, doctorHash, 25,empData?.hash);
       let formData = DecryptData(`${doctorHash}-formData`);
       const response = await fetch(videoUrl);
       const blob = await response.blob();
@@ -269,13 +298,13 @@ function GenerateVideo({ ui, projectData, projectId }) {
             </div>
 
             <div className="w-full mb-6 ">
-              <div className="w-full h-3 rounded-full overflow-hidden bg-[#e5e7eb] dark:bg-[#404040]">
+              <div className="w-full h-3 rounded-full overflow-hidden bg-gray-900 dark:bg-white">
                 <div
                   className="h-full rounded-full transition-all duration-500 ease-out"
                   style={{
                     width: `${progress}%`,
-                    background: ui.basic.SecondaryText,
-                    color: ui.basic.SecondaryText,
+                    background:ui.basic.primaryColor,
+                    color:ui.basic.primaryText ,
                   }}
                 />
               </div>
@@ -334,6 +363,7 @@ function GenerateVideo({ ui, projectData, projectId }) {
               : "hover:shadow-lg transform hover:scale-105"
           }`}
           style={{
+            color: ui.basic.primaryText,
             backgroundColor:
               loading && !error && !videoGenerated
                 ? "#6b7280"

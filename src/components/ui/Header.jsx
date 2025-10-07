@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { IoArrowBackCircleSharp, IoGameControllerSharp } from "react-icons/io5";
 import { FaFilePrescription } from "react-icons/fa";
 import { FaUserDoctor } from "react-icons/fa6";
+import { SiGoogledisplayandvideo360 } from "react-icons/si";
 
 function useHeaderData() {
   const pathname = usePathname();
@@ -17,13 +18,15 @@ const getProjectIcon = (name) => {
   switch (name) {
     case "PVR":
       return <FaFilm className="text-red-600 text-2xl mr-3" />;
+    case "EVideo":
+      return <SiGoogledisplayandvideo360 className="text-gray-600 text-2xl mr-3"/>
     case "Cinema":
       return <FaVideo className="text-red-600 text-2xl mr-3" />;
     case "Scratch activity":
       return <IoGameControllerSharp className="text-red-600 text-2xl mr-3" />;
     case "Doctor":
       return <FaUserMd className="text-purple-600 text-2xl mr-3" />;
-    case "RxPad Ajanata":
+    case "RxPad":
       return <FaFilePrescription className="text-gray-600 text-2xl mr-3" />;
     default:
       return <FaUserDoctor className="text-gray-600 text-2xl mr-3" />; // fallback
@@ -87,7 +90,7 @@ const Header = ({ ui, userInfo, projectData, projectHash, isHomePage }) => {
               </div>
             ) : (
               <div className="flex items-center">
-                {getProjectIcon(projectData?.name)}
+                {getProjectIcon(projectData?.product_type)}
 
                 <div>
                   <h1

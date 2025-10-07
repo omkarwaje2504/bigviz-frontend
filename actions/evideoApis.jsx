@@ -89,6 +89,7 @@ export const GetRenderStatus = async (id) => {
       return {
         success: false,
         message: "Video processing is still in progress",
+        data: result,
       };
     }
   } catch (error) {
