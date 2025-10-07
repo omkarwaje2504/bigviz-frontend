@@ -25,7 +25,6 @@ function generateRandomString(length) {
   return result;
 }
 
-
 export default function RegisterNewCandidate({ projectData, projectId, ui }) {
   const [currentStep, setCurrentStep] = useState(1);
   const [photoUploadStatus, setPhotoUploadStatus] = useState(false);
@@ -55,7 +54,7 @@ export default function RegisterNewCandidate({ projectData, projectId, ui }) {
     const params = url.searchParams;
     const urlCheck = params.get("dh");
     if (!projectData?.config?.employee && !urlCheck) {
-      params.set("dh",`${generateRandomString(8)}-new` );
+      params.set("dh", `${generateRandomString(8)}-new`);
       window.history.replaceState({}, "", url.toString());
     }
   });
@@ -76,8 +75,8 @@ export default function RegisterNewCandidate({ projectData, projectId, ui }) {
     const url = new URL(window.location.href);
     const params = url.searchParams;
     const dh = params.get("dh");
-    if(!projectData?.config?.employee){
-      RemoveData(`${dh}-formData`)
+    if (!projectData?.config?.employee) {
+      RemoveData(`${dh}-formData`);
     }
     setDoctorHash(dh);
 

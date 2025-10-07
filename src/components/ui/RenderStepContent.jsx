@@ -8,21 +8,8 @@ import CalendarPage from "@components/ui/Calendar";
 import MyError from "@services/MyError";
 import { CheckMobile } from "@actions/user";
 import { DecryptData, EncryptData } from "@utils/cryptoUtils";
-
-const cleanName = (name) => {
-  const prefixes = ["Dr", "Prof", "Mr", "Mrs", "dr", "prof", "mr", "mrs"];
-  let newName = name;
-  for (const p of prefixes) {
-    if (newName.startsWith(`${p}. `) || newName.startsWith(`${p} `)) {
-      newName = newName.substring(p.length + 1).trim();
-      break;
-    } else if (newName.startsWith(`${p}.`)) {
-      newName = newName.substring(p.length).trim();
-      break;
-    }
-  }
-  return newName;
-};
+import CalendarConsent from "./CalendarConsent";
+import { cleanName } from "@utils/CleanUrl";
 
 const getMaxLengthFromRegex = (str) => {
   if (!str) return undefined;
@@ -69,7 +56,12 @@ const RenderStepContent = ({
 
   useEffect(() => {
     if (formData?.name?.length > 5) {
-      setFormData({ ...formData, name: !projectData?.config?.doctor?.disable_doctor_prefix ?cleanName(formData?.name): formData?.name});
+      setFormData({
+        ...formData,
+        name: !projectData?.config?.doctor?.disable_doctor_prefix
+          ? cleanName(formData?.name)
+          : formData?.name,
+      });
     }
   }, [formData?.name]);
 
@@ -177,6 +169,7 @@ const RenderStepContent = ({
     }
     return [];
   };
+
   switch (currentStep) {
     case 1:
       return (
@@ -381,6 +374,7 @@ const RenderStepContent = ({
                   formData={formData}
                   setFormData={setFormData}
                   ui={ui}
+                  doctorHash={doctorHash}
                 />
               ) : (
                 <>
@@ -449,12 +443,24 @@ const RenderStepContent = ({
     case 3:
       return (
         <div className="space-y-6">
-          <AudioUploadEditor
-            projectData={projectData}
-            setFormData={setFormData}
-            formData={formData}
-            setAudioUploadStatus={setAudioUploadStatus}
-          />
+          {projectData?.product_type === "DeskCalendar" ? (
+            <CalendarConsent
+              projectData={projectData}
+              ui={ui}
+              doctorHash={doctorHash}
+              formData={formData}
+              setFormData={setFormData}
+            />
+          ) : (
+            <>
+              <AudioUploadEditor
+                projectData={projectData}
+                setFormData={setFormData}
+                formData={formData}
+                setAudioUploadStatus={setAudioUploadStatus}
+              />{" "}
+            </>
+          )}
         </div>
       );
     case 4:

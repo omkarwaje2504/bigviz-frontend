@@ -36,15 +36,18 @@ const FormNavigationButtons = ({
     disablePhotoUpload ||
     (projectType !== "DeskCalendar" && !!formData?.photo?.croppedImage) ||
     (projectType === "DeskCalendar" &&
-      Array.isArray(formData?.calendarData) &&
-      formData.calendarData.length === 12 &&
-      formData.calendarData.every((item) => !!item.images[0]?.croppedImage));
+      Array.isArray(formData?.calendar_images) &&
+      formData?.calendar_images?.length > 0 &&
+      formData?.calendar_images?.every(
+        (item) => !!item.croppedImage || !!item.images[0]?.croppedImage,
+      ));
 
+      const isPage3Valid = currentStep !== 3 || !!formData?.calendar_consent;
   const isLastStepForProject =
     (projectType === "EVideo" && currentStep === 2 && formData.photo) ||
     (projectType === "RxPad" && currentStep === 2 && formData.photo) ||
     (disablePhotoUpload && currentStep === 1 && isPage1Valid) ||
-    (projectType === "DeskCalendar" && currentStep === 2 && isPage2Valid) ||
+    (projectType === "DeskCalendar" && currentStep === 3 && isPage3Valid) ||
     (projectType === "PhotoFrame" && currentStep === 2 && isPage2Valid) ||
     (projectType !== "EVideo" && currentStep === 4);
 
@@ -89,7 +92,7 @@ const FormNavigationButtons = ({
         </button>
       )}
 
-      {!isLastStepForProject && canProceed && (
+      {!isLastStepForProject && canProceed && currentStep !==3 && (
         <button
           type="button"
           onClick={handleNext}

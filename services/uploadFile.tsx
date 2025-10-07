@@ -46,9 +46,9 @@ const s3 = new S3Client({
 });
 
 async function GenerateFilePath(
-  doctorHash:string | null,
   fileName: string,
   projectInfo: any,
+  doctorHash: string | null,
 ) {
   let d_Hash;
 
@@ -69,7 +69,7 @@ async function GenerateFilePath(
 }
 
 const UploadFile = async (
-  doctorHash: string|null,
+  doctorHash: string | null,
   projectData: any,
   file: Blob | Uint8Array,
   fileName: string,
@@ -81,8 +81,7 @@ const UploadFile = async (
     throw new Error("AWS credentials are not defined");
   }
 
-  const filePath = await GenerateFilePath(doctorHash, fileName, projectData);
-
+  const filePath = await GenerateFilePath(fileName, projectData, doctorHash);
   let buffer: Buffer;
   if (file instanceof Blob) {
     const arrayBuffer = await file.arrayBuffer();
@@ -144,8 +143,12 @@ export const createS3Url = ({ name }: { name: string }) => {
   throw new Error("Unsupported storage provider");
 };
 
-export const DeleteFile = async (doctorHash:string|null ,name: any, projectData: any) => {
-  const filePath = await GenerateFilePath(doctorHash,name, projectData);
+export const DeleteFile = async (
+  doctorHash: string | null,
+  name: any,
+  projectData: any,
+) => {
+  const filePath = await GenerateFilePath(name, projectData, doctorHash);
   const bucketParams = {
     Bucket: bucketName,
     Key: filePath,
