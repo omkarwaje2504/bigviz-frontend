@@ -567,6 +567,7 @@ const ImageCaptureComponent = ({
     [handleReplaceImage],
   );
 
+  console.log(formData)
   // Drag and drop handlers
   const handleDragStart = useCallback((e, index) => {
     setDraggedItem(index);

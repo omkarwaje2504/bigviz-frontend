@@ -8,6 +8,7 @@ import CalendarPage from "@components/ui/Calendar";
 import MyError from "@services/MyError";
 import { CheckMobile } from "@actions/user";
 import { DecryptData, EncryptData } from "@utils/cryptoUtils";
+import CalendarConsent from "./CalendarConsent";
 
 const cleanName = (name) => {
   const prefixes = ["Dr", "Prof", "Mr", "Mrs", "dr", "prof", "mr", "mrs"];
@@ -69,7 +70,12 @@ const RenderStepContent = ({
 
   useEffect(() => {
     if (formData?.name?.length > 5) {
-      setFormData({ ...formData, name: !projectData?.config?.doctor?.disable_doctor_prefix ?cleanName(formData?.name): formData?.name});
+      setFormData({
+        ...formData,
+        name: !projectData?.config?.doctor?.disable_doctor_prefix
+          ? cleanName(formData?.name)
+          : formData?.name,
+      });
     }
   }, [formData?.name]);
 
@@ -450,12 +456,24 @@ const RenderStepContent = ({
     case 3:
       return (
         <div className="space-y-6">
-          <AudioUploadEditor
-            projectData={projectData}
-            setFormData={setFormData}
-            formData={formData}
-            setAudioUploadStatus={setAudioUploadStatus}
-          />
+          {projectData?.product_type === "DeskCalendar" ? (
+            <CalendarConsent
+              projectData={projectData}
+              ui={ui}
+              doctorHash={doctorHash}
+              formData={formData}
+              setFormData={setFormData}
+            />
+          ) : (
+            <>
+              <AudioUploadEditor
+                projectData={projectData}
+                setFormData={setFormData}
+                formData={formData}
+                setAudioUploadStatus={setAudioUploadStatus}
+              />{" "}
+            </>
+          )}
         </div>
       );
     case 4:
