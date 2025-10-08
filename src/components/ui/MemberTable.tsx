@@ -72,7 +72,7 @@ const MemberTable: React.FC<MemberTableProps> = ({
 
   useEffect(() => {
     if (projectData?.config?.employee) {
-      let empData = DecryptData("empData");
+      const empData = DecryptData("empData");
       if (empData) {
         setempData(empData);
       }
@@ -178,7 +178,7 @@ const MemberTable: React.FC<MemberTableProps> = ({
 
         return acc;
       },
-      {} as Record<number, any>,
+      {} as Record<number, Doctor["approval_history"][number]>,
     );
 
     // Get approved and disapproved roles based on latest status
@@ -895,7 +895,7 @@ const MemberTable: React.FC<MemberTableProps> = ({
                         className="w-full justify-center flex items-center space-x-1 text-xs text-white bg-purple-600 p-2 rounded-sm"
                         onClick={() => {
                           EncryptData("isEdit", "true");
-                          onEdit(member.doctor_hash);
+                          onEdit(member);
                         }}
                       >
                         <FaEdit />
@@ -1101,7 +1101,7 @@ const MemberTable: React.FC<MemberTableProps> = ({
                           <button
                             onClick={() => {
                               EncryptData("isEdit", "true");
-                              onEdit(member.doctor_hash);
+                              onEdit(member);
                             }}
                             title="Edit"
                           >

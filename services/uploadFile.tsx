@@ -1,10 +1,10 @@
 import {
   S3Client,
-  PutObjectCommand,
   DeleteObjectCommand,
 } from "@aws-sdk/client-s3";
 import { DecryptData } from "@utils/cryptoUtils";
 import MyError from "@services/MyError";
+import { ProjectInfo } from "@utils/types";
 
 let bucketName: string,
   awsRegion: string,
@@ -47,7 +47,7 @@ const s3 = new S3Client({
 
 async function GenerateFilePath(
   fileName: string,
-  projectInfo: any,
+  projectInfo: ProjectInfo,
   doctorHash: string | null,
 ) {
   let d_Hash;
@@ -70,7 +70,7 @@ async function GenerateFilePath(
 
 const UploadFile = async (
   doctorHash: string | null,
-  projectData: any,
+  projectData: ProjectInfo,
   file: Blob | Uint8Array,
   fileName: string,
   type?: string,
@@ -96,7 +96,7 @@ const UploadFile = async (
   );
   uploadUrl.searchParams.set("filename", filePath);
 
-  const fileBlob = new Blob([buffer], { type: contentType });
+  const fileBlob = new Blob([new Uint8Array(buffer)], { type: contentType });
 
   try {
     const response = await fetch(uploadUrl.toString(), {
@@ -145,8 +145,8 @@ export const createS3Url = ({ name }: { name: string }) => {
 
 export const DeleteFile = async (
   doctorHash: string | null,
-  name: any,
-  projectData: any,
+  name: string,
+  projectData: ProjectInfo,
 ) => {
   const filePath = await GenerateFilePath(name, projectData, doctorHash);
   const bucketParams = {

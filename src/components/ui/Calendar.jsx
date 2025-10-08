@@ -21,6 +21,7 @@ import { ImageCropper } from "./ImageCropper";
 import PreviewModal from "./PreviewModal";
 import { CALENDAR_PREVIEW_CONFIG } from "./CalendarConsent";
 import { getPhotoDims } from "@utils/imageHelpers";
+import { FaBahai } from "react-icons/fa6";
 
 const CONFIG = {
   maxImages: 12,
@@ -63,13 +64,34 @@ const CalendarPage = ({
 
   // Load saved images from localStorage on component mount
   useEffect(() => {
-    const savedImages = formData?.calendar_images;
-    if (savedImages) {
-      try {
-        setSelectedImages(savedImages);
-      } catch (e) {
-        console.error("Error loading saved images:", e);
+    const media = formData?.media;
+
+    if (media && typeof media === "object") {
+      const images = [];
+
+      MONTH_NAMES.forEach((month, index) => {
+        const key = month.toLowerCase();
+        const original = media[key];
+        const cropped = media[`${key}_cropped`];
+        const traillingPath = process.env.NEXT_PUBLIC_R2_PUBLIC_URL;
+
+        if (original || cropped) {
+          images.push({
+            id: `${key}-${index}`,
+            month: key,
+            name: `${month} Image`,
+            needsCropping: false,
+            [`${key}`]: traillingPath +"/"+ original || "",
+            [`${key}_cropped`]: traillingPath +"/"+ cropped || "",
+          });
+        }
+      });
+
+      if (images.length > 0) {
+        setSelectedImages(images);
       }
+    } else if (formData?.calendar_images) {
+      setSelectedImages(formData.calendar_images);
     }
   }, []);
 
@@ -443,7 +465,37 @@ const CalendarPage = ({
           />
         </label>
       </div>
-
+      <div className="mb-2 flex gap-1">
+        <label
+          className={`
+            py-2 rounded-lg text-white font-medium text-sm w-full text-center
+            inline-block transition-all duration-200 cursor-pointer
+            ${
+              remainingSlots > 0 && !isProcessing
+                ? "bg-blue-600 hover:bg-blue-700 active:bg-blue-800 shadow-md hover:shadow-lg"
+                : "bg-gray-700 cursor-not-allowed opacity-60"
+            }
+          `}
+          title={
+            isProcessing
+              ? "Please finish cropping current images"
+              : remainingSlots > 0
+                ? `Choose up to ${remainingSlots} photos from gallery`
+                : "Maximum limit reached"
+          }
+        >
+          <FaBahai /> Generate with AI
+          <input
+            ref={fileInputRef}
+            type="file"
+            multiple
+            accept={CONFIG.acceptedFormats}
+            onChange={(e) => handleImageSelection(e, "gallery")}
+            disabled={remainingSlots === 0 || isProcessing}
+            className="hidden"
+          />
+        </label>
+      </div>
       {/* Processing Status */}
       {isProcessing && (
         <div className="mb-1 bg-blue-900 bg-opacity-30 border border-blue-700 rounded-lg">
@@ -475,15 +527,14 @@ const CalendarPage = ({
                 image.croppedImage ||
                 image.src;
 
-                
               return (
                 <div
                   key={image.id}
                   className={`
-        flex flex-col bg-gray-800 border-2 rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-all duration-200 cursor-move
-        ${draggedItem === index ? "opacity-50 transform rotate-3 scale-105" : ""}
-        ${dragOverIndex === index ? "border-blue-500 bg-blue-900 bg-opacity-30" : "border-gray-700"}
-      `}
+                    flex flex-col bg-gray-800 border-2 rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-all duration-200 cursor-move
+                    ${draggedItem === index ? "opacity-50 transform rotate-3 scale-105" : ""}
+                    ${dragOverIndex === index ? "border-blue-500 bg-blue-900 bg-opacity-30" : "border-gray-700"}
+                  `}
                   draggable="true"
                   onDragStart={(e) => handleDragStart(e, index)}
                   onDragOver={(e) => handleDragOver(e, index)}

@@ -38,8 +38,7 @@ const FormNavigationButtons = ({
     (projectType === "DeskCalendar" &&
       Array.isArray(formData?.calendar_images) &&
       formData?.calendar_images?.length > 0);
-      
-  console.log(formData);
+    
 
   const isPage3Valid = currentStep !== 3 || !!formData?.calendar_consent;
 

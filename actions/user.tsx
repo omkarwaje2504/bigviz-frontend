@@ -4,11 +4,11 @@ import { DecryptData } from "@utils/cryptoUtils";
 import { FormData, ProjectInfo } from "@utils/types";
 
 interface CalendarImage {
-  id: number;
+  id: string;
   name: string;
-  needsCropping: boolean;
+  needsCropping: string;
   month: string;
-  [key: string]: string | number | boolean;
+  [key: string]: string;
 }
 
 export const FetchDoctors = async (
@@ -197,14 +197,9 @@ export const SaveDoctors = async (
   formData: any,
   doctorCode: string,
 ) => {
-  let prevData;
-
   const apiUrl = process.env.NEXT_PUBLIC_PROJECT_URL;
   if (!apiUrl) {
     throw new Error("API url is missing. Please check");
-  }
-  if (doctorCode) {
-    prevData = DecryptData(`${doctorCode}-prevData`);
   }
   if (!projectData?.project_hash) {
     return {
@@ -308,12 +303,12 @@ export const SaveDoctors = async (
         img[`${img.month?.toLowerCase()}_cropped`] ||
         "";
 
-      calendarData[month] = String(monthUrl);
-      calendarData[`${month}_cropped`] = String(monthCroppedUrl);
+      calendarData[month] = String(monthUrl?.replace(trailingPath, ""));
+      calendarData[`${month}_cropped`] = String(
+        monthCroppedUrl?.replace(trailingPath, ""),
+      );
     });
   }
-
-  console.log("Calendar Data:", calendarData);
   try {
     const requestBody = {
       project_hash: projectData.project_hash,
@@ -327,7 +322,7 @@ export const SaveDoctors = async (
       media: {
         images: photo,
         cropped_image,
-        calendarData,
+        ...calendarData,
       },
     };
 

@@ -19,7 +19,9 @@ const getProjectIcon = (name) => {
     case "PVR":
       return <FaFilm className="text-red-600 text-2xl mr-3" />;
     case "EVideo":
-      return <SiGoogledisplayandvideo360 className="text-gray-600 text-2xl mr-3"/>
+      return (
+        <SiGoogledisplayandvideo360 className="text-gray-600 text-2xl mr-3" />
+      );
     case "Cinema":
       return <FaVideo className="text-red-600 text-2xl mr-3" />;
     case "Scratch activity":
@@ -35,8 +37,18 @@ const getProjectIcon = (name) => {
 
 const Header = ({ ui, userInfo, projectData, projectHash, isHomePage }) => {
   const { pathnamesArray } = useHeaderData();
+  const [isNew, setIsNew] = useState(false);
 
   const [isDark, setIsDark] = useState(false);
+
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    const params = url.searchParams;
+    const urlCheck = params.get("dh");
+    if (urlCheck?.includes("-new")) {
+      setIsNew(true);
+    }
+  });
 
   // detect system dark/light
   useEffect(() => {
@@ -80,10 +92,16 @@ const Header = ({ ui, userInfo, projectData, projectHash, isHomePage }) => {
                   )}
                   <div>
                     <h1 className="text-xl font-bold flex gap-2 items-center text-gray-800 dark:text-white">
-                      {ui?.DoctorRegistrationForm?.FormHeading}
+                      {isNew
+                        ? ui?.DoctorRegistrationForm?.FormHeading
+                        : ui?.DoctorRegistrationForm?.FormHeading?.replace(
+                            "Add New",
+                            "Edit",
+                          )}
                     </h1>
                     <p className="text-gray-400 text-sm md:text-md">
-                      {ui?.DoctorRegistrationForm?.FormSubHeading}
+                      {isNew
+                        ? ui?.DoctorRegistrationForm?.FormSubHeading: ui?.DoctorRegistrationForm?.FormSubHeading?.replace("add","edit") }
                     </p>
                   </div>
                 </div>
