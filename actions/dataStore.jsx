@@ -10,7 +10,7 @@ export async function getDataSingleton() {
         "Content-Type": "application/json",
         Accept: "application/json",
       },
-      cache: "no-cache",
+      // cache: "no-cache",
     },
   );
   if(response.status !== 200) {

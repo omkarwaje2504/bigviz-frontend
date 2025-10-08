@@ -8,7 +8,7 @@ const Dashboard = ({ members, ui }) => {
   const disapprovedCount = memberList.filter(m => m.photo_approval_status === 2).length;
   const pendingCount = memberList.filter(m => m.photo_approval_status === 0).length;
 
-  const stats = [
+  let stats= [
     { label: "Approved", value: approvedCount, color: "green" },
     { label: "Disapproved", value: disapprovedCount, color: "red" },
     { label: "Pending", value: pendingCount, color: "yellow" },

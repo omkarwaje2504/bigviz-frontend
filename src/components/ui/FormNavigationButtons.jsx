@@ -37,12 +37,12 @@ const FormNavigationButtons = ({
     (projectType !== "DeskCalendar" && !!formData?.photo?.croppedImage) ||
     (projectType === "DeskCalendar" &&
       Array.isArray(formData?.calendar_images) &&
-      formData?.calendar_images?.length > 0 &&
-      formData?.calendar_images?.every(
-        (item) => !!item.croppedImage || !!item.images[0]?.croppedImage,
-      ));
+      formData?.calendar_images?.length > 0);
+      
+  console.log(formData);
 
-      const isPage3Valid = currentStep !== 3 || !!formData?.calendar_consent;
+  const isPage3Valid = currentStep !== 3 || !!formData?.calendar_consent;
+
   const isLastStepForProject =
     (projectType === "EVideo" && currentStep === 2 && formData.photo) ||
     (projectType === "RxPad" && currentStep === 2 && formData.photo) ||
@@ -92,7 +92,7 @@ const FormNavigationButtons = ({
         </button>
       )}
 
-      {!isLastStepForProject && canProceed && currentStep !==3 && (
+      {!isLastStepForProject && canProceed && currentStep !== 3 && (
         <button
           type="button"
           onClick={handleNext}

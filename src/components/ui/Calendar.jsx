@@ -29,18 +29,18 @@ const CONFIG = {
 };
 
 const MONTH_NAMES = [
-  "Jan",
-  "Feb",
-  "Mar",
-  "Apr",
+  "January",
+  "February",
+  "March",
+  "April",
   "May",
-  "Jun",
-  "Jul",
-  "Aug",
-  "Sep",
-  "Oct",
-  "Nov",
-  "Dec",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
 ];
 
 const CalendarPage = ({
@@ -189,29 +189,32 @@ const CalendarPage = ({
     (croppedData) => {
       const currentPendingImage = pendingImages[currentCropIndex];
 
+      // Determine the month name based on the current selectedImages length
+      const currentMonthIndex = selectedImages.length;
+      const monthName = MONTH_NAMES[currentMonthIndex]
+        ? MONTH_NAMES[currentMonthIndex].toLowerCase()
+        : `month_${currentMonthIndex + 1}`;
+
+      // Create formatted image data
+      const formattedData = {
+        id: currentPendingImage.replaceId || currentPendingImage.id,
+        name: currentPendingImage.name,
+        needsCropping: false,
+        month: monthName,
+        [`${monthName}`]: croppedData.originalImage,
+        [`${monthName}_cropped`]: croppedData.croppedImage,
+      };
+
       if (currentPendingImage.replaceId) {
         // Replace existing image
         setSelectedImages((prev) =>
           prev.map((img) =>
-            img.id === currentPendingImage.replaceId
-              ? {
-                  ...croppedData,
-                  needsCropping: false,
-                  id: currentPendingImage.replaceId, // Keep original ID
-                }
-              : img,
+            img.id === currentPendingImage.replaceId ? formattedData : img,
           ),
         );
       } else {
         // Add new image
-        setSelectedImages((prev) => [
-          ...prev,
-          {
-            ...croppedData,
-
-            needsCropping: false,
-          },
-        ]);
+        setSelectedImages((prev) => [...prev, formattedData]);
       }
 
       // Move to next image or finish
@@ -225,7 +228,7 @@ const CalendarPage = ({
         setIsProcessing(false);
       }
     },
-    [currentCropIndex, pendingImages],
+    [currentCropIndex, pendingImages, selectedImages],
   );
 
   const handleCropCancel = useCallback(() => {
@@ -461,94 +464,107 @@ const CalendarPage = ({
             Selected Images ({selectedImages.length}/{CONFIG.maxImages})
           </h3>
           <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
-            {selectedImages.map((image, index) => (
-              <div
-                key={image.id}
-                className={`
-                  flex flex-col bg-gray-800 border-2 rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-all duration-200 cursor-move
-                  ${draggedItem === index ? "opacity-50 transform rotate-3 scale-105" : ""}
-                  ${dragOverIndex === index ? "border-blue-500 bg-blue-900 bg-opacity-30" : "border-gray-700"}
-                `}
-                draggable="true"
-                onDragStart={(e) => handleDragStart(e, index)}
-                onDragOver={(e) => handleDragOver(e, index)}
-                onDragLeave={handleDragLeave}
-                onDrop={(e) => handleDrop(e, index)}
-                onDragEnd={handleDragEnd}
-              >
-                {/* Month Header */}
-                <div className="bg-gray-700 text-white text-center py-0.5 text-sm font-semibold flex items-center justify-center gap-2">
-                  <MdDragIndicator className="h-4 w-4 text-gray-400" />
-                  {getMonthName(index)}
-                </div>
+            {selectedImages.map((image, index) => {
+              const monthKey = image.month || MONTH_NAMES[index]?.toLowerCase();
+              const displayMonthName =
+                monthKey.charAt(0).toUpperCase() + monthKey.slice(1);
 
-                {/* Image Preview */}
+              const previewSrc =
+                image[`${monthKey}_cropped`] ||
+                image[`${monthKey}`] ||
+                image.croppedImage ||
+                image.src;
+
+                
+              return (
                 <div
-                  className="relative w-full h-20 overflow-hidden"
-                  onClick={() => handlePreviewOpen(image, index)}
+                  key={image.id}
+                  className={`
+        flex flex-col bg-gray-800 border-2 rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-all duration-200 cursor-move
+        ${draggedItem === index ? "opacity-50 transform rotate-3 scale-105" : ""}
+        ${dragOverIndex === index ? "border-blue-500 bg-blue-900 bg-opacity-30" : "border-gray-700"}
+      `}
+                  draggable="true"
+                  onDragStart={(e) => handleDragStart(e, index)}
+                  onDragOver={(e) => handleDragOver(e, index)}
+                  onDragLeave={handleDragLeave}
+                  onDrop={(e) => handleDrop(e, index)}
+                  onDragEnd={handleDragEnd}
                 >
-                  <img
-                    src={image.croppedImage || image.src}
-                    alt={`${getMonthName(index)} - ${image.name}`}
-                    className="w-full h-full object-cover"
-                  />
-                  {image.needsCropping && (
-                    <div className="absolute inset-0 bg-yellow-500 bg-opacity-30 flex items-center justify-center">
-                      <span className="text-yellow-800 text-xs font-bold bg-yellow-400 px-2 rounded">
-                        Needs Crop
-                      </span>
-                    </div>
-                  )}
-                </div>
-
-                {/* Action Buttons */}
-                <div className="flex gap-1 justify-center bg-gray-700 p-1">
-                  <div className="relative flex-1">
-                    <button
-                      type="button"
-                      className="w-full bg-blue-600 hover:bg-blue-700 active:scale-105 py-1 border-none rounded flex items-center justify-center shadow-sm transition-all duration-200 text-white"
-                      onClick={(e) => toggleMenu(image.id, e)}
-                      title={`Replace ${getMonthName(index)} image`}
-                    >
-                      ↻
-                    </button>
-
-                    <div
-                      id={`menu-${image.id}`}
-                      className="hidden absolute bottom-full left-0 mb-1 bg-gray-800 border border-gray-600 rounded-md shadow-lg z-50 min-w-32 overflow-hidden"
-                    >
-                      <button
-                        type="button"
-                        onClick={(e) =>
-                          handleReplaceClick(image.id, "camera", e)
-                        }
-                        className="block w-full px-3 py-2 text-left text-sm text-gray-200 hover:bg-gray-700 bg-gray-600 border-none transition-colors duration-200"
-                      >
-                        Camera
-                      </button>
-                      <button
-                        type="button"
-                        onClick={(e) =>
-                          handleReplaceClick(image.id, "gallery", e)
-                        }
-                        className="block w-full px-3 py-2 text-left text-sm text-gray-200 hover:bg-gray-700 border-none border-t border-gray-600 transition-colors duration-200"
-                      >
-                        Gallery
-                      </button>
-                    </div>
+                  {/* Month Header */}
+                  <div className="bg-gray-700 text-white text-center py-0.5 text-sm font-semibold flex items-center justify-center gap-2">
+                    <MdDragIndicator className="h-4 w-4 text-gray-400" />
+                    {displayMonthName}
                   </div>
 
-                  <button
-                    type="button"
-                    onClick={(e) => removeImage(image.id, e)}
-                    className="flex-1 py-1 bg-red-600 hover:bg-red-700 active:scale-105 border-none rounded flex items-center justify-center shadow-sm transition-all duration-200 text-white"
-                    title={`Delete ${getMonthName(index)} image`}
+                  {/* Image Preview */}
+                  <div
+                    className="relative w-full h-20 overflow-hidden"
+                    onClick={() => handlePreviewOpen(image, index)}
                   >
-                    <MdDelete className="h-4 w-4" />
-                  </button>
+                    <img
+                      src={previewSrc}
+                      alt={`${displayMonthName} - ${image.name}`}
+                      className="w-full h-full object-cover"
+                    />
+                    {image.needsCropping && (
+                      <div className="absolute inset-0 bg-yellow-500 bg-opacity-30 flex items-center justify-center">
+                        <span className="text-yellow-800 text-xs font-bold bg-yellow-400 px-2 rounded">
+                          Needs Crop
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="flex gap-1 justify-center bg-gray-700 p-1">
+                    <div className="relative flex-1">
+                      <button
+                        type="button"
+                        className="w-full bg-blue-600 hover:bg-blue-700 active:scale-105 py-1 border-none rounded flex items-center justify-center shadow-sm transition-all duration-200 text-white"
+                        onClick={(e) => toggleMenu(image.id, e)}
+                        title={`Replace ${displayMonthName} image`}
+                      >
+                        ↻
+                      </button>
+
+                      <div
+                        id={`menu-${image.id}`}
+                        className="hidden absolute bottom-full left-0 mb-1 bg-gray-800 border border-gray-600 rounded-md shadow-lg z-50 min-w-32 overflow-hidden"
+                      >
+                        <button
+                          type="button"
+                          onClick={(e) =>
+                            handleReplaceClick(image.id, "camera", e)
+                          }
+                          className="block w-full px-3 py-2 text-left text-sm text-gray-200 hover:bg-gray-700 bg-gray-600 border-none transition-colors duration-200"
+                        >
+                          Camera
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) =>
+                            handleReplaceClick(image.id, "gallery", e)
+                          }
+                          className="block w-full px-3 py-2 text-left text-sm text-gray-200 hover:bg-gray-700 border-none border-t border-gray-600 transition-colors duration-200"
+                        >
+                          Gallery
+                        </button>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={(e) => removeImage(image.id, e)}
+                      className="flex-1 py-1 bg-red-600 hover:bg-red-700 active:scale-105 border-none rounded flex items-center justify-center shadow-sm transition-all duration-200 text-white"
+                      title={`Delete ${displayMonthName} image`}
+                    >
+                      <MdDelete className="h-4 w-4" />
+                    </button>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}
