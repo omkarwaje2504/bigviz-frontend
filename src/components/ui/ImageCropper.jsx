@@ -39,7 +39,7 @@ export const ImageCropper = ({
 }) => {
   const [zoom, setZoom] = useState(1);
   const [rotation, setRotation] = useState(0);
-  const [editMode, setEditMode] = useState(null);
+  const [editMode, setEditMode] = useState("crop");
   const [contrast, setContrast] = useState(100);
   const [brightness, setBrightness] = useState(100);
   const [saturate, setSaturate] = useState(100);
@@ -50,6 +50,9 @@ export const ImageCropper = ({
   const cropperRef = useRef(null);
   const imageRef = useRef(null);
 
+  useEffect(()=>{
+    setEditMode("crop")
+  })
   const currentFilterStyle = {
     filter: `contrast(${contrast}%) brightness(${brightness}%) saturate(${saturate}%)`,
   };
