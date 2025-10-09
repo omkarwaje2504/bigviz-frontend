@@ -50,7 +50,7 @@ async function GenerateFilePath(
   projectInfo: ProjectInfo,
   doctorHash: string | null,
 ) {
-  let d_Hash;
+  let d_Hash=doctorHash;
 
   if (!doctorHash) {
     const employeeInfo = DecryptData("empData");
