@@ -32,6 +32,7 @@ import { FaFilePrescription } from "react-icons/fa";
 import { DecryptData, EncryptData } from "@utils/cryptoUtils";
 import { GiGamepadCross } from "react-icons/gi";
 import Link from "next/link";
+import PreviewModal from "./PreviewModal";
 
 const ITEMS_PER_PAGE = 4;
 
@@ -711,60 +712,11 @@ const MemberTable: React.FC<MemberTableProps> = ({
   return (
     <div className="mt-6 text-gray-900 dark:text-white">
       {previewMode && (
-        <div className="fixed top-0 left-0 w-full h-full flex items-center justify-center z-10 bg-slate-900/80 transition-all duration-300 ease-in-out">
-          <div className="flex flex-col items-center justify-center p-3 w-full md:max-w-[50%] h-full max-h-[75%] relative">
-            <MdOutlineCancel
-              className="w-10 h-10 fill-black mb-2 z-10 self-end cursor-pointer absolute top-0 bg-white rounded-full border border-black"
-              onClick={() => setPreviewMode(false)}
-            />
-
-            {/* Image Preview */}
-            {previewType === "IMAGE" && (
-              <div className="w-full h-full flex items-center justify-center">
-                {previewUrl ? (
-                  <img
-                    src={previewUrl}
-                    alt="Preview"
-                    className="max-h-full max-w-full object-contain border-4 border-white rounded-2xl overflow-hidden"
-                  />
-                ) : previewImageType === "DOCTOR_IMAGE" ? (
-                  <div className="w-64 h-64 p-10 bg-gray-800 flex flex-col items-center justify-center">
-                    No Doctor Photo
-                  </div>
-                ) : (
-                  <div className="w-64 h-64 p-10 bg-gray-800 flex flex-col items-center justify-center">
-                    <RiArtboardFill className="text-6xl text-gray-400" />
-                    No Artwork Uploaded
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* PDF Preview */}
-            {previewType === "PDF" && previewUrl && (
-              <div className="w-full h-full">
-                <iframe
-                  src={previewUrl}
-                  className="w-full h-full border-4 border-white rounded-2xl"
-                  title="PDF Preview"
-                />
-              </div>
-            )}
-
-            {/* Video Preview */}
-            {previewType === "VIDEO" && previewUrl && (
-              <div className="w-full h-full flex items-center justify-center">
-                <video
-                  controls
-                  className="max-w-full max-h-full border-4 border-white rounded-2xl"
-                  src={previewUrl}
-                >
-                  Your browser does not support the video tag.
-                </video>
-              </div>
-            )}
-          </div>
-        </div>
+         <PreviewModal
+          previewType={previewType}
+          previewUrl={previewUrl}
+          setPreviewMode={setPreviewMode}
+        />
       )}
       <CommentModal
         showModal={showCommentModal}
@@ -777,6 +729,7 @@ const MemberTable: React.FC<MemberTableProps> = ({
       <div className="flex w-full items-center gap-2 mb-4">
         <div className="w-full">
           <InputField
+            doctorHash={null}
             ui={ui}
             id="search"
             label=""
