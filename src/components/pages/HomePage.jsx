@@ -187,7 +187,6 @@ const HomePage = ({ projectData, projectId, ui }) => {
             ui={ui}
             projectData={projectData}
           />
-
         )}
 
         <div className="flex md:gap-10  md:flex-row justify-between items-start md:items-center mb-6 space-y-4 md:space-y-0 mt-3">
@@ -199,7 +198,7 @@ const HomePage = ({ projectData, projectId, ui }) => {
               {ui.Dashboard.HomePageSubTitle}
             </p>
           </div>
-          
+
 
           <div className="flex  md:w-auto">
             {projectData?.config?.doctor?.enable_add_new_doctor &&
