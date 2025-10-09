@@ -254,23 +254,23 @@ const MemberTable: React.FC<MemberTableProps> = ({
     };
   };
   const onDownload = async (member: Doctor) => {
-    const link = member.download_url || member.extras.video_url;
+    const link = member.download_url || member?.extras?.video_url;
     try {
       const response = await fetch(link, { method: "GET", cache: "no-cache" });
 
       if (!response.ok) {
-        console.error(`Download failed. Status: ${response.status}`);
-        MyError(`Download failed. Status: ${response.status}`);
+        console.error(`Download failed. Status: ${response?.status}`);
+        MyError(`Download failed. Status: ${response?.status}`);
         return;
       }
 
-      setDownloadingStatus((prev) => [...prev, member.doctor_hash]);
+      setDownloadingStatus((prev) => [...prev, member?.doctor_hash]);
 
       // @ts-expect-error this is a dynamic import
       const FileSaver = (await import("file-saverjs")).default;
       const contentBlob = await response.blob();
 
-      let fileName = slugify(member.name || "download", {
+      let fileName = slugify(member?.name || "download", {
         replacement: "",
         remove: /[*+~.()'"!:@]/g,
         lower: false,
@@ -280,7 +280,7 @@ const MemberTable: React.FC<MemberTableProps> = ({
           fileName += ".jpg";
           break;
         case "E-Greeting":
-          fileName += projectData?.features.includes("pdf_ecard")
+          fileName += projectData?.features?.includes("pdf_ecard")
             ? ".pdf"
             : ".jpg";
           break;
@@ -295,13 +295,13 @@ const MemberTable: React.FC<MemberTableProps> = ({
       FileSaver(contentBlob, fileName);
 
       setDownloadingStatus((prev) =>
-        prev.filter((hash) => hash !== member.doctor_hash),
+        prev.filter((hash) => hash !== member?.doctor_hash),
       );
     } catch (error) {
       console.error("Download error:", error);
 
       setDownloadingStatus((prev) =>
-        prev.filter((h) => h !== member.doctor_hash),
+        prev.filter((h) => h !== member?.doctor_hash),
       );
 
       try {

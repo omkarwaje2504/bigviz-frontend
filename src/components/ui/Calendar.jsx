@@ -21,10 +21,7 @@ import { ImageCropper } from "./ImageCropper";
 import PreviewModal from "./PreviewModal";
 import { CALENDAR_PREVIEW_CONFIG } from "./CalendarConsent";
 import { getPhotoDims } from "@utils/imageHelpers";
-<<<<<<< HEAD
-=======
 import { FaBahai } from "react-icons/fa6";
->>>>>>> a9abb7dfb2357d39985cb0fac3b297596ce4494b
 
 const CONFIG = {
   maxImages: 12,

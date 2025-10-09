@@ -112,7 +112,7 @@ const Header = ({ ui, userInfo, projectData, projectHash, isHomePage }) => {
 
                 <div>
                   <h1
-                    className="text-md md:text-xl font-bold"
+                    className="text-sm md:text-xl font-bold"
                     style={{ color: textColor }}
                   >
                     {projectData?.config?.theme?.loading_title ||
