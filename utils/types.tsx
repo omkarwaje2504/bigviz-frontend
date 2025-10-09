@@ -86,7 +86,7 @@ interface Field {
 export interface ProjectInfo {
   project_hash: string;
   product_type: string;
-  features: unknown;
+  features: any;
   config: {
     field: Field[];
     doctor: {
@@ -128,13 +128,13 @@ export interface ProjectInfo {
   name: string;
 }
 export type MemberTableProps = {
-  ui: unknown;
+  ui: any;
   projectData: ProjectInfo;
   userInfo: UserInfo;
   members: Doctor[];
   onEdit:  (member: Doctor) => void;
   approvalState?: boolean;
-  approvingStatus?: unknown;
+  approvingStatus?: any;
   onApprove?: (member: Doctor) => void;
   onDisapprove?: (member: Doctor, comment: string) => void;
 };

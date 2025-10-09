@@ -96,8 +96,8 @@ const LoadingPage = ({ ui, projectData }) => {
         className="text-sm"
         style={{
           color: isDark
-            ? ui?.basic?.primaryText || "#cccccc"
-            : ui?.basic?.secondaryText || "#666666",
+            ? ui?.basic?.primaryColor || "#cccccc"
+            : ui?.basic?.secondaryColor || "#666666",
         }}
       >
         {ui?.loaderPage?.assetLoader} {progress}%
