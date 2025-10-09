@@ -61,6 +61,7 @@ const CalendarPage = ({
   const [previewData, setPreviewData] = useState(null);
   const fileInputRef = useRef(null);
   const cameraInputRef = useRef(null);
+  const [calendarTheme,setCalendarTheme] = useState(formData?.calendar_theme);
 
   // Load saved images from localStorage on component mount
   useEffect(() => {
@@ -386,6 +387,22 @@ const CalendarPage = ({
     return MONTH_NAMES[index] || `Month ${index + 1}`;
   };
 
+  if(!calendarTheme){
+
+    return(
+    <div>
+      <h2 className="text-2xl font-bold text-white">Select Calendar Theme</h2>
+    <p className="text-gray-800 dark:text-gray-400">Select your theme to start with the image selections</p>
+    <div className="flex flex-wrap gap-2 mt-6">
+      <button onClick={()=>setCalendarTheme('personalized')} className="bg-blue-600 hover:bg-blue-700 text-white text-md font-bold py-3 px-2 rounded w-fit col-span-2">Personalized Doctor photos</button>
+      <button onClick={()=>setCalendarTheme('nature')} className="bg-green-600 hover:bg-green-700 text-white text-md font-bold py-3 px-2 rounded w-fit">Nature</button>
+      <button onClick={()=>setCalendarTheme('architecture')} className="bg-gray-600 hover:bg-gray-700 text-white text-md font-bold py-3 px-2 rounded w-fit">Name Art</button>
+      <button onClick={()=>setCalendarTheme('artistic')} className="bg-purple-600 hover:bg-purple-700 text-white text-md font-bold py-3 px-2 rounded w-fit">AI Images</button>
+    </div>
+    </div>
+    )
+  }else{
+
   return (
     <div className="bg-gray-900">
       {previewData && (
@@ -698,6 +715,7 @@ const CalendarPage = ({
       )}
     </div>
   );
+}
 };
 
 export default CalendarPage;

@@ -135,8 +135,8 @@ const HomePage = ({ projectData, projectId, ui }) => {
       mobile: member?.mobile?.replace(/^\+91/, "") || "",
       prefix: "Dr",
       photo: {
-        croppedImage: member?.image,
-        originalImage: member?.cropped_image,
+        originalImage: member?.image,
+        croppedImage: member?.cropped_image,
       },
     };
 
