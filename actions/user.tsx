@@ -3,6 +3,14 @@ import cleanUrls from "@utils/CleanUrl";
 import { DecryptData } from "@utils/cryptoUtils";
 import { FormData, ProjectInfo } from "@utils/types";
 
+interface CalendarImage {
+  id: string;
+  name: string;
+  needsCropping: string;
+  month: string;
+  [key: string]: string;
+}
+
 export const FetchDoctors = async (
   projectData: ProjectInfo,
   employeeCode: string,
@@ -175,7 +183,7 @@ function mapFormDataToFields(formData: FormData, project: ProjectInfo) {
     if (value === "Other" && formData?.[`other-${field.name}`]) {
       value = formData[`other-${field.name}`];
     }
-   
+
     return {
       id: field.id ?? index + 1,
       value: value,
@@ -189,26 +197,22 @@ export const SaveDoctors = async (
   formData: any,
   doctorCode: string,
 ) => {
-  let prevData;
-
-  if (doctorCode) {
-    prevData = DecryptData(`${doctorCode}-prevData`);
+  const apiUrl = process.env.NEXT_PUBLIC_PROJECT_URL;
+  if (!apiUrl) {
+    throw new Error("API url is missing. Please check");
   }
-
   if (!projectData?.project_hash) {
     return {
       success: false,
       message: "Something left behind. Please refresh and try again.",
     };
   }
-
   if (projectData?.config?.employee && !employeeCode) {
     return {
       success: false,
       message: "Employee code is required. Please logout and login again.",
     };
   }
-
   if (!formData) {
     return {
       success: false,
@@ -216,83 +220,111 @@ export const SaveDoctors = async (
     };
   }
 
-  const apiUrl = process.env.NEXT_PUBLIC_PROJECT_URL;
-  
-  if (!apiUrl) {
-    throw new Error("API url is missing. Please check");
-  }
+  const countryCode = projectData?.config?.doctor?.country_codes
+    ? projectData?.config?.doctor?.country_codes?.[0] || +91
+    : null;
 
   const fields = mapFormDataToFields(formData, projectData);
 
-  const countryCode = projectData?.config?.doctor?.country_codes?.[0] || +91;
-
   const trailingPath =
     "https://pub-0b6394cfeda24bf196c98e1746afe09b.r2.dev/production";
-  
-  let photo = formData?.photo?.originalImage || "";
 
+  let photo = formData?.photo?.originalImage || "";
   if (photo.startsWith(trailingPath)) {
-    photo = photo.replace(trailingPath, "");
+    photo = photo?.replace(trailingPath, "");
   }
 
   let cropped_image = formData?.photo?.croppedImage || "";
   if (cropped_image.startsWith(trailingPath)) {
-    cropped_image = cropped_image.replace(trailingPath, "");
+    cropped_image = cropped_image?.replace(trailingPath, "");
   }
-  
-  let isEdit = DecryptData("isEdit");
 
+  // -------------- Name with Prefix Logic ----------------
+  const name = projectData?.config?.doctor?.disable_doctor_prefix
+    ? `${formData?.name}`
+    : `${formData?.prefix}. ${formData?.name}`;
+
+  // -------------- Calendar Images Logic ----------------
+  const calendarData: Record<string, string> = {};
+
+  const MONTH_NAMES = [
+    "january",
+    "february",
+    "march",
+    "april",
+    "may",
+    "june",
+    "july",
+    "august",
+    "september",
+    "october",
+    "november",
+    "december",
+  ];
+
+  if (
+    projectData?.product_type === "DeskCalendar" &&
+    formData?.calendar_images?.length > 0
+  ) {
+    const images = formData?.calendar_images || [];
+    const totalMonths = 12;
+
+    // ✅ Step 1: Pre-fill all months with empty strings
+    MONTH_NAMES.forEach((m) => {
+      calendarData[m] = "";
+      calendarData[`${m}_cropped`] = "";
+    });
+
+    // ✅ Step 2: Generate filled array (cycle through uploaded images)
+    const filledImages: CalendarImage[] = Array.from(
+      { length: totalMonths },
+      (_, i) => {
+        if (images.length === 0) {
+          return {} as CalendarImage;
+        } else if (images?.length === 1) {
+          return images[0];
+        } else if (images?.length === 2) {
+          return images[i % 2];
+        } else {
+          return images[i % images?.length];
+        }
+      },
+    );
+
+    // ✅ Step 3: Assign URLs for each month
+    filledImages.forEach((img, index) => {
+      const month = MONTH_NAMES[index]; // directly map to fixed month order
+      if (!img) return;
+
+      // Prefer the image matching that month's data
+      const monthUrl = img[month] || img[img.month?.toLowerCase()] || "";
+      const monthCroppedUrl =
+        img[`${month}_cropped`] ||
+        img[`${img.month?.toLowerCase()}_cropped`] ||
+        "";
+
+      calendarData[month] = String(monthUrl?.replace(trailingPath, ""));
+      calendarData[`${month}_cropped`] = String(
+        monthCroppedUrl?.replace(trailingPath, ""),
+      );
+    });
+  }
   try {
-    let requestBody: any = {
+    const requestBody = {
       project_hash: projectData.project_hash,
       doctor_hash: doctorCode,
-    };
-    
-    let name = projectData?.config?.doctor?.disable_doctor_prefix 
-      ? `${formData?.name}`
-      : `${formData?.prefix}. ${formData?.name}`;
-    
-    let updatedformData = {
-      ...formData,
-      name: `${formData.prefix}. ${formData.name}`,
-    };
-
-    if (projectData?.config?.employee) {
-      requestBody.employee_hash = employeeCode;
-    }
-
-    const hasPhotoChanged = prevData && 
-      JSON.stringify(prevData?.photo) !== JSON.stringify(updatedformData?.photo);
-
-    requestBody = {
-      ...requestBody,
-      name: name,
+      employee_hash: projectData?.config?.employee ? employeeCode : null,
+      name,
       fields,
+      mobile: projectData?.config?.doctor?.disable_mobile_number
+        ? null
+        : countryCode + formData?.mobile,
+      media: {
+        images: photo,
+        cropped_image,
+        ...calendarData,
+      },
     };
-
-
-    if (!projectData?.config?.doctor?.disable_mobile_number) {
-      requestBody.mobile = countryCode + formData?.mobile;
-    }
-
-    if (!isEdit || (isEdit && hasPhotoChanged)) {
-      requestBody.media = { 
-        images: photo, 
-        cropped_image 
-      };
-    }
-
-
-    if (isEdit && prevData && JSON.stringify(prevData) === JSON.stringify(updatedformData)) {
-      requestBody = {
-        project_hash: projectData.project_hash,
-        doctor_hash: doctorCode,
-        name: name,
-      };
-      if (projectData?.config?.employee) {
-      requestBody.employee_hash = employeeCode;
-    }
-    }
 
     const response = await fetch(`${apiUrl}/doctor/save`, {
       method: "POST",

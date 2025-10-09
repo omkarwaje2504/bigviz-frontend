@@ -8,7 +8,7 @@ import config from "@utils/Config";
 import MyError from "@services/MyError";
 import { DecryptData, EncryptData } from "@utils/cryptoUtils";
 import { useRouter } from "next/navigation";
-import { GenerateCardImage } from "@services/GenerateCardImage";
+import { GenerateCardImage } from "@services/GenerateGreeting";
 
 function generateRandomString(length) {
   const characters =

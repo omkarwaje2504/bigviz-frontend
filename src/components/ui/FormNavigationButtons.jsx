@@ -36,9 +36,9 @@ const FormNavigationButtons = ({
     disablePhotoUpload ||
     (projectType !== "DeskCalendar" && !!formData?.photo?.croppedImage) ||
     (projectType === "DeskCalendar" &&
-      Array.isArray(formData?.calendarData) &&
-      formData.calendarData.length === 12 &&
-      formData.calendarData.every((item) => !!item.images[0]?.croppedImage));
+      Array.isArray(formData?.calendar_images) &&
+      formData?.calendar_images?.length > 0);
+    
 
   const isPage3Valid = currentStep !== 3 || !!formData?.calendar_consent;
 
@@ -91,7 +91,7 @@ const FormNavigationButtons = ({
         </button>
       )}
 
-      {!isLastStepForProject && canProceed && currentStep !==3 && (
+      {!isLastStepForProject && canProceed && currentStep !== 3 && (
         <button
           type="button"
           onClick={handleNext}

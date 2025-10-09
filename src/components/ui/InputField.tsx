@@ -90,7 +90,6 @@ const InputField: React.FC<InputFieldProps> = ({
   icon,
   type,
   value,
-  countryCode,
   onChange,
   validation = {},
   placeholder = "",

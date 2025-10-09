@@ -2,13 +2,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Stage, Layer, Rect, Text, Image as KonvaImage } from 'react-konva';
 
-
-
-const ArtworkImage = ({ src, x, y, width, height }) => {
-
-  return ;
-};
-
 const VideoArtworkFlow = ({ 
   formData = { 
     name: "John Doe", 

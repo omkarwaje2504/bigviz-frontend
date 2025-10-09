@@ -4,19 +4,19 @@ import { useEffect, useState } from "react";
 import generateCalendarPreviewBlob from "./CalendarPreviewKonva";
 import InputField from "./InputField";
 
-export const MONTH_NAMES = [
-  "Jan",
-  "Feb",
-  "Mar",
-  "Apr",
+const MONTH_NAMES = [
+  "January",
+  "February",
+  "March",
+  "April",
   "May",
-  "Jun",
-  "Jul",
-  "Aug",
-  "Sep",
-  "Oct",
-  "Nov",
-  "Dec",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
 ];
 
 // Calendar preview mockup configuration
@@ -50,7 +50,6 @@ const CalendarConsent = ({
   useEffect(() => {
     const generatePreviews = async () => {
       const images = formData?.calendar_images || [];
-
       if (images.length === 0) return;
 
       setLoading(true);
@@ -58,31 +57,52 @@ const CalendarConsent = ({
 
       try {
         const totalMonths = 12;
+
+        // ✅ Always create 12 months — cycle through images if fewer
         const filledImages = Array.from({ length: totalMonths }, (_, i) => {
-          if (images.length === 1) {
-            return images[0];
-          } else if (images.length === 2) {
-            return images[i % 2];
-          } else {
-            return images[i % images.length];
-          }
+          if (images.length === 1) return images[0];
+          if (images.length === 2) return images[i % 2];
+          return images[i % images.length];
         });
 
+        // ✅ Generate previews for each month
         const blobUrls = await Promise.all(
           filledImages.map(async (calendarItem, index) => {
+            const monthKey =
+              calendarItem?.month?.toLowerCase() ||
+              MONTH_NAMES[index]?.toLowerCase();
+            const displayMonthName =
+              monthKey.charAt(0).toUpperCase() + monthKey.slice(1);
+
+            // ✅ Prefer cropped > original > fallback (blank)
+            const previewSrc =
+              calendarItem?.[`${monthKey}_cropped`] ||
+              calendarItem?.[monthKey] ||
+              "";
+
+            // Skip if no valid image URL
+            if (!previewSrc) {
+              return {
+                monthName: MONTH_NAMES[index],
+                blobUrl: "",
+                originalData: calendarItem,
+              };
+            }
+
             const blobUrl = await generateCalendarPreviewBlob(
-              calendarItem.croppedImage,
+              previewSrc,
               CALENDAR_PREVIEW_CONFIG,
             );
 
             return {
-              monthName: MONTH_NAMES[index],
+              monthName: displayMonthName,
               blobUrl,
               originalData: calendarItem,
             };
           }),
         );
 
+        // ✅ Always set previews for all 12 months
         setCalendarPreviews(blobUrls);
       } catch (error) {
         console.error("Failed to generate calendar previews:", error);
@@ -94,15 +114,14 @@ const CalendarConsent = ({
 
     generatePreviews();
 
-    // Cleanup: revoke blob URLs
+    // ✅ Cleanup previous blob URLs to prevent memory leaks
     return () => {
       calendarPreviews.forEach((preview) => {
-        if (preview.blobUrl) {
-          URL.revokeObjectURL(preview.blobUrl);
-        }
+        if (preview.blobUrl) URL.revokeObjectURL(preview.blobUrl);
       });
     };
   }, [formData?.calendar_images]);
+
   return (
     <div className="bg-gray-900 rounded-lg">
       <h2 className="text-xl font-bold text-white mb-2">Review Your Design</h2>

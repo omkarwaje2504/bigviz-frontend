@@ -129,22 +129,20 @@ const HomePage = ({ projectData, projectId, ui }) => {
     }
   };
 
-  const editDoctor = async (id) => {
-    let fetchDoctor = await FetchDoctor(projectData, id);
-
+  const editDoctor = async (member) => {
     let tempData = {
-      name: fetchDoctor?.data?.name,
-      mobile: fetchDoctor?.data?.mobile?.replace(/^\+91/, "") || "",
+      ...member,
+      mobile: member?.mobile?.replace(/^\+91/, "") || "",
       prefix: "Dr",
       photo: {
-        croppedImage: fetchDoctor?.data?.image,
-        originalImage: fetchDoctor?.data?.cropped_image,
+        croppedImage: member?.image,
+        originalImage: member?.cropped_image,
       },
     };
 
-    if (projectData?.config?.field?.length) {
+    if (projectData?.config?.field?.length > 0) {
       projectData.config.field.forEach((field) => {
-        const matchingField = fetchDoctor?.data?.fields?.find(
+        const matchingField = member?.fields?.find(
           (f) => String(f.id) === String(field.id),
         );
 
@@ -153,12 +151,11 @@ const HomePage = ({ projectData, projectId, ui }) => {
           : field.default_value || "";
       });
     }
-
     if (tempData) {
-      localStorage.setItem("doctorHash", id);
-      EncryptData(`${id}-prevData`, tempData);
-      EncryptData(`${id}-formData`, tempData);
-      router.push(`register-new-candidate?dh=${id}`);
+      localStorage.setItem("doctorHash", member.doctor_hash);
+      EncryptData(`${member.doctor_hash}-prevData`, tempData);
+      EncryptData(`${member.doctor_hash}-formData`, tempData);
+      router.push(`register-new-candidate?dh=${member.doctor_hash}`);
     }
   };
 
@@ -255,7 +252,7 @@ const HomePage = ({ projectData, projectId, ui }) => {
             members={members}
             approvalState={projectData.config.employee.approval_required}
             approvingStatus={approvingStatus}
-            onEdit={(id) => editDoctor(id)}
+            onEdit={(member) => editDoctor(member)}
             onApprove={handleApprove}
             onDisapprove={handleApprove}
           />

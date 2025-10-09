@@ -72,7 +72,7 @@ const MemberTable: React.FC<MemberTableProps> = ({
 
   useEffect(() => {
     if (projectData?.config?.employee) {
-      let empData = DecryptData("empData");
+      const empData = DecryptData("empData");
       if (empData) {
         setempData(empData);
       }
@@ -178,7 +178,7 @@ const MemberTable: React.FC<MemberTableProps> = ({
 
         return acc;
       },
-      {} as Record<number, any>,
+      {} as Record<number, Doctor["approval_history"][number]>,
     );
 
     // Get approved and disapproved roles based on latest status
@@ -275,12 +275,12 @@ const MemberTable: React.FC<MemberTableProps> = ({
         remove: /[*+~.()'"!:@]/g,
         lower: false,
       });
-      switch (projectData.product_type) {
+      switch (projectData?.product_type) {
         case "PhotoFrame":
           fileName += ".jpg";
           break;
         case "E-Greeting":
-          fileName += projectData.features.includes("pdf_ecard")
+          fileName += projectData?.features.includes("pdf_ecard")
             ? ".pdf"
             : ".jpg";
           break;
@@ -384,7 +384,7 @@ const MemberTable: React.FC<MemberTableProps> = ({
       );
     }
     const isApproving =
-      (approvingStatus && approvingStatus[member.doctor_hash]) || false;
+      (approvingStatus && approvingStatus[member?.doctor_hash]) || false;
 
     // Only show approval buttons if user is in approval flow
     if (currentUserCanApprove || userHasActed) {
@@ -712,7 +712,7 @@ const MemberTable: React.FC<MemberTableProps> = ({
   return (
     <div className="mt-6 text-gray-900 dark:text-white">
       {previewMode && (
-         <PreviewModal
+        <PreviewModal
           previewType={previewType}
           previewUrl={previewUrl}
           setPreviewMode={setPreviewMode}
@@ -826,13 +826,11 @@ const MemberTable: React.FC<MemberTableProps> = ({
                             : "bg-gray-500/20 text-gray-600 dark:text-gray-400"
                         }`}
                       >
-                        {
-                          member.download_url || member.extras.video_url
-                            ? projectData?.product_type === "EVideo"
-                              ? "Video Generated"
-                              : "Artwork Generated"
-                            : "Artwork Pending"
-                        }
+                        {member.download_url || member.extras.video_url
+                          ? projectData?.product_type === "EVideo"
+                            ? "Video Generated"
+                            : "Artwork Generated"
+                          : "Artwork Pending"}
                       </span>
                     )}
                     <h3 className="font-bold text-lg">{member.name}</h3>
@@ -897,7 +895,7 @@ const MemberTable: React.FC<MemberTableProps> = ({
                         className="w-full justify-center flex items-center space-x-1 text-xs text-white bg-purple-600 p-2 rounded-sm"
                         onClick={() => {
                           EncryptData("isEdit", "true");
-                          onEdit(member.doctor_hash);
+                          onEdit(member);
                         }}
                       >
                         <FaEdit />
@@ -1050,26 +1048,25 @@ const MemberTable: React.FC<MemberTableProps> = ({
                               : "bg-gray-500/20 text-gray-600 dark:text-gray-400"
                           }`}
                         >
-                          {
-                            member.download_url || member.extras.video_url
-                              ? projectData?.product_type === "EVideo"
-                                ? "Video Generated"
-                                : "Artwork Generated"
-                              : "Artwork Pending"
-                          }
+                          {member.download_url || member.extras.video_url
+                            ? projectData?.product_type === "EVideo"
+                              ? "Video Generated"
+                              : "Artwork Generated"
+                            : "Artwork Pending"}
                         </span>
                       )}
                     </td>
                     <td className="px-6 py-4 text-right">
                       <div className="flex justify-end items-center space-x-2">
-                        {(member.download_url || member?.extras?.video_url) && projectData?.config?.doctor?.preview_enabled && (
-                          <button
-                            onClick={() => onPreview(member, "PREVIEW")}
-                            title="Preview"
-                          >
-                            <FaEye className="w-5 h-5 fill-yellow-500 hover:fill-yellow-600" />
-                          </button>
-                        )}
+                        {(member.download_url || member?.extras?.video_url) &&
+                          projectData?.config?.doctor?.preview_enabled && (
+                            <button
+                              onClick={() => onPreview(member, "PREVIEW")}
+                              title="Preview"
+                            >
+                              <FaEye className="w-5 h-5 fill-yellow-500 hover:fill-yellow-600" />
+                            </button>
+                          )}
                         {projectData?.config?.game &&
                           ui?.DoctorRegistrationForm?.HomeRedirection && (
                             <Link
@@ -1104,7 +1101,7 @@ const MemberTable: React.FC<MemberTableProps> = ({
                           <button
                             onClick={() => {
                               EncryptData("isEdit", "true");
-                              onEdit(member.doctor_hash);
+                              onEdit(member);
                             }}
                             title="Edit"
                           >
