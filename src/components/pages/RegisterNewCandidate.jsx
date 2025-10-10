@@ -53,11 +53,16 @@ export default function RegisterNewCandidate({ projectData, projectId, ui }) {
     const url = new URL(window.location.href);
     const params = url.searchParams;
     const urlCheck = params.get("dh");
+    const photoCollectionType = params.get("photo-collection-type");
+
     if (!projectData?.config?.employee && !urlCheck) {
       params.set("dh", `${generateRandomString(8)}-new`);
       window.history.replaceState({}, "", url.toString());
     }
-  });
+    if (projectData?.product_type === "DeskCalendar" && photoCollectionType) {
+      setCurrentStep(2);
+    }
+  }, []);
 
   useEffect(() => {
     const media = window.matchMedia("(prefers-color-scheme: dark)");

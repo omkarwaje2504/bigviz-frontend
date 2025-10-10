@@ -38,7 +38,6 @@ const FormNavigationButtons = ({
     (projectType === "DeskCalendar" &&
       Array.isArray(formData?.calendar_images) &&
       formData?.calendar_images?.length > 0);
-    
 
   const isPage3Valid = currentStep !== 3 || !!formData?.calendar_consent;
 
@@ -78,12 +77,35 @@ const FormNavigationButtons = ({
     setCurrentStep(currentStep - 1);
   };
 
+const handleCalendarBack = () => {
+  const url = new URL(window.location.href);
+  const params = url.searchParams;
+
+  const photoCollectionType = params.get("photo-collection-type");
+  const themeType = params.get("theme-type");
+
+  if (photoCollectionType && themeType) {
+    params.delete("theme-type");
+    window.history.replaceState({}, "", url.toString());
+    window.dispatchEvent(new Event("urlchange"));
+  } else if (photoCollectionType && !themeType) {
+    params.delete("photo-collection-type");
+    window.history.replaceState({}, "", url.toString());
+    window.dispatchEvent(new Event("urlchange"));
+  } else {
+    // No params: Go back to previous form step
+    setCurrentStep(currentStep - 1);
+  }
+};
+
   return (
     <div className="mt-8 flex flex-wrap justify-between">
       {currentStep > 1 && currentStep !== 99 && (
         <button
           type="button"
-          onClick={handleBack}
+          onClick={
+            projectType !== "DeskCalendar" ? handleBack : handleCalendarBack
+          }
           className="flex items-center bg-gray-700 hover:bg-gray-600 text-white py-2 px-4 rounded h-fit"
         >
           <FaChevronLeft size={16} className="mr-1" />

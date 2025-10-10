@@ -22,6 +22,7 @@ import PreviewModal from "./PreviewModal";
 import { CALENDAR_PREVIEW_CONFIG } from "./CalendarConsent";
 import { getPhotoDims } from "@utils/imageHelpers";
 import { FaBahai } from "react-icons/fa6";
+import { useSearchParams } from "next/navigation";
 
 const CONFIG = {
   maxImages: 12,
@@ -61,7 +62,67 @@ const CalendarPage = ({
   const [previewData, setPreviewData] = useState(null);
   const fileInputRef = useRef(null);
   const cameraInputRef = useRef(null);
-  const [calendarTheme,setCalendarTheme] = useState(formData?.calendar_theme);
+  const [photoCollectionType, setPhotoCollectionType] = useState(null);
+  const [themeType, setThemeType] = useState(null);
+
+  const searchParams = useSearchParams();
+
+  const getParams = () => {
+    const url = new URL(window.location.href);
+    const params = url.searchParams;
+
+    return { params, url };
+  };
+  const handleRouteChange = () => {
+    const { params, url } = getParams();
+    const getPhotoCollectionType = params.get("photo-collection-type");
+    const getThemeType = params.get("theme-type");
+
+    if (getPhotoCollectionType) {
+      setPhotoCollectionType(photoCollectionType);
+    } else {
+      setPhotoCollectionType(null);
+    }
+    if (getThemeType) {
+      setThemeType(themeType);
+    } else {
+      setThemeType(null);
+    }
+
+    if (!getPhotoCollectionType && !getThemeType) {
+      setPhotoCollectionType(null);
+      setThemeType(null);
+    }
+  };
+
+  useEffect(() => {
+    window.addEventListener("urlchange", handleRouteChange);
+  }, []);
+
+  useEffect(() => {
+    const { params, url } = getParams();
+    const getPhotoCollectionType = params.get("photo-collection-type");
+    const getThemeType = params.get("theme-type");
+
+    if (getPhotoCollectionType) {
+      setPhotoCollectionType(getPhotoCollectionType);
+    }
+    if (getThemeType) {
+      setThemeType(getThemeType);
+    }
+  }, []);
+
+  useEffect(() => {
+    const { params, url } = getParams();
+    if (photoCollectionType) {
+      params.set("photo-collection-type", photoCollectionType);
+      window.history.replaceState({}, "", url.toString());
+    }
+    if (themeType) {
+      params.set("theme-type", themeType);
+      window.history.replaceState({}, "", url.toString());
+    }
+  }, [photoCollectionType, themeType]);
 
   // Load saved images from localStorage on component mount
   useEffect(() => {
@@ -82,8 +143,8 @@ const CalendarPage = ({
             month: key,
             name: `${month} Image`,
             needsCropping: false,
-            [`${key}`]: traillingPath +"/"+ original || "",
-            [`${key}_cropped`]: traillingPath +"/"+ cropped || "",
+            [`${key}`]: traillingPath + "/" + original || "",
+            [`${key}_cropped`]: traillingPath + "/" + cropped || "",
           });
         }
       });
@@ -387,44 +448,115 @@ const CalendarPage = ({
     return MONTH_NAMES[index] || `Month ${index + 1}`;
   };
 
-  if(!calendarTheme){
-
-    return(
-    <div>
-      <h2 className="text-2xl font-bold text-white">Select Calendar Theme</h2>
-    <p className="text-gray-800 dark:text-gray-400">Select your theme to start with the image selections</p>
-    <div className="flex flex-wrap gap-2 mt-6">
-      <button onClick={()=>setCalendarTheme('personalized')} className="bg-blue-600 hover:bg-blue-700 text-white text-md font-bold py-3 px-2 rounded w-fit col-span-2">Personalized Doctor photos</button>
-      <button onClick={()=>setCalendarTheme('nature')} className="bg-green-600 hover:bg-green-700 text-white text-md font-bold py-3 px-2 rounded w-fit">Nature</button>
-      <button onClick={()=>setCalendarTheme('architecture')} className="bg-gray-600 hover:bg-gray-700 text-white text-md font-bold py-3 px-2 rounded w-fit">Name Art</button>
-      <button onClick={()=>setCalendarTheme('artistic')} className="bg-purple-600 hover:bg-purple-700 text-white text-md font-bold py-3 px-2 rounded w-fit">AI Images</button>
-    </div>
-    </div>
-    )
-  }else{
-
-    
-  return (
-    <div className="bg-gray-900">
-      {previewData && (
-        <PreviewModal
-          previewType="IMAGE"
-          previewUrl={previewData}
-          setPreviewMode={setPreviewData}
-        />
-      )}
-      <h2 className="text-2xl font-bold text-white mb-6">Calendar Images</h2>
-
-      {error && (
-        <div className="text-red-400 mb-4 text-sm bg-red-900 bg-opacity-30 p-3 rounded-lg border border-red-800">
-          {error}
+  if (!photoCollectionType) {
+    return (
+      <div>
+        <h2 className="text-2xl font-bold text-white">
+          Start Calendar Journey
+        </h2>
+        <p className="text-gray-800 dark:text-gray-400">
+          Select your theme to start with the image selections
+        </p>
+        <div className="flex flex-wrap gap-2 mt-6">
+          <button
+            type="button"
+            onClick={() => setPhotoCollectionType("with-doctor")}
+            className="bg-blue-600 hover:bg-blue-700 text-white text-md font-bold py-3 px-2 rounded w-fit col-span-2"
+          >
+            Do you have Doctor Photos
+          </button>
+          <button
+            type="button"
+            onClick={() => setPhotoCollectionType("ai-generate-for-you")}
+            className="bg-green-600 hover:bg-green-700 text-white text-md font-bold py-3 px-2 rounded w-fit"
+          >
+            Let's AI generate theme for you
+          </button>
+          <button
+            type="button"
+            onClick={() => setPhotoCollectionType("mix")}
+            className="bg-gray-600 hover:bg-gray-700 text-white text-md font-bold py-3 px-2 rounded w-fit"
+          >
+            Doctor photo + AI
+          </button>
         </div>
-      )}
+      </div>
+    );
+  } else if (photoCollectionType && !themeType) {
+    switch (photoCollectionType) {
+      case "with-doctor":
+        return null;
+      case "ai-generate-for-you":
+        return (
+          <div>
+            <h2 className="text-2xl font-bold text-white">
+              Start Calendar Journey
+            </h2>
+            <p className="text-gray-800 dark:text-gray-400">
+              Select your theme to start with the image selections
+            </p>
+            <div className="flex flex-wrap gap-2 mt-6">
+              <button
+                type="button"
+                onClick={() => setThemeType("nature")}
+                className="bg-blue-600 hover:bg-blue-700 text-white text-md font-bold py-3 px-2 rounded w-fit col-span-2"
+              >
+                Nature
+              </button>
+              <button
+                type="button"
+                onClick={() => setThemeType("abstract")}
+                className="bg-green-600 hover:bg-green-700 text-white text-md font-bold py-3 px-2 rounded w-fit"
+              >
+                Abstract
+              </button>
+              <button
+                type="button"
+                onClick={() => setThemeType("historic")}
+                className="bg-green-600 hover:bg-green-700 text-white text-md font-bold py-3 px-2 rounded w-fit"
+              >
+                Historic
+              </button>
+              <button
+                type="button"
+                onClick={() => setThemeType("medical")}
+                className="bg-green-600 hover:bg-green-700 text-white text-md font-bold py-3 px-2 rounded w-fit"
+              >
+                Medical
+              </button>
+              <button
+                type="button"
+                onClick={() => setThemeType("motvational")}
+                className="bg-green-600 hover:bg-green-700 text-white text-md font-bold py-3 px-2 rounded w-fit"
+              >
+                Motivation
+              </button>
+            </div>
+          </div>
+        );
+    }
+  } else {
+    return (
+      <div className="bg-gray-900">
+        {previewData && (
+          <PreviewModal
+            previewType="IMAGE"
+            previewUrl={previewData}
+            setPreviewMode={setPreviewData}
+          />
+        )}
+        <h2 className="text-2xl font-bold text-white mb-6">Calendar Images</h2>
 
-      {/* Upload Controls */}
-      <div className="mb-2 flex gap-1">
-        <label
-          className={`
+        {error && (
+          <div className="text-red-400 mb-4 text-sm bg-red-900 bg-opacity-30 p-3 rounded-lg border border-red-800">
+            {error}
+          </div>
+        )}
+
+        {/* Upload Controls */}
+        <div className="mb-2 flex gap-1">
+          <label
+            className={`
             py-2 rounded-lg text-white font-medium text-sm w-full text-center justify-center items-center
             flex gap-1 transition-all duration-200 cursor-pointer
             ${
@@ -433,28 +565,28 @@ const CalendarPage = ({
                 : "bg-gray-700 cursor-not-allowed opacity-60"
             }
           `}
-          title={
-            isProcessing
-              ? "Please finish cropping current images"
-              : remainingSlots > 0
-                ? "Take a photo with your camera"
-                : "Maximum limit reached"
-          }
-        >
-          <FaCamera className="h-4" /> Take Photo
-          <input
-            ref={cameraInputRef}
-            type="file"
-            accept={CONFIG.acceptedFormats}
-            capture="environment"
-            onChange={(e) => handleImageSelection(e, "camera")}
-            disabled={remainingSlots === 0 || isProcessing}
-            className="hidden"
-          />
-        </label>
+            title={
+              isProcessing
+                ? "Please finish cropping current images"
+                : remainingSlots > 0
+                  ? "Take a photo with your camera"
+                  : "Maximum limit reached"
+            }
+          >
+            <FaCamera className="h-4" /> Take Photo
+            <input
+              ref={cameraInputRef}
+              type="file"
+              accept={CONFIG.acceptedFormats}
+              capture="environment"
+              onChange={(e) => handleImageSelection(e, "camera")}
+              disabled={remainingSlots === 0 || isProcessing}
+              className="hidden"
+            />
+          </label>
 
-        <label
-          className={`
+          <label
+            className={`
             py-2 rounded-lg text-white font-medium text-sm w-full text-center
             inline-block transition-all duration-200 cursor-pointer
             ${
@@ -463,260 +595,261 @@ const CalendarPage = ({
                 : "bg-gray-700 cursor-not-allowed opacity-60"
             }
           `}
-          title={
-            isProcessing
-              ? "Please finish cropping current images"
-              : remainingSlots > 0
-                ? `Choose up to ${remainingSlots} photos from gallery`
-                : "Maximum limit reached"
-          }
-        >
-          📁 Choose Photos
-          <input
-            ref={fileInputRef}
-            type="file"
-            multiple
-            accept={CONFIG.acceptedFormats}
-            onChange={(e) => handleImageSelection(e, "gallery")}
-            disabled={remainingSlots === 0 || isProcessing}
-            className="hidden"
-          />
-        </label>
-      </div>
-      <div className="mb-2 flex gap-1">
-        <label
-          className={`
-            py-2 rounded-lg text-white font-medium text-sm w-full text-center
-            inline-block transition-all duration-200 cursor-pointer
-            ${
-              remainingSlots > 0 && !isProcessing
-                ? "bg-blue-600 hover:bg-blue-700 active:bg-blue-800 shadow-md hover:shadow-lg"
-                : "bg-gray-700 cursor-not-allowed opacity-60"
+            title={
+              isProcessing
+                ? "Please finish cropping current images"
+                : remainingSlots > 0
+                  ? `Choose up to ${remainingSlots} photos from gallery`
+                  : "Maximum limit reached"
             }
-          `}
-          title={
-            isProcessing
-              ? "Please finish cropping current images"
-              : remainingSlots > 0
-                ? `Choose up to ${remainingSlots} photos from gallery`
-                : "Maximum limit reached"
-          }
-        >
-          <FaBahai /> Generate with AI
-          <input
-            ref={fileInputRef}
-            type="file"
-            multiple
-            accept={CONFIG.acceptedFormats}
-            onChange={(e) => handleImageSelection(e, "gallery")}
-            disabled={remainingSlots === 0 || isProcessing}
-            className="hidden"
-          />
-        </label>
-      </div>
-      {/* Processing Status */}
-      {isProcessing && (
-        <div className="mb-1 bg-blue-900 bg-opacity-30 border border-blue-700 rounded-lg">
-          <div className="flex items-center gap-3">
-            <div className="animate-spin rounded-full h-5 w-5 border-2 border-blue-500 border-t-transparent"></div>
-            <p className="text-blue-300 font-medium">
-              Processing images... {currentCropIndex + 1} of{" "}
-              {pendingImages.length}
-            </p>
-          </div>
+          >
+            📁 Choose Photos
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              accept={CONFIG.acceptedFormats}
+              onChange={(e) => handleImageSelection(e, "gallery")}
+              disabled={remainingSlots === 0 || isProcessing}
+              className="hidden"
+            />
+          </label>
         </div>
-      )}
+        <div className="mb-2 flex gap-1">
+          <label
+            className={`
+            py-2 rounded-lg text-white font-medium text-sm w-full text-center
+            inline-block transition-all duration-200 cursor-pointer
+            ${
+              remainingSlots > 0 && !isProcessing
+                ? "bg-blue-600 hover:bg-blue-700 active:bg-blue-800 shadow-md hover:shadow-lg"
+                : "bg-gray-700 cursor-not-allowed opacity-60"
+            }
+          `}
+            title={
+              isProcessing
+                ? "Please finish cropping current images"
+                : remainingSlots > 0
+                  ? `Choose up to ${remainingSlots} photos from gallery`
+                  : "Maximum limit reached"
+            }
+          >
+            <FaBahai /> Generate with AI
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              accept={CONFIG.acceptedFormats}
+              onChange={(e) => handleImageSelection(e, "gallery")}
+              disabled={remainingSlots === 0 || isProcessing}
+              className="hidden"
+            />
+          </label>
+        </div>
+        {/* Processing Status */}
+        {isProcessing && (
+          <div className="mb-1 bg-blue-900 bg-opacity-30 border border-blue-700 rounded-lg">
+            <div className="flex items-center gap-3">
+              <div className="animate-spin rounded-full h-5 w-5 border-2 border-blue-500 border-t-transparent"></div>
+              <p className="text-blue-300 font-medium">
+                Processing images... {currentCropIndex + 1} of{" "}
+                {pendingImages.length}
+              </p>
+            </div>
+          </div>
+        )}
 
-      {/* Selected Images Grid */}
-      {selectedImages.length > 0 && (
-        <div>
-          <h3 className="text-lg font-medium mb-3 text-gray-300">
-            Selected Images ({selectedImages.length}/{CONFIG.maxImages})
-          </h3>
-          <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
-            {selectedImages.map((image, index) => {
-              const monthKey = image.month || MONTH_NAMES[index]?.toLowerCase();
-              const displayMonthName =
-                monthKey.charAt(0).toUpperCase() + monthKey.slice(1);
+        {/* Selected Images Grid */}
+        {selectedImages.length > 0 && (
+          <div>
+            <h3 className="text-lg font-medium mb-3 text-gray-300">
+              Selected Images ({selectedImages.length}/{CONFIG.maxImages})
+            </h3>
+            <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+              {selectedImages.map((image, index) => {
+                const monthKey =
+                  image.month || MONTH_NAMES[index]?.toLowerCase();
+                const displayMonthName =
+                  monthKey.charAt(0).toUpperCase() + monthKey.slice(1);
 
-              const previewSrc =
-                image[`${monthKey}_cropped`] ||
-                image[`${monthKey}`] ||
-                image.croppedImage ||
-                image.src;
+                const previewSrc =
+                  image[`${monthKey}_cropped`] ||
+                  image[`${monthKey}`] ||
+                  image.croppedImage ||
+                  image.src;
 
-              return (
-                <div
-                  key={image.id}
-                  className={`
+                return (
+                  <div
+                    key={image.id}
+                    className={`
                     flex flex-col bg-gray-800 border-2 rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-all duration-200 cursor-move
                     ${draggedItem === index ? "opacity-50 transform rotate-3 scale-105" : ""}
                     ${dragOverIndex === index ? "border-blue-500 bg-blue-900 bg-opacity-30" : "border-gray-700"}
                   `}
-                  draggable="true"
-                  onDragStart={(e) => handleDragStart(e, index)}
-                  onDragOver={(e) => handleDragOver(e, index)}
-                  onDragLeave={handleDragLeave}
-                  onDrop={(e) => handleDrop(e, index)}
-                  onDragEnd={handleDragEnd}
-                >
-                  {/* Month Header */}
-                  <div className="bg-gray-700 text-white text-center py-0.5 text-sm font-semibold flex items-center justify-center gap-2">
-                    <MdDragIndicator className="h-4 w-4 text-gray-400" />
-                    {displayMonthName}
-                  </div>
-
-                  {/* Image Preview */}
-                  <div
-                    className="relative w-full h-20 overflow-hidden"
-                    onClick={() => handlePreviewOpen(image, index)}
+                    draggable="true"
+                    onDragStart={(e) => handleDragStart(e, index)}
+                    onDragOver={(e) => handleDragOver(e, index)}
+                    onDragLeave={handleDragLeave}
+                    onDrop={(e) => handleDrop(e, index)}
+                    onDragEnd={handleDragEnd}
                   >
-                    <img
-                      src={previewSrc}
-                      alt={`${displayMonthName} - ${image.name}`}
-                      className="w-full h-full object-cover"
-                    />
-                    {image.needsCropping && (
-                      <div className="absolute inset-0 bg-yellow-500 bg-opacity-30 flex items-center justify-center">
-                        <span className="text-yellow-800 text-xs font-bold bg-yellow-400 px-2 rounded">
-                          Needs Crop
-                        </span>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Action Buttons */}
-                  <div className="flex gap-1 justify-center bg-gray-700 p-1">
-                    <div className="relative flex-1">
-                      <button
-                        type="button"
-                        className="w-full bg-blue-600 hover:bg-blue-700 active:scale-105 py-1 border-none rounded flex items-center justify-center shadow-sm transition-all duration-200 text-white"
-                        onClick={(e) => toggleMenu(image.id, e)}
-                        title={`Replace ${displayMonthName} image`}
-                      >
-                        ↻
-                      </button>
-
-                      <div
-                        id={`menu-${image.id}`}
-                        className="hidden absolute bottom-full left-0 mb-1 bg-gray-800 border border-gray-600 rounded-md shadow-lg z-50 min-w-32 overflow-hidden"
-                      >
-                        <button
-                          type="button"
-                          onClick={(e) =>
-                            handleReplaceClick(image.id, "camera", e)
-                          }
-                          className="block w-full px-3 py-2 text-left text-sm text-gray-200 hover:bg-gray-700 bg-gray-600 border-none transition-colors duration-200"
-                        >
-                          Camera
-                        </button>
-                        <button
-                          type="button"
-                          onClick={(e) =>
-                            handleReplaceClick(image.id, "gallery", e)
-                          }
-                          className="block w-full px-3 py-2 text-left text-sm text-gray-200 hover:bg-gray-700 border-none border-t border-gray-600 transition-colors duration-200"
-                        >
-                          Gallery
-                        </button>
-                      </div>
+                    {/* Month Header */}
+                    <div className="bg-gray-700 text-white text-center py-0.5 text-sm font-semibold flex items-center justify-center gap-2">
+                      <MdDragIndicator className="h-4 w-4 text-gray-400" />
+                      {displayMonthName}
                     </div>
 
-                    <button
-                      type="button"
-                      onClick={(e) => removeImage(image.id, e)}
-                      className="flex-1 py-1 bg-red-600 hover:bg-red-700 active:scale-105 border-none rounded flex items-center justify-center shadow-sm transition-all duration-200 text-white"
-                      title={`Delete ${displayMonthName} image`}
+                    {/* Image Preview */}
+                    <div
+                      className="relative w-full h-20 overflow-hidden"
+                      onClick={() => handlePreviewOpen(image, index)}
                     >
-                      <MdDelete className="h-4 w-4" />
-                    </button>
+                      <img
+                        src={previewSrc}
+                        alt={`${displayMonthName} - ${image.name}`}
+                        className="w-full h-full object-cover"
+                      />
+                      {image.needsCropping && (
+                        <div className="absolute inset-0 bg-yellow-500 bg-opacity-30 flex items-center justify-center">
+                          <span className="text-yellow-800 text-xs font-bold bg-yellow-400 px-2 rounded">
+                            Needs Crop
+                          </span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div className="flex gap-1 justify-center bg-gray-700 p-1">
+                      <div className="relative flex-1">
+                        <button
+                          type="button"
+                          className="w-full bg-blue-600 hover:bg-blue-700 active:scale-105 py-1 border-none rounded flex items-center justify-center shadow-sm transition-all duration-200 text-white"
+                          onClick={(e) => toggleMenu(image.id, e)}
+                          title={`Replace ${displayMonthName} image`}
+                        >
+                          ↻
+                        </button>
+
+                        <div
+                          id={`menu-${image.id}`}
+                          className="hidden absolute bottom-full left-0 mb-1 bg-gray-800 border border-gray-600 rounded-md shadow-lg z-50 min-w-32 overflow-hidden"
+                        >
+                          <button
+                            type="button"
+                            onClick={(e) =>
+                              handleReplaceClick(image.id, "camera", e)
+                            }
+                            className="block w-full px-3 py-2 text-left text-sm text-gray-200 hover:bg-gray-700 bg-gray-600 border-none transition-colors duration-200"
+                          >
+                            Camera
+                          </button>
+                          <button
+                            type="button"
+                            onClick={(e) =>
+                              handleReplaceClick(image.id, "gallery", e)
+                            }
+                            className="block w-full px-3 py-2 text-left text-sm text-gray-200 hover:bg-gray-700 border-none border-t border-gray-600 transition-colors duration-200"
+                          >
+                            Gallery
+                          </button>
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={(e) => removeImage(image.id, e)}
+                        className="flex-1 py-1 bg-red-600 hover:bg-red-700 active:scale-105 border-none rounded flex items-center justify-center shadow-sm transition-all duration-200 text-white"
+                        title={`Delete ${displayMonthName} image`}
+                      >
+                        <MdDelete className="h-4 w-4" />
+                      </button>
+                    </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Empty State */}
-      {selectedImages.length === 0 && !isProcessing && (
-        <div className="border-2 border-dashed border-gray-700 rounded-lg p-8 text-center h-40 flex flex-col items-center justify-center">
-          <div className="text-gray-500 mb-4 bg-gray-800 p-4 rounded-full">
-            <FaRegImage size={32} />
+        {/* Empty State */}
+        {selectedImages.length === 0 && !isProcessing && (
+          <div className="border-2 border-dashed border-gray-700 rounded-lg p-8 text-center h-40 flex flex-col items-center justify-center">
+            <div className="text-gray-500 mb-4 bg-gray-800 p-4 rounded-full">
+              <FaRegImage size={32} />
+            </div>
+            <p className="text-gray-400 mb-2">No images selected yet</p>
+            <p className="text-gray-500 text-sm">
+              Upload up to {CONFIG.maxImages} images for your calendar
+            </p>
           </div>
-          <p className="text-gray-400 mb-2">No images selected yet</p>
-          <p className="text-gray-500 text-sm">
-            Upload up to {CONFIG.maxImages} images for your calendar
-          </p>
-        </div>
-      )}
+        )}
 
-      {/* Crop Modal */}
-      {currentCropIndex !== null && pendingImages[currentCropIndex] && (
-        <ImageCropper
-          image={{
-            src: pendingImages[currentCropIndex].src,
-            type: pendingImages[currentCropIndex].file?.type || "image/jpeg",
-          }}
-          setImage={(newImage) => {
-            setPendingImages((prev) => {
-              const updated = [...prev];
-              updated[currentCropIndex] = {
-                ...updated[currentCropIndex],
-                src: newImage.src,
-              };
-              return updated;
-            });
-          }}
-          originalFile={pendingImages[currentCropIndex].file}
-          filename={pendingImages[currentCropIndex].name}
-          unsavedChanges={true}
-          setUnsavedChanges={() => {}}
-          isRxPadImage={false}
-          formData={formData}
-          setFormData={(updater) => {
-            const result =
-              typeof updater === "function" ? updater(formData) : updater;
-
-            // Extract the saved photo data and trigger handleCropSave
-            if (result.photo) {
-              handleCropSave({
-                croppedImage: result.photo.croppedImage,
-                originalImage: result.photo.originalImage,
-                name: pendingImages[currentCropIndex].name,
-                id:
-                  pendingImages[currentCropIndex].replaceId ||
-                  pendingImages[currentCropIndex].id,
+        {/* Crop Modal */}
+        {currentCropIndex !== null && pendingImages[currentCropIndex] && (
+          <ImageCropper
+            image={{
+              src: pendingImages[currentCropIndex].src,
+              type: pendingImages[currentCropIndex].file?.type || "image/jpeg",
+            }}
+            setImage={(newImage) => {
+              setPendingImages((prev) => {
+                const updated = [...prev];
+                updated[currentCropIndex] = {
+                  ...updated[currentCropIndex],
+                  src: newImage.src,
+                };
+                return updated;
               });
-            }
-          }}
-          onClose={handleCropCancel}
-          ui={ui}
-          doctorHash={doctorHash}
-          projectData={projectData}
-          cropWidth={cropDimensions.w}
-          cropHeight={cropDimensions.h}
-          ratio={cropDimensions.w / cropDimensions.h}
-          onRemove={() => {
-            const currentPending = pendingImages[currentCropIndex];
-            if (currentPending.replaceId) {
-              // If replacing, cancel the replacement
-              handleCropCancel();
-            } else {
-              // If new image, skip this one
-              const nextIndex = currentCropIndex + 1;
-              if (nextIndex < pendingImages.length) {
-                setCurrentCropIndex(nextIndex);
-              } else {
-                handleCropCancel();
+            }}
+            originalFile={pendingImages[currentCropIndex].file}
+            filename={pendingImages[currentCropIndex].name}
+            unsavedChanges={true}
+            setUnsavedChanges={() => {}}
+            isRxPadImage={false}
+            formData={formData}
+            setFormData={(updater) => {
+              const result =
+                typeof updater === "function" ? updater(formData) : updater;
+
+              // Extract the saved photo data and trigger handleCropSave
+              if (result.photo) {
+                handleCropSave({
+                  croppedImage: result.photo.croppedImage,
+                  originalImage: result.photo.originalImage,
+                  name: pendingImages[currentCropIndex].name,
+                  id:
+                    pendingImages[currentCropIndex].replaceId ||
+                    pendingImages[currentCropIndex].id,
+                });
               }
-            }
-          }}
-        />
-      )}
-    </div>
-  );
-}
+            }}
+            onClose={handleCropCancel}
+            ui={ui}
+            doctorHash={doctorHash}
+            projectData={projectData}
+            cropWidth={cropDimensions.w}
+            cropHeight={cropDimensions.h}
+            ratio={cropDimensions.w / cropDimensions.h}
+            onRemove={() => {
+              const currentPending = pendingImages[currentCropIndex];
+              if (currentPending.replaceId) {
+                // If replacing, cancel the replacement
+                handleCropCancel();
+              } else {
+                // If new image, skip this one
+                const nextIndex = currentCropIndex + 1;
+                if (nextIndex < pendingImages.length) {
+                  setCurrentCropIndex(nextIndex);
+                } else {
+                  handleCropCancel();
+                }
+              }
+            }}
+          />
+        )}
+      </div>
+    );
+  }
 };
 
 export default CalendarPage;
