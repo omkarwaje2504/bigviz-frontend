@@ -42,9 +42,9 @@ const ShalinaNigeriaFlagHosting = ({ projectData, projectId, ui }) => {
             (f) => f.value === "Male" || f.value === "Female",
           );
           if (genderField?.value === "Male") {
-            setVideoSrc("/game/male-flag-hosting.mp4");
+            setVideoSrc(`/game/flag/${projectId}/male-flag-hosting.mp4`);
           } else {
-            setVideoSrc("/game/female-flag-hosting.mp4");
+            setVideoSrc(`/game/flag/${projectId}/female-flag-hosting.mp4`);
           }
           setDoctorData(doctorData?.data);
         }
@@ -128,10 +128,8 @@ const ShalinaNigeriaFlagHosting = ({ projectData, projectId, ui }) => {
       canvas.width = newWidth;
       canvas.height = newHeight;
 
-      // Draw video frame
       ctx.drawImage(video, 0, 0, newWidth, newHeight);
 
-      // Add green border
       const borderWidth = 1;
       ctx.fillStyle = "#008000";
       ctx.fillRect(0, 0, canvas.width, borderWidth);
@@ -139,8 +137,15 @@ const ShalinaNigeriaFlagHosting = ({ projectData, projectId, ui }) => {
       ctx.fillRect(0, 0, borderWidth, canvas.height);
       ctx.fillRect(canvas.width - borderWidth, 0, borderWidth, canvas.height);
 
-      // ✅ DRAW DOCTOR NAME INSIDE HERE
-      if (showDoctorName && video.currentTime < 18) {
+      let nameEnd
+
+      if(projectId==="mg2n7zq8"){
+        nameEnd= 17
+      }else{
+        nameEnd= 18
+      }
+      // console.log(video.currentTime)
+      if (showDoctorName && video.currentTime < nameEnd) {
         const text = doctorData?.name || "";
         if (text) {
           const paddingX = 10;
@@ -255,7 +260,8 @@ const ShalinaNigeriaFlagHosting = ({ projectData, projectId, ui }) => {
     const ctx = canvas.getContext("2d");
 
     const bgImg = new Image();
-    bgImg.src = "/game/Certificate-Shalina.png";
+    
+    bgImg.src = `/game/flag/${projectId}/Certificate-Shalina.png`;
     await new Promise((resolve) => (bgImg.onload = resolve));
 
     let doctorImgUrl = null;
