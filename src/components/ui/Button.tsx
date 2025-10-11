@@ -57,7 +57,7 @@ const Button: React.FC<ButtonProps> = ({
   const enabledClass = "hover:opacity-90 dark:hover:brightness-110";
   const disabledClass = "bg-gray-400 dark:bg-gray-600 text-white cursor-not-allowed";
 
-  const finalClass = `${baseClasses} ${
+  const finalClass = `text-nowrap ${baseClasses} ${
     isLoading || disabled ? disabledClass : enabledClass
   } ${fullWidth ? "w-full" : ""} focus:ring-red-500`;
 

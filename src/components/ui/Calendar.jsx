@@ -2,9 +2,6 @@
 
 import React, { useState, useRef, useCallback, useEffect } from "react";
 import { MdDelete, MdDragIndicator } from "react-icons/md";
-import { Cropper, RectangleStencil } from "react-advanced-cropper";
-import "react-advanced-cropper/dist/style.css";
-import { getMimeType } from "advanced-cropper/extensions/mimes";
 import {
   FaTrashAlt,
   FaRedo,
@@ -16,300 +13,45 @@ import {
   FaSave,
   FaSlidersH,
   FaTimes,
+  FaCamera,
 } from "react-icons/fa";
 import UploadFile from "@services/uploadFile";
+import generateCalendarPreviewBlob from "./CalendarPreviewKonva";
+import { ImageCropper } from "./ImageCropper";
+import PreviewModal from "./PreviewModal";
+import { CALENDAR_PREVIEW_CONFIG } from "./CalendarConsent";
+import { getPhotoDims } from "@utils/imageHelpers";
+import { FaBahai } from "react-icons/fa6";
+import { useSearchParams } from "next/navigation";
 
 const CONFIG = {
   maxImages: 12,
   acceptedFormats: "image/*",
-  maxFileSize: 5 * 1024 * 1024,
+  maxFileSize: 10 * 1024 * 1024,
 };
 
 const MONTH_NAMES = [
-  "Jan",
-  "Feb",
-  "Mar",
-  "Apr",
+  "January",
+  "February",
+  "March",
+  "April",
   "May",
-  "Jun",
-  "Jul",
-  "Aug",
-  "Sep",
-  "Oct",
-  "Nov",
-  "Dec",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
 ];
 
-// Utility function to convert dataURL to blob
-const dataURLToBlob = (dataURL) => {
-  const arr = dataURL.split(",");
-  const mime = arr[0].match(/:(.*?);/)[1];
-  const bstr = atob(arr[1]);
-  let n = bstr.length;
-  const u8arr = new Uint8Array(n);
-  while (n--) {
-    u8arr[n] = bstr.charCodeAt(n);
-  }
-  return new Blob([u8arr], { type: mime });
-};
-
-// Utility function to get photo dimensions from project data
-const getPhotoDims = (projectData) => {
-  try {
-    const firstArtwork = projectData?.artworks?.[0];
-    const settings = firstArtwork?.settings || {};
-    const w = Number(settings.photo_width) || null;
-    const h = Number(settings.photo_height) || null;
-    if (w && h) return { w, h };
-  } catch {}
-  return { w: 700, h: 700 };
-};
-
-// Crop Modal Component - Updated to match PhotoUpload styling
-const CropModal = ({
-  image,
-  onSave,
-  onCancel,
+const CalendarPage = ({
   projectData,
-  monthName,
-  cropDimensions,
-  currentIndex,
-  totalImages,
+  formData,
+  setFormData,
+  ui,
+  doctorHash,
 }) => {
-  const cropperRef = useRef(null);
-  const imageRef = useRef(null);
-  const [zoom, setZoom] = useState(1);
-  const [rotation, setRotation] = useState(0);
-  const [contrast, setContrast] = useState(100);
-  const [brightness, setBrightness] = useState(100);
-  const [saturate, setSaturate] = useState(100);
-  const [editMode, setEditMode] = useState("crop");
-  const [isUploading, setIsUploading] = useState(false);
-  const [position, setPosition] = useState({ x: 0, y: 0 });
-
-  const { w: cropWidth, h: cropHeight } = cropDimensions;
-  const ratio = cropWidth / cropHeight;
-
-  const currentFilterStyle = {
-    filter: `contrast(${contrast}%) brightness(${brightness}%) saturate(${saturate}%)`,
-  };
-
-  const rotateImage = (direction) => {
-    setRotation((prev) => prev + 90 * direction);
-  };
-
-  const handleZoom = (delta) => {
-    setZoom((prev) => Math.max(0.5, Math.min(prev + delta * 0.1, 3)));
-  };
-
-  const resetEdits = () => {
-    setZoom(1);
-    setRotation(0);
-    setContrast(100);
-    setBrightness(100);
-    setSaturate(100);
-    setEditMode("crop");
-    setPosition({ x: 0, y: 0 });
-  };
-
-  const toggleCropMode = () => {
-    setEditMode((prev) => (prev === "crop" ? "edit" : "crop"));
-  };
-
-  const saveCroppedImage = async () => {
-    setIsUploading(true);
-
-    try {
-      let canvas = null;
-      const { w: cropWidth, h: cropHeight } = cropDimensions;
-
-      if (editMode === "crop" && cropperRef.current) {
-        canvas = cropperRef.current.getCanvas({
-          width: cropWidth,
-          height: cropHeight,
-        });
-      } else if (imageRef.current) {
-        const imgElement = imageRef.current;
-        const tempCanvas = document.createElement("canvas");
-        const ctx = tempCanvas.getContext("2d");
-
-        const size = Math.max(
-          imgElement.naturalWidth,
-          imgElement.naturalHeight,
-        );
-        tempCanvas.width = size;
-        tempCanvas.height = size;
-
-        ctx.clearRect(0, 0, size, size);
-        ctx.save();
-        ctx.translate(size / 2, size / 2);
-        ctx.rotate((rotation * Math.PI) / 180);
-        ctx.scale(zoom, zoom);
-
-        ctx.filter = `contrast(${contrast}%) brightness(${brightness}%) saturate(${saturate}%)`;
-        ctx.drawImage(
-          imgElement,
-          -imgElement.naturalWidth / 2,
-          -imgElement.naturalHeight / 2,
-        );
-        ctx.restore();
-        canvas = tempCanvas;
-      }
-
-      if (canvas) {
-        const now = new Date();
-        const blobName = `image-${now
-          .toLocaleString("en-GB", {
-            year: "numeric",
-            month: "2-digit",
-            day: "2-digit",
-            hour: "2-digit",
-            minute: "2-digit",
-            second: "2-digit",
-          })
-          .replace(/[/, ]/g, "_")
-          .replace(/:/g, "-")}.png`;
-
-        const dataUrl = canvas.toDataURL("image/png");
-        const imageBlob = dataURLToBlob(dataUrl);
-
-        const cropperFileName = `cropped_${monthName}_${blobName}`;
-        const originalFileName = `original_${monthName}_${blobName}`;
-
-        const uploadedCroppedFileUrl = await UploadFile(
-          projectData,
-          imageBlob,
-          cropperFileName,
-          "image",
-        );
-
-        const uploadedOriginalFileUrl = await UploadFile(
-          projectData,
-          image.file,
-          originalFileName,
-          "image",
-        );
-
-        onSave({
-          croppedImage: uploadedCroppedFileUrl,
-          originalImage: uploadedOriginalFileUrl,
-        });
-      }
-    } catch (error) {
-      console.error("Error uploading image:", error);
-      alert("Failed to upload image. Please try again.");
-    } finally {
-      setIsUploading(false);
-    }
-  };
-
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
-      <div className="bg-gray-900 rounded-lg max-w-4xl w-full max-h-[95vh] overflow-y-auto">
-        <div className="p-6">
-          {/* Header */}
-          <div className="flex justify-between items-center mb-6">
-            <div>
-              <h3 className="text-xl font-semibold text-white">
-                Edit Image - {monthName}
-              </h3>
-              <p className="text-sm text-gray-400">
-                {currentIndex + 1} of {totalImages} images
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={onCancel}
-              className="text-gray-400 hover:text-gray-200 transition-colors"
-              disabled={isUploading}
-            >
-              <FaTimes size={24} />
-            </button>
-          </div>
-          <div className="relative bg-gray-800 rounded-lg overflow-hidden flex items-center justify-center h-80 mb-6">
-            {editMode === "crop" ? (
-              <Cropper
-                ref={cropperRef}
-                src={image.src}
-                stencilComponent={RectangleStencil}
-                stencilProps={{
-                  stencilSize: { width: cropWidth, height: cropHeight },
-                  movable: true,
-                  resizable: true,
-                }}
-                aspectRatio={ratio}
-                imageClassName="cropper-image"
-                className="cropper"
-                backgroundClassName="cropper-bg"
-                canvas={true}
-                checkOrientation={true}
-                imageRestriction="stencil"
-                priority="coordinates"
-                transformImage={{ adjustStencil: true }}
-                transitions={true}
-              />
-            ) : (
-              <img
-                ref={imageRef}
-                src={image.src}
-                alt="Preview"
-                className="max-h-80 transition-all duration-200"
-                style={{
-                  transform: `rotate(${rotation}deg) scale(${zoom})`,
-                  transformOrigin: "center",
-                  ...currentFilterStyle,
-                  marginLeft: `${position.x}px`,
-                  marginTop: `${position.y}px`,
-                }}
-              />
-            )}
-          </div>
-
-          {/* Status and Action Buttons */}
-          <div className="bg-gray-800 rounded-lg p-4 flex flex-col md:flex-row justify-between items-center">
-            <div className="text-white mb-2 md:mb-0">
-              <p className="text-sm text-gray-400">Filename: {image.name}</p>
-              <div className="flex items-center mt-1">
-                <span className="text-sm mr-2">Zoom: {zoom.toFixed(1)}x</span>
-                <span className="text-sm">Rotation: {rotation}°</span>
-              </div>
-            </div>
-            <div className="flex gap-3">
-              <button
-                type="button"
-                onClick={onCancel}
-                disabled={isUploading}
-                className="px-4 py-2 bg-red-600 hover:bg-red-700 disabled:bg-gray-600 text-white rounded-lg transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={saveCroppedImage}
-                disabled={isUploading}
-                className="px-4 py-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-600 text-white rounded-lg flex items-center gap-2 transition-colors"
-              >
-                {isUploading ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
-                    Uploading...
-                  </>
-                ) : (
-                  <>
-                    <FaSave /> Save Changes
-                  </>
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// Main ImageCaptureComponent
-const ImageCaptureComponent = ({ projectData }) => {
   const [selectedImages, setSelectedImages] = useState([]);
   const [error, setError] = useState("");
   const [draggedItem, setDraggedItem] = useState(null);
@@ -317,26 +59,90 @@ const ImageCaptureComponent = ({ projectData }) => {
   const [pendingImages, setPendingImages] = useState([]);
   const [currentCropIndex, setCurrentCropIndex] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
-
+  const [previewData, setPreviewData] = useState(null);
   const fileInputRef = useRef(null);
   const cameraInputRef = useRef(null);
+  const [photoCollectionType, setPhotoCollectionType] = useState(null);
+  const [themeType, setThemeType] = useState(null);
+
+  const searchParams = useSearchParams();
+
+  const getParams = () => {
+    const url = new URL(window.location.href);
+    const params = url.searchParams;
+
+    return { params, url };
+  };
+
+  useEffect(() => {
+    const getPhotoCollectionType = searchParams.get("photo-collection-type");
+    const getThemeType = searchParams.get("theme-type");
+
+    setPhotoCollectionType(getPhotoCollectionType);
+    setThemeType(getThemeType);
+  }, [searchParams]);
+
+  useEffect(() => {
+    const { params, url } = getParams();
+    const getPhotoCollectionType = params.get("photo-collection-type");
+    const getThemeType = params.get("theme-type");
+
+    if (getPhotoCollectionType) {
+      setPhotoCollectionType(getPhotoCollectionType);
+    }
+    if (getThemeType) {
+      setThemeType(getThemeType);
+    }
+  }, []);
+
+  useEffect(() => {
+    const { params, url } = getParams();
+    if (photoCollectionType) {
+      params.set("photo-collection-type", photoCollectionType);
+      window.history.replaceState({}, "", url.toString());
+    }
+    if (themeType) {
+      params.set("theme-type", themeType);
+      window.history.replaceState({}, "", url.toString());
+    }
+  }, [photoCollectionType, themeType]);
 
   // Load saved images from localStorage on component mount
   useEffect(() => {
-    const savedImages = localStorage.getItem("calendar_images");
-    if (savedImages) {
-      try {
-        const parsed = JSON.parse(savedImages);
-        setSelectedImages(parsed);
-      } catch (e) {
-        console.error("Error loading saved images:", e);
+    const media = formData?.media;
+
+    if (media && typeof media === "object") {
+      const images = [];
+
+      MONTH_NAMES.forEach((month, index) => {
+        const key = month.toLowerCase();
+        const original = media[key];
+        const cropped = media[`${key}_cropped`];
+        const traillingPath = process.env.NEXT_PUBLIC_R2_PUBLIC_URL;
+
+        if (original || cropped) {
+          images.push({
+            id: `${key}-${index}`,
+            month: key,
+            name: `${month} Image`,
+            needsCropping: false,
+            [`${key}`]: traillingPath + "/" + original || "",
+            [`${key}_cropped`]: traillingPath + "/" + cropped || "",
+          });
+        }
+      });
+
+      if (images.length > 0) {
+        setSelectedImages(images);
       }
+    } else if (formData?.calendar_images) {
+      setSelectedImages(formData.calendar_images);
     }
   }, []);
 
   // Save to localStorage whenever selectedImages changes
   useEffect(() => {
-    localStorage.setItem("calendar_images", JSON.stringify(selectedImages));
+    setFormData((prev) => ({ ...prev, calendar_images: selectedImages }));
   }, [selectedImages]);
 
   const cropDimensions = getPhotoDims(projectData);
@@ -396,26 +202,27 @@ const ImageCaptureComponent = ({ projectData }) => {
       }
 
       const processFiles = async () => {
-        const newImages = [];
-
-        for (const file of validFiles) {
-          const reader = new FileReader();
-          const base64Promise = new Promise((resolve) => {
-            reader.onload = () => resolve(reader.result);
+        // Create all FileReader promises at once
+        const imagePromises = validFiles.map((file) => {
+          return new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onload = () => {
+              resolve({
+                id: replaceId || Date.now() + Math.random(),
+                src: reader.result,
+                name: file.name,
+                type: source,
+                file: file,
+                needsCropping: true,
+                replaceId: replaceId,
+              });
+            };
             reader.readAsDataURL(file);
           });
+        });
 
-          const base64 = await base64Promise;
-          newImages.push({
-            id: replaceId || Date.now() + Math.random(),
-            src: base64,
-            name: file.name,
-            type: source,
-            file: file,
-            needsCropping: true,
-            replaceId: replaceId,
-          });
-        }
+        // Wait for ALL images to be read
+        const newImages = await Promise.all(imagePromises);
 
         if (replaceId) {
           // For replacement, add to pending and start cropping immediately
@@ -423,7 +230,7 @@ const ImageCaptureComponent = ({ projectData }) => {
           setCurrentCropIndex(0);
           setIsProcessing(true);
         } else {
-          // For new images, add to pending and start cropping
+          // For new images, add ALL to pending and start cropping
           setPendingImages(newImages);
           setCurrentCropIndex(0);
           setIsProcessing(true);
@@ -442,37 +249,39 @@ const ImageCaptureComponent = ({ projectData }) => {
         event.target.value = "";
       }
     },
-    [selectedImages.length],
+    [selectedImages],
   );
 
   const handleCropSave = useCallback(
     (croppedData) => {
       const currentPendingImage = pendingImages[currentCropIndex];
 
+      // Determine the month name based on the current selectedImages length
+      const currentMonthIndex = selectedImages.length;
+      const monthName = MONTH_NAMES[currentMonthIndex]
+        ? MONTH_NAMES[currentMonthIndex].toLowerCase()
+        : `month_${currentMonthIndex + 1}`;
+
+      // Create formatted image data
+      const formattedData = {
+        id: currentPendingImage.replaceId || currentPendingImage.id,
+        name: currentPendingImage.name,
+        needsCropping: false,
+        month: monthName,
+        [`${monthName}`]: croppedData.originalImage,
+        [`${monthName}_cropped`]: croppedData.croppedImage,
+      };
+
       if (currentPendingImage.replaceId) {
         // Replace existing image
         setSelectedImages((prev) =>
           prev.map((img) =>
-            img.id === currentPendingImage.replaceId
-              ? {
-                  ...currentPendingImage,
-                  ...croppedData,
-                  needsCropping: false,
-                  id: currentPendingImage.replaceId, // Keep original ID
-                }
-              : img,
+            img.id === currentPendingImage.replaceId ? formattedData : img,
           ),
         );
       } else {
         // Add new image
-        setSelectedImages((prev) => [
-          ...prev,
-          {
-            ...currentPendingImage,
-            ...croppedData,
-            needsCropping: false,
-          },
-        ]);
+        setSelectedImages((prev) => [...prev, formattedData]);
       }
 
       // Move to next image or finish
@@ -486,7 +295,7 @@ const ImageCaptureComponent = ({ projectData }) => {
         setIsProcessing(false);
       }
     },
-    [currentCropIndex, pendingImages],
+    [currentCropIndex, pendingImages, selectedImages],
   );
 
   const handleCropCancel = useCallback(() => {
@@ -526,7 +335,7 @@ const ImageCaptureComponent = ({ projectData }) => {
       event.stopPropagation();
     }
     setSelectedImages([]);
-    localStorage.removeItem("calendar_images");
+    setFormData((prev) => ({ ...prev, calendar_images: [] }));
     setError("");
   }, []);
 
@@ -560,8 +369,13 @@ const ImageCaptureComponent = ({ projectData }) => {
   const handleDragStart = useCallback((e, index) => {
     setDraggedItem(index);
     e.dataTransfer.effectAllowed = "move";
-    e.dataTransfer.setData("text/html", e.target.parentNode);
-    e.dataTransfer.setDragImage(e.target.parentNode, 60, 40);
+
+    // Only set the current element as the drag image
+    const dragElement = e.currentTarget; // this div represents one image card
+    const rect = dragElement.getBoundingClientRect();
+
+    // Use a small offset to make it feel natural
+    e.dataTransfer.setDragImage(dragElement, rect.width / 2, rect.height / 2);
   }, []);
 
   const handleDragOver = useCallback((e, index) => {
@@ -585,13 +399,11 @@ const ImageCaptureComponent = ({ projectData }) => {
       }
 
       const updatedImages = [...selectedImages];
-      const draggedImage = updatedImages[draggedItem];
 
-      updatedImages.splice(draggedItem, 1);
-
-      const actualDropIndex =
-        draggedItem < dropIndex ? dropIndex - 1 : dropIndex;
-      updatedImages.splice(actualDropIndex, 0, draggedImage);
+      // 🔄 Swap the two images instead of shifting
+      const temp = updatedImages[draggedItem];
+      updatedImages[draggedItem] = updatedImages[dropIndex];
+      updatedImages[dropIndex] = temp;
 
       setSelectedImages(updatedImages);
       setDraggedItem(null);
@@ -605,57 +417,160 @@ const ImageCaptureComponent = ({ projectData }) => {
     setDragOverIndex(null);
   }, []);
 
+  const handlePreviewOpen = async (image, index) => {
+    const previewUrl = await generateCalendarPreviewBlob(
+      image.croppedImage,
+      CALENDAR_PREVIEW_CONFIG,
+    );
+    setPreviewData(previewUrl);
+  };
+
   const remainingSlots = CONFIG.maxImages - selectedImages.length;
 
   const getMonthName = (index) => {
     return MONTH_NAMES[index] || `Month ${index + 1}`;
   };
 
-  return (
-    <div className="bg-gray-900">
-      <h2 className="text-2xl font-bold text-white mb-6">Calendar Images</h2>
-
-      {error && (
-        <div className="text-red-400 mb-4 text-sm bg-red-900 bg-opacity-30 p-3 rounded-lg border border-red-800">
-          {error}
+  if (!photoCollectionType) {
+    return (
+      <div>
+        <h2 className="text-2xl font-bold text-white">
+          Start Calendar Journey
+        </h2>
+        <p className="text-gray-800 dark:text-gray-400">
+          Select your theme to start with the image selections
+        </p>
+        <div className="flex flex-wrap gap-2 mt-6">
+          <button
+            type="button"
+            onClick={() => setPhotoCollectionType("with-doctor")}
+            className="bg-blue-600 hover:bg-blue-700 text-white text-md font-bold py-3 px-2 rounded w-fit col-span-2"
+          >
+            Do you have Doctor Photos
+          </button>
+          <button
+            type="button"
+            onClick={() => setPhotoCollectionType("ai-generate-for-you")}
+            className="bg-green-600 hover:bg-green-700 text-white text-md font-bold py-3 px-2 rounded w-fit"
+          >
+            Let's AI generate theme for you
+          </button>
+          <button
+            type="button"
+            onClick={() => setPhotoCollectionType("mix")}
+            className="bg-gray-600 hover:bg-gray-700 text-white text-md font-bold py-3 px-2 rounded w-fit"
+          >
+            Doctor photo + AI
+          </button>
         </div>
-      )}
+      </div>
+    );
+  } else if (photoCollectionType && !themeType) {
+    switch (photoCollectionType) {
+      case "with-doctor":
+        return null;
+      case "ai-generate-for-you":
+        return (
+          <div>
+            <h2 className="text-2xl font-bold text-white">
+              Start Calendar Journey
+            </h2>
+            <p className="text-gray-800 dark:text-gray-400">
+              Select your theme to start with the image selections
+            </p>
+            <div className="flex flex-wrap gap-2 mt-6">
+              <button
+                type="button"
+                onClick={() => setThemeType("nature")}
+                className="bg-blue-600 hover:bg-blue-700 text-white text-md font-bold py-3 px-2 rounded w-fit col-span-2"
+              >
+                Nature
+              </button>
+              <button
+                type="button"
+                onClick={() => setThemeType("abstract")}
+                className="bg-green-600 hover:bg-green-700 text-white text-md font-bold py-3 px-2 rounded w-fit"
+              >
+                Abstract
+              </button>
+              <button
+                type="button"
+                onClick={() => setThemeType("historic")}
+                className="bg-green-600 hover:bg-green-700 text-white text-md font-bold py-3 px-2 rounded w-fit"
+              >
+                Historic
+              </button>
+              <button
+                type="button"
+                onClick={() => setThemeType("medical")}
+                className="bg-green-600 hover:bg-green-700 text-white text-md font-bold py-3 px-2 rounded w-fit"
+              >
+                Medical
+              </button>
+              <button
+                type="button"
+                onClick={() => setThemeType("motvational")}
+                className="bg-green-600 hover:bg-green-700 text-white text-md font-bold py-3 px-2 rounded w-fit"
+              >
+                Motivation
+              </button>
+            </div>
+          </div>
+        );
+    }
+  } else {
+    return (
+      <div className="bg-gray-900">
+        {previewData && (
+          <PreviewModal
+            previewType="IMAGE"
+            previewUrl={previewData}
+            setPreviewMode={setPreviewData}
+          />
+        )}
+        <h2 className="text-2xl font-bold text-white mb-6">Calendar Images</h2>
 
-      {/* Upload Controls */}
-      <div className="mb-2 flex gap-1">
-        <label
-          className={`
-            py-2 rounded-lg text-white font-medium text-base w-full text-center
-            inline-block transition-all duration-200 cursor-pointer
+        {error && (
+          <div className="text-red-400 mb-4 text-sm bg-red-900 bg-opacity-30 p-3 rounded-lg border border-red-800">
+            {error}
+          </div>
+        )}
+
+        {/* Upload Controls */}
+        <div className="mb-2 flex gap-1">
+          <label
+            className={`
+            py-2 rounded-lg text-white font-medium text-sm w-full text-center justify-center items-center
+            flex gap-1 transition-all duration-200 cursor-pointer
             ${
               remainingSlots > 0 && !isProcessing
                 ? "bg-green-600 hover:bg-green-700 active:bg-green-800 shadow-md hover:shadow-lg"
                 : "bg-gray-700 cursor-not-allowed opacity-60"
             }
           `}
-          title={
-            isProcessing
-              ? "Please finish cropping current images"
-              : remainingSlots > 0
-                ? "Take a photo with your camera"
-                : "Maximum limit reached"
-          }
-        >
-          📷 Take Photo
-          <input
-            ref={cameraInputRef}
-            type="file"
-            accept={CONFIG.acceptedFormats}
-            capture="environment"
-            onChange={(e) => handleImageSelection(e, "camera")}
-            disabled={remainingSlots === 0 || isProcessing}
-            className="hidden"
-          />
-        </label>
+            title={
+              isProcessing
+                ? "Please finish cropping current images"
+                : remainingSlots > 0
+                  ? "Take a photo with your camera"
+                  : "Maximum limit reached"
+            }
+          >
+            <FaCamera className="h-4" /> Take Photo
+            <input
+              ref={cameraInputRef}
+              type="file"
+              accept={CONFIG.acceptedFormats}
+              capture="environment"
+              onChange={(e) => handleImageSelection(e, "camera")}
+              disabled={remainingSlots === 0 || isProcessing}
+              className="hidden"
+            />
+          </label>
 
-        <label
-          className={`
-            py-2 rounded-lg text-white font-medium text-base w-full text-center
+          <label
+            className={`
+            py-2 rounded-lg text-white font-medium text-sm w-full text-center
             inline-block transition-all duration-200 cursor-pointer
             ${
               remainingSlots > 0 && !isProcessing
@@ -663,170 +578,261 @@ const ImageCaptureComponent = ({ projectData }) => {
                 : "bg-gray-700 cursor-not-allowed opacity-60"
             }
           `}
-          title={
-            isProcessing
-              ? "Please finish cropping current images"
-              : remainingSlots > 0
-                ? `Choose up to ${remainingSlots} photos from gallery`
-                : "Maximum limit reached"
-          }
-        >
-          📁 Choose Photos
-          <input
-            ref={fileInputRef}
-            type="file"
-            multiple
-            accept={CONFIG.acceptedFormats}
-            onChange={(e) => handleImageSelection(e, "gallery")}
-            disabled={remainingSlots === 0 || isProcessing}
-            className="hidden"
-          />
-        </label>
-      </div>
-
-      {/* Processing Status */}
-      {isProcessing && (
-        <div className="mb-1 bg-blue-900 bg-opacity-30 border border-blue-700 rounded-lg">
-          <div className="flex items-center gap-3">
-            <div className="animate-spin rounded-full h-5 w-5 border-2 border-blue-500 border-t-transparent"></div>
-            <p className="text-blue-300 font-medium">
-              Processing images... {currentCropIndex + 1} of{" "}
-              {pendingImages.length}
-            </p>
-          </div>
+            title={
+              isProcessing
+                ? "Please finish cropping current images"
+                : remainingSlots > 0
+                  ? `Choose up to ${remainingSlots} photos from gallery`
+                  : "Maximum limit reached"
+            }
+          >
+            📁 Choose Photos
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              accept={CONFIG.acceptedFormats}
+              onChange={(e) => handleImageSelection(e, "gallery")}
+              disabled={remainingSlots === 0 || isProcessing}
+              className="hidden"
+            />
+          </label>
         </div>
-      )}
+        <div className="mb-2 flex gap-1">
+          <label
+            className={`
+            py-2 rounded-lg text-white font-medium text-sm w-full text-center
+            inline-block transition-all duration-200 cursor-pointer
+            ${
+              remainingSlots > 0 && !isProcessing
+                ? "bg-blue-600 hover:bg-blue-700 active:bg-blue-800 shadow-md hover:shadow-lg"
+                : "bg-gray-700 cursor-not-allowed opacity-60"
+            }
+          `}
+            title={
+              isProcessing
+                ? "Please finish cropping current images"
+                : remainingSlots > 0
+                  ? `Choose up to ${remainingSlots} photos from gallery`
+                  : "Maximum limit reached"
+            }
+          >
+            <FaBahai /> Generate with AI
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              accept={CONFIG.acceptedFormats}
+              onChange={(e) => handleImageSelection(e, "gallery")}
+              disabled={remainingSlots === 0 || isProcessing}
+              className="hidden"
+            />
+          </label>
+        </div>
+        {/* Processing Status */}
+        {isProcessing && (
+          <div className="mb-1 bg-blue-900 bg-opacity-30 border border-blue-700 rounded-lg">
+            <div className="flex items-center gap-3">
+              <div className="animate-spin rounded-full h-5 w-5 border-2 border-blue-500 border-t-transparent"></div>
+              <p className="text-blue-300 font-medium">
+                Processing images... {currentCropIndex + 1} of{" "}
+                {pendingImages.length}
+              </p>
+            </div>
+          </div>
+        )}
 
-      {/* Selected Images Grid */}
-      {selectedImages.length > 0 && (
-        <div>
-          <h3 className="text-lg font-medium mb-3 text-gray-300">
-            Selected Images ({selectedImages.length}/{CONFIG.maxImages})
-          </h3>
-          <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
-            {selectedImages.map((image, index) => (
-              <div
-                key={image.id}
-                className={`
-                  flex flex-col bg-gray-800 border-2 rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-all duration-200 cursor-move
-                  ${draggedItem === index ? "opacity-50 transform rotate-3 scale-105" : ""}
-                  ${dragOverIndex === index ? "border-blue-500 bg-blue-900 bg-opacity-30" : "border-gray-700"}
-                `}
-                draggable="true"
-                onDragStart={(e) => handleDragStart(e, index)}
-                onDragOver={(e) => handleDragOver(e, index)}
-                onDragLeave={handleDragLeave}
-                onDrop={(e) => handleDrop(e, index)}
-                onDragEnd={handleDragEnd}
-              >
-                {/* Month Header */}
-                <div className="bg-gray-700 text-white text-center py-0.5 text-sm font-semibold flex items-center justify-center gap-2">
-                  <MdDragIndicator className="h-4 w-4 text-gray-400" />
-                  {getMonthName(index)}
-                </div>
+        {/* Selected Images Grid */}
+        {selectedImages.length > 0 && (
+          <div>
+            <h3 className="text-lg font-medium mb-3 text-gray-300">
+              Selected Images ({selectedImages.length}/{CONFIG.maxImages})
+            </h3>
+            <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+              {selectedImages.map((image, index) => {
+                const monthKey =
+                  image.month || MONTH_NAMES[index]?.toLowerCase();
+                const displayMonthName =
+                  monthKey.charAt(0).toUpperCase() + monthKey.slice(1);
 
-                {/* Image Preview */}
-                <div className="relative w-full h-20 overflow-hidden">
-                  <img
-                    src={image.croppedImage || image.src}
-                    alt={`${getMonthName(index)} - ${image.name}`}
-                    className="w-full h-full object-cover"
-                  />
-                  {image.needsCropping && (
-                    <div className="absolute inset-0 bg-yellow-500 bg-opacity-30 flex items-center justify-center">
-                      <span className="text-yellow-800 text-xs font-bold bg-yellow-400 px-2 rounded">
-                        Needs Crop
-                      </span>
+                const previewSrc =
+                  image[`${monthKey}_cropped`] ||
+                  image[`${monthKey}`] ||
+                  image.croppedImage ||
+                  image.src;
+
+                return (
+                  <div
+                    key={image.id}
+                    className={`
+                    flex flex-col bg-gray-800 border-2 rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-all duration-200 cursor-move
+                    ${draggedItem === index ? "opacity-50 transform rotate-3 scale-105" : ""}
+                    ${dragOverIndex === index ? "border-blue-500 bg-blue-900 bg-opacity-30" : "border-gray-700"}
+                  `}
+                    draggable="true"
+                    onDragStart={(e) => handleDragStart(e, index)}
+                    onDragOver={(e) => handleDragOver(e, index)}
+                    onDragLeave={handleDragLeave}
+                    onDrop={(e) => handleDrop(e, index)}
+                    onDragEnd={handleDragEnd}
+                  >
+                    {/* Month Header */}
+                    <div className="bg-gray-700 text-white text-center py-0.5 text-sm font-semibold flex items-center justify-center gap-2">
+                      <MdDragIndicator className="h-4 w-4 text-gray-400" />
+                      {displayMonthName}
                     </div>
-                  )}
-                </div>
 
-                {/* Action Buttons */}
-                <div className="flex gap-1 justify-center bg-gray-700 p-1">
-                  <div className="relative flex-1">
-                    <button
-                      type="button"
-                      className="w-full bg-blue-600 hover:bg-blue-700 active:scale-105 py-2 border-none rounded flex items-center justify-center shadow-sm transition-all duration-200 text-white"
-                      onClick={(e) => toggleMenu(image.id, e)}
-                      title={`Replace ${getMonthName(index)} image`}
-                    >
-                      ↻
-                    </button>
-
+                    {/* Image Preview */}
                     <div
-                      id={`menu-${image.id}`}
-                      className="hidden absolute bottom-full left-0 mb-1 bg-gray-800 border border-gray-600 rounded-md shadow-lg z-50 min-w-32 overflow-hidden"
+                      className="relative w-full h-20 overflow-hidden"
+                      onClick={() => handlePreviewOpen(image, index)}
                     >
+                      <img
+                        src={previewSrc}
+                        alt={`${displayMonthName} - ${image.name}`}
+                        className="w-full h-full object-cover"
+                      />
+                      {image.needsCropping && (
+                        <div className="absolute inset-0 bg-yellow-500 bg-opacity-30 flex items-center justify-center">
+                          <span className="text-yellow-800 text-xs font-bold bg-yellow-400 px-2 rounded">
+                            Needs Crop
+                          </span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div className="flex gap-1 justify-center bg-gray-700 p-1">
+                      <div className="relative flex-1">
+                        <button
+                          type="button"
+                          className="w-full bg-blue-600 hover:bg-blue-700 active:scale-105 py-1 border-none rounded flex items-center justify-center shadow-sm transition-all duration-200 text-white"
+                          onClick={(e) => toggleMenu(image.id, e)}
+                          title={`Replace ${displayMonthName} image`}
+                        >
+                          ↻
+                        </button>
+
+                        <div
+                          id={`menu-${image.id}`}
+                          className="hidden absolute bottom-full left-0 mb-1 bg-gray-800 border border-gray-600 rounded-md shadow-lg z-50 min-w-32 overflow-hidden"
+                        >
+                          <button
+                            type="button"
+                            onClick={(e) =>
+                              handleReplaceClick(image.id, "camera", e)
+                            }
+                            className="block w-full px-3 py-2 text-left text-sm text-gray-200 hover:bg-gray-700 bg-gray-600 border-none transition-colors duration-200"
+                          >
+                            Camera
+                          </button>
+                          <button
+                            type="button"
+                            onClick={(e) =>
+                              handleReplaceClick(image.id, "gallery", e)
+                            }
+                            className="block w-full px-3 py-2 text-left text-sm text-gray-200 hover:bg-gray-700 border-none border-t border-gray-600 transition-colors duration-200"
+                          >
+                            Gallery
+                          </button>
+                        </div>
+                      </div>
+
                       <button
                         type="button"
-                        onClick={(e) =>
-                          handleReplaceClick(image.id, "camera", e)
-                        }
-                        className="block w-full px-3 py-2 text-left text-sm text-gray-200 hover:bg-gray-700 border-none transition-colors duration-200"
+                        onClick={(e) => removeImage(image.id, e)}
+                        className="flex-1 py-1 bg-red-600 hover:bg-red-700 active:scale-105 border-none rounded flex items-center justify-center shadow-sm transition-all duration-200 text-white"
+                        title={`Delete ${displayMonthName} image`}
                       >
-                        📷 Camera
-                      </button>
-                      <button
-                        type="button"
-                        onClick={(e) =>
-                          handleReplaceClick(image.id, "gallery", e)
-                        }
-                        className="block w-full px-3 py-2 text-left text-sm text-gray-200 hover:bg-gray-700 border-none border-t border-gray-600 transition-colors duration-200"
-                      >
-                        📁 Gallery
+                        <MdDelete className="h-4 w-4" />
                       </button>
                     </div>
                   </div>
-
-                  <button
-                    type="button"
-                    onClick={(e) => removeImage(image.id, e)}
-                    className="flex-1 py-2 bg-red-600 hover:bg-red-700 active:scale-105 border-none rounded flex items-center justify-center shadow-sm transition-all duration-200 text-white"
-                    title={`Delete ${getMonthName(index)} image`}
-                  >
-                    <MdDelete className="h-4 w-4" />
-                  </button>
-                </div>
-              </div>
-            ))}
+                );
+              })}
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Empty State */}
-      {selectedImages.length === 0 && !isProcessing && (
-        <div className="border-2 border-dashed border-gray-700 rounded-lg p-8 text-center h-40 flex flex-col items-center justify-center">
-          <div className="text-gray-500 mb-4 bg-gray-800 p-4 rounded-full">
-            <FaRegImage size={32} />
+        {/* Empty State */}
+        {selectedImages.length === 0 && !isProcessing && (
+          <div className="border-2 border-dashed border-gray-700 rounded-lg p-8 text-center h-40 flex flex-col items-center justify-center">
+            <div className="text-gray-500 mb-4 bg-gray-800 p-4 rounded-full">
+              <FaRegImage size={32} />
+            </div>
+            <p className="text-gray-400 mb-2">No images selected yet</p>
+            <p className="text-gray-500 text-sm">
+              Upload up to {CONFIG.maxImages} images for your calendar
+            </p>
           </div>
-          <p className="text-gray-400 mb-2">No images selected yet</p>
-          <p className="text-gray-500 text-sm">
-            Upload up to {CONFIG.maxImages} images for your calendar
-          </p>
-        </div>
-      )}
+        )}
 
-      {/* Crop Modal */}
-      {currentCropIndex !== null && pendingImages[currentCropIndex] && (
-        <CropModal
-          image={pendingImages[currentCropIndex]}
-          onSave={handleCropSave}
-          onCancel={handleCropCancel}
-          projectData={projectData}
-          monthName={getMonthName(
-            pendingImages[currentCropIndex].replaceId
-              ? selectedImages.findIndex(
-                  (img) => img.id === pendingImages[currentCropIndex].replaceId,
-                )
-              : selectedImages.length + currentCropIndex,
-          )}
-          cropDimensions={cropDimensions}
-          currentIndex={currentCropIndex}
-          totalImages={pendingImages.length}
-        />
-      )}
-    </div>
-  );
+        {/* Crop Modal */}
+        {currentCropIndex !== null && pendingImages[currentCropIndex] && (
+          <ImageCropper
+            image={{
+              src: pendingImages[currentCropIndex].src,
+              type: pendingImages[currentCropIndex].file?.type || "image/jpeg",
+            }}
+            setImage={(newImage) => {
+              setPendingImages((prev) => {
+                const updated = [...prev];
+                updated[currentCropIndex] = {
+                  ...updated[currentCropIndex],
+                  src: newImage.src,
+                };
+                return updated;
+              });
+            }}
+            originalFile={pendingImages[currentCropIndex].file}
+            filename={pendingImages[currentCropIndex].name}
+            unsavedChanges={true}
+            setUnsavedChanges={() => {}}
+            isRxPadImage={false}
+            formData={formData}
+            setFormData={(updater) => {
+              const result =
+                typeof updater === "function" ? updater(formData) : updater;
+
+              // Extract the saved photo data and trigger handleCropSave
+              if (result.photo) {
+                handleCropSave({
+                  croppedImage: result.photo.croppedImage,
+                  originalImage: result.photo.originalImage,
+                  name: pendingImages[currentCropIndex].name,
+                  id:
+                    pendingImages[currentCropIndex].replaceId ||
+                    pendingImages[currentCropIndex].id,
+                });
+              }
+            }}
+            onClose={handleCropCancel}
+            ui={ui}
+            doctorHash={doctorHash}
+            projectData={projectData}
+            cropWidth={cropDimensions.w}
+            cropHeight={cropDimensions.h}
+            ratio={cropDimensions.w / cropDimensions.h}
+            onRemove={() => {
+              const currentPending = pendingImages[currentCropIndex];
+              if (currentPending.replaceId) {
+                // If replacing, cancel the replacement
+                handleCropCancel();
+              } else {
+                // If new image, skip this one
+                const nextIndex = currentCropIndex + 1;
+                if (nextIndex < pendingImages.length) {
+                  setCurrentCropIndex(nextIndex);
+                } else {
+                  handleCropCancel();
+                }
+              }
+            }}
+          />
+        )}
+      </div>
+    );
+  }
 };
 
-export default ImageCaptureComponent;
+export default CalendarPage;

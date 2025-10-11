@@ -13,6 +13,9 @@ export async function getDataSingleton() {
       // cache: "no-cache",
     },
   );
+  if(response.status !== 200) {
+    throw new Error('Failed to fetch data');
+  }
   dataCache = await response.json();
   return dataCache;
 }

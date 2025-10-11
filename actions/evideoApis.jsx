@@ -89,10 +89,10 @@ export const GetRenderStatus = async (id) => {
       return {
         success: false,
         message: "Video processing is still in progress",
+        data: result,
       };
     }
   } catch (error) {
-    MyError(error);
     return {
       success: false,
       message: "Failure occur while generating Ai Video",

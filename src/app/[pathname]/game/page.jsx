@@ -2,7 +2,11 @@ import { getAllProjectsCached } from "../../../../utils/projectCache";
 import Config from "../../../../utils/Config";
 import NotFoundPage from "../NotFoundPage";
 import ScratchCard from "../../../components/pages/funzo/ScratchCard";
+<<<<<<< HEAD
 import VideoArtworkFlow from "@components/pages/VideoArtworkFlow";
+=======
+import ShalinaNigeriaFlagHosting from "../../../components/pages/funzo/ShalinaNigeriaFlagHosting";
+>>>>>>> 841e2afbc29bcb5181ad5698155e4d728aed718d
 
 export async function generateStaticParams() {
   const projects = await getAllProjectsCached();
@@ -51,8 +55,20 @@ export default async function Home({ params }) {
   );
   const ui = await Config(projectInfo);
   if (projectInfo) {
+<<<<<<< HEAD
     if (projectInfo?.config?.game?.scratch_card && projectInfo?.project_hash !== "v42062x3") {
       console.log("Rendering ScratchCard for project:", projectInfo.project_hash);
+=======
+    if (pathname === "j02y1r2m" || pathname === "mg2n7zq8") {
+      return (
+        <ShalinaNigeriaFlagHosting
+          projectData={projectInfo}
+          projectId={pathname}
+          ui={ui}
+        />
+      );
+    } else if (projectInfo?.config?.game?.scratch_card) {
+>>>>>>> 841e2afbc29bcb5181ad5698155e4d728aed718d
       return (
         <ScratchCard projectData={projectInfo} projectId={pathname} ui={ui} />
       );

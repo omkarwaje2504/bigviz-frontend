@@ -8,7 +8,6 @@ import {
   FaUser,
   FaClock,
   FaLaptop,
-  FaFireAlt,
   FaArrowUp,
   FaArrowDown,
   FaMoon,
@@ -25,6 +24,8 @@ import {
   FaPlay,
   FaPause,
   FaFilter,
+  FaBuilding,
+  FaUserTie,
 } from "react-icons/fa";
 import { IoRefresh, IoClose } from "react-icons/io5";
 
@@ -124,27 +125,6 @@ const StatusChip = ({ status }) => {
   );
 };
 
-const PriorityBadge = ({ priority }) => {
-  const getCfg = (p) => {
-    if (p >= 4)
-      return { bg: "bg-red-500", text: "text-white", label: "Critical" };
-    if (p >= 3)
-      return { bg: "bg-orange-500", text: "text-white", label: "High" };
-    if (p >= 2)
-      return { bg: "bg-yellow-500", text: "text-white", label: "Medium" };
-    return { bg: "bg-green-500", text: "text-white", label: "Low" };
-  };
-  const cfg = getCfg(priority);
-  return (
-    <span
-      className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium ${cfg.bg} ${cfg.text}`}
-    >
-      <FaFireAlt className="text-xs" />
-      {cfg.label}
-    </span>
-  );
-};
-
 const LoadingSkeleton = () => (
   <div className="space-y-3">
     {[...Array(5)].map((_, i) => (
@@ -161,30 +141,6 @@ const LoadingSkeleton = () => (
         </div>
       </div>
     ))}
-  </div>
-);
-
-const StatsCard = ({ icon: Icon, label, value, color, trend }) => (
-  <div className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-gray-200 dark:border-gray-700">
-    <div className="flex items-center justify-between mb-2">
-      <div className={`p-2 rounded-lg ${color}`}>
-        <Icon className="text-lg text-white" />
-      </div>
-      {trend && (
-        <span
-          className={`text-xs font-medium flex items-center ${
-            trend > 0 ? "text-red-500" : "text-green-500"
-          }`}
-        >
-          {trend > 0 ? <FaArrowUp /> : <FaArrowDown />}
-          {Math.abs(trend)}%
-        </span>
-      )}
-    </div>
-    <div className="text-2xl font-bold text-gray-900 dark:text-white">
-      {value}
-    </div>
-    <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">{label}</div>
   </div>
 );
 
@@ -236,7 +192,6 @@ const FilterPanel = ({
             className="px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-white"
           >
             <option value="timestamp">Date</option>
-            <option value="priority">Priority</option>
             <option value="status">Status</option>
           </select>
           <Button
@@ -271,25 +226,6 @@ const FilterPanel = ({
 
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Priority
-            </label>
-            <select
-              value={filters.priority}
-              onChange={(e) =>
-                setFilters({ ...filters, priority: e.target.value })
-              }
-              className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-white"
-            >
-              <option value="">All Priority</option>
-              <option value="4">Critical</option>
-              <option value="3">High</option>
-              <option value="2">Medium</option>
-              <option value="1">Low</option>
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Date Range
             </label>
             <select
@@ -318,7 +254,7 @@ const FilterPanel = ({
   );
 };
 
-/* ============== Cards and group ============== */
+/* ============== Individual Error Card ============== */
 const ErrorCard = ({
   error,
   onView,
@@ -329,9 +265,9 @@ const ErrorCard = ({
 }) => {
   const checked = isSelected?.(error._id) || false;
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow">
+    <div className="bg-white dark:bg-gray-800 rounded-lg p-3 shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow">
       <div className="flex items-start justify-between">
-        <div className="flex items-start gap-3 flex-1 min-w-0">
+        <div className="flex items-start gap-2 flex-1 min-w-0">
           <input
             type="checkbox"
             className="mt-1"
@@ -340,22 +276,16 @@ const ErrorCard = ({
             onClick={(e) => e.stopPropagation()}
           />
           <div className="flex-1 min-w-0" onClick={() => onView(error)}>
-            <div className="flex items-center gap-2 mb-2">
-              <h3 className="font-semibold text-red-600 dark:text-red-400 truncate">
+            <div className="flex items-center gap-2 mb-1">
+              <h4 className="font-medium text-red-600 dark:text-red-400 truncate text-sm">
                 {error.error.name}
-              </h3>
+              </h4>
               <StatusChip status={error.status} />
-              <PriorityBadge priority={error.priority} />
             </div>
-            <p className="text-sm text-gray-600 dark:text-gray-300 mb-3 line-clamp-2">
+            <p className="text-xs text-gray-600 dark:text-gray-300 mb-2 line-clamp-2">
               {error.error.message}
             </p>
-
-            <div className="flex items-center gap-4 text-xs text-gray-500 dark:text-gray-400">
-              <div className="flex items-center gap-1">
-                <FaUser className="text-gray-400" />
-                <span className="truncate max-w-[120px]">{error.userId}</span>
-              </div>
+            <div className="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
               <div className="flex items-center gap-1">
                 <FaClock className="text-gray-400" />
                 <span>
@@ -363,10 +293,8 @@ const ErrorCard = ({
                     timeZone: "Asia/Kolkata",
                     day: "2-digit",
                     month: "short",
-                    year: "numeric",
                     hour: "2-digit",
                     minute: "2-digit",
-                    second: "2-digit",
                   })}
                 </span>
               </div>
@@ -378,28 +306,28 @@ const ErrorCard = ({
           </div>
         </div>
 
-        <div className="flex flex-col gap-2 ml-3">
+        <div className="flex gap-1 ml-2">
           <Button
             variant="ghost"
-            size="sm"
+            size="xs"
             onClick={() => onView(error)}
-            className="p-2"
+            className="p-1"
           >
             <FaEye />
           </Button>
           <Button
             variant="success"
-            size="sm"
+            size="xs"
             onClick={() => onResolve(error._id)}
-            className="p-2"
+            className="p-1"
           >
             <FaCheck />
           </Button>
           <Button
             variant="danger"
-            size="sm"
+            size="xs"
             onClick={() => onDelete(error._id)}
-            className="p-2"
+            className="p-1"
           >
             <IoClose />
           </Button>
@@ -409,8 +337,10 @@ const ErrorCard = ({
   );
 };
 
-const ErrorGroup = ({
-  group,
+/* ============== Error Type Group (Level 3) ============== */
+const ErrorTypeGroup = ({
+  errorType,
+  errors,
   onView,
   onResolve,
   onDelete,
@@ -418,30 +348,28 @@ const ErrorGroup = ({
   toggleSelect,
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
-  const errorCount = group.length;
-  const latestError = group[0];
-  const employeeCode = latestError.deviceInfo?.employeeDetails?.code;
-  const employeeName = latestError.deviceInfo?.employeeDetails?.name;
+  const errorCount = errors.length;
+  const latestError = errors[0];
 
-  const groupAllChecked = group.every((e) => isSelected?.(e._id));
+  const groupAllChecked = errors.every((e) => isSelected?.(e._id));
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+    <div className="bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 overflow-hidden ml-8">
       <div
-        className="p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+        className="p-3 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
         onClick={() => setIsExpanded(!isExpanded)}
       >
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <input
               type="checkbox"
               checked={groupAllChecked}
               onChange={(e) => {
                 e.stopPropagation();
                 if (groupAllChecked) {
-                  group.forEach((it) => toggleSelect(it._id)); // will unselect each (toggle)
+                  errors.forEach((it) => toggleSelect(it._id));
                 } else {
-                  group.forEach((it) => {
+                  errors.forEach((it) => {
                     if (!isSelected(it._id)) toggleSelect(it._id);
                   });
                 }
@@ -450,32 +378,18 @@ const ErrorGroup = ({
             />
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-1">
-                <h3 className="font-semibold text-red-600 dark:text-red-400 truncate">
-                  {latestError.error.name}
-                </h3>
-                <PriorityBadge priority={latestError.priority} />
+                <h4 className="font-medium text-red-600 dark:text-red-400 text-sm">
+                  {errorType}
+                </h4>
+                <span className="px-2 py-1 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 text-xs rounded-md">
+                  {errorCount} error{errorCount !== 1 ? "s" : ""}
+                </span>
               </div>
-
-              <p className="text-sm text-gray-600 dark:text-gray-300 mb-2 line-clamp-1">
+              <p className="text-xs text-gray-600 dark:text-gray-300 mb-1 line-clamp-1">
                 {latestError.error.message}
               </p>
-
-              {employeeCode && (
-                <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400 mb-2">
-                  <FaUser className="text-gray-400" />
-                  <span className="font-medium">{employeeCode}</span>
-                  {employeeName && <span>({employeeName})</span>}
-                </div>
-              )}
-
-              <div className="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
-                <span>
-                  {errorCount} occurrence{errorCount !== 1 ? "s" : ""}
-                </span>
-                <span>•</span>
-                <span>
-                  Last: {new Date(latestError.timestamp).toLocaleDateString()}
-                </span>
+              <div className="text-xs text-gray-500 dark:text-gray-400">
+                Last: {new Date(latestError.timestamp).toLocaleDateString()}
               </div>
             </div>
           </div>
@@ -490,8 +404,8 @@ const ErrorGroup = ({
       </div>
 
       {isExpanded && (
-        <div className="border-t border-gray-200 dark:border-gray-700 p-4 space-y-3">
-          {group.map((error) => (
+        <div className="border-t border-gray-200 dark:border-gray-600 p-3 space-y-2">
+          {errors.map((error) => (
             <ErrorCard
               key={error._id}
               error={error}
@@ -502,6 +416,199 @@ const ErrorGroup = ({
               onToggleSelect={toggleSelect}
             />
           ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+/* ============== Employee Group (Level 2) ============== */
+const EmployeeGroup = ({
+  employeeCode,
+  employeeName,
+  errorTypeGroups,
+  onView,
+  onResolve,
+  onDelete,
+  isSelected,
+  toggleSelect,
+}) => {
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  // Get all errors from all error types under this employee
+  const allErrors = Object.values(errorTypeGroups).flat();
+  const errorCount = allErrors.length;
+  const errorTypeCount = Object.keys(errorTypeGroups).length;
+
+  const groupAllChecked = allErrors.every((e) => isSelected?.(e._id));
+
+  return (
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden ml-4">
+      <div
+        className="p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+        onClick={() => setIsExpanded(!isExpanded)}
+      >
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <input
+              type="checkbox"
+              checked={groupAllChecked}
+              onChange={(e) => {
+                e.stopPropagation();
+                if (groupAllChecked) {
+                  allErrors.forEach((it) => toggleSelect(it._id));
+                } else {
+                  allErrors.forEach((it) => {
+                    if (!isSelected(it._id)) toggleSelect(it._id);
+                  });
+                }
+              }}
+              onClick={(e) => e.stopPropagation()}
+            />
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-1">
+                <FaUserTie className="text-blue-600 dark:text-blue-400" />
+                <h3 className="font-semibold text-gray-900 dark:text-white">
+                  {employeeName || "Unknown Employee"}
+                </h3>
+                <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-xs rounded-md">
+                  Code: {employeeCode}
+                </span>
+              </div>
+
+              <div className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-300">
+                <span>{errorCount} total errors</span>
+                <span>•</span>
+                <span>{errorTypeCount} error types</span>
+              </div>
+            </div>
+          </div>
+
+          <FaChevronDown
+            className={`transition-transform ${isExpanded ? "rotate-180" : ""}`}
+          />
+        </div>
+      </div>
+
+      {isExpanded && (
+        <div className="border-t border-gray-200 dark:border-gray-700 p-4 space-y-3">
+          {Object.entries(errorTypeGroups)
+            .sort(([, a], [, b]) => b.length - a.length) // Sort by error count
+            .map(([errorType, errors]) => (
+              <ErrorTypeGroup
+                key={errorType}
+                errorType={errorType}
+                errors={errors}
+                onView={onView}
+                onResolve={onResolve}
+                onDelete={onDelete}
+                isSelected={isSelected}
+                toggleSelect={toggleSelect}
+              />
+            ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+/* ============== Project Group (Level 1) ============== */
+const ProjectGroup = ({
+  projectId,
+  employeeGroups,
+  onView,
+  onResolve,
+  onDelete,
+  isSelected,
+  toggleSelect,
+}) => {
+  const [isExpanded, setIsExpanded] = useState(true); // Projects expanded by default
+
+  // Get all errors from all employees under this project
+  const allErrors = Object.values(employeeGroups)
+    .map((emp) => Object.values(emp.errorTypeGroups))
+    .flat(2);
+
+  const errorCount = allErrors.length;
+  const employeeCount = Object.keys(employeeGroups).length;
+  const uniqueErrorTypes = new Set(allErrors.map((e) => e.error.name)).size;
+
+  const groupAllChecked = allErrors.every((e) => isSelected?.(e._id));
+
+  return (
+    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+      <div
+        className="p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors border-b border-gray-200 dark:border-gray-700"
+        onClick={() => setIsExpanded(!isExpanded)}
+      >
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <input
+              type="checkbox"
+              checked={groupAllChecked}
+              onChange={(e) => {
+                e.stopPropagation();
+                if (groupAllChecked) {
+                  allErrors.forEach((it) => toggleSelect(it._id));
+                } else {
+                  allErrors.forEach((it) => {
+                    if (!isSelected(it._id)) toggleSelect(it._id);
+                  });
+                }
+              }}
+              onClick={(e) => e.stopPropagation()}
+            />
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-2">
+                <FaBuilding className="text-purple-600 dark:text-purple-400" />
+                <h2 className="text-lg font-bold text-gray-900 dark:text-white">
+                  Project: {projectId}
+                </h2>
+                <span className="px-3 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 text-sm rounded-md">
+                  {errorCount} errors
+                </span>
+              </div>
+
+              <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-300">
+                <div className="flex items-center gap-1">
+                  <FaUsers className="text-gray-400" />
+                  <span>{employeeCount} employees</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <FaBug className="text-gray-400" />
+                  <span>{uniqueErrorTypes} error types</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <FaChevronDown
+            className={`transition-transform ${isExpanded ? "rotate-180" : ""}`}
+          />
+        </div>
+      </div>
+
+      {isExpanded && (
+        <div className="p-4 space-y-4">
+          {Object.entries(employeeGroups)
+            .sort(([, a], [, b]) => {
+              const aCount = Object.values(a.errorTypeGroups).flat().length;
+              const bCount = Object.values(b.errorTypeGroups).flat().length;
+              return bCount - aCount; // Sort by error count
+            })
+            .map(([employeeCode, employeeData]) => (
+              <EmployeeGroup
+                key={employeeCode}
+                employeeCode={employeeCode}
+                employeeName={employeeData.employeeName}
+                errorTypeGroups={employeeData.errorTypeGroups}
+                onView={onView}
+                onResolve={onResolve}
+                onDelete={onDelete}
+                isSelected={isSelected}
+                toggleSelect={toggleSelect}
+              />
+            ))}
         </div>
       )}
     </div>
@@ -542,7 +649,6 @@ const ErrorDetail = ({ error, onBack, onResolve, onReject }) => {
               {error.error.name}
             </h1>
             <StatusChip status={error.status} />
-            <PriorityBadge priority={error.priority} />
           </div>
 
           <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 mb-6">
@@ -750,10 +856,9 @@ export default function ErrorTrackingDashboard() {
   const [autoRefresh, setAutoRefresh] = useState(false);
   const [filters, setFilters] = useState({
     status: "",
-    priority: "",
     dateRange: "",
   });
-  const [viewMode, setViewMode] = useState("grouped"); // 'grouped' or 'list'
+  const [viewMode, setViewMode] = useState("hierarchical");
   const prevErrorIdsRef = useRef(new Set());
 
   // Selection state
@@ -819,27 +924,7 @@ export default function ErrorTrackingDashboard() {
     }
   }, [rawErrors]);
 
-  // Priority calculation
-  const calculatePriority = (error, allErrors) => {
-    const sameErrorCount = allErrors.filter(
-      (e) => e.error.name === error.error.name,
-    ).length;
-    const hoursSinceError =
-      (Date.now() - new Date(error.timestamp).getTime()) / (1000 * 60 * 60);
-
-    let priority = 0;
-    if (sameErrorCount > 10) priority += 3;
-    else if (sameErrorCount > 5) priority += 2;
-    else if (sameErrorCount > 1) priority += 1;
-
-    if (hoursSinceError < 1) priority += 3;
-    else if (hoursSinceError < 24) priority += 2;
-    else if (hoursSinceError < 168) priority += 1;
-
-    return Math.min(priority, 5);
-  };
-
-  // Process errors: filter, sort, compute priority
+  // Process errors: filter, sort
   const processedErrors = useMemo(() => {
     let filtered = rawErrors.filter((error) => {
       const q = searchTerm.toLowerCase();
@@ -848,6 +933,7 @@ export default function ErrorTrackingDashboard() {
         error.error.message?.toLowerCase().includes(q) ||
         error.error.name?.toLowerCase().includes(q) ||
         error.userId?.toLowerCase().includes(q) ||
+        error.projectId?.toLowerCase().includes(q) ||
         error.deviceInfo?.employeeDetails?.code?.toLowerCase().includes(q) ||
         error.deviceInfo?.employeeDetails?.name?.toLowerCase().includes(q);
 
@@ -880,27 +966,12 @@ export default function ErrorTrackingDashboard() {
       return searchMatch && statusMatch && dateMatch;
     });
 
-    filtered = filtered.map((error) => ({
-      ...error,
-      priority: calculatePriority(error, rawErrors),
-    }));
-
-    if (filters.priority) {
-      filtered = filtered.filter(
-        (error) => error.priority >= parseInt(filters.priority),
-      );
-    }
-
     filtered.sort((a, b) => {
       let aVal, bVal;
       switch (sortBy) {
         case "timestamp":
           aVal = new Date(a.timestamp);
           bVal = new Date(b.timestamp);
-          break;
-        case "priority":
-          aVal = a.priority;
-          bVal = b.priority;
           break;
         case "status":
           aVal = a.status;
@@ -922,58 +993,64 @@ export default function ErrorTrackingDashboard() {
     return filtered;
   }, [rawErrors, filters, sortBy, sortOrder, searchTerm]);
 
-  // Group errors by signature or employee code
-  const groupedErrors = useMemo(() => {
-    const groups = processedErrors.reduce((acc, error) => {
-      const employeeCode = error.deviceInfo?.employeeDetails?.code;
-      const key = employeeCode
-        ? `employee:${employeeCode}:${error.error.name}`
-        : `${error.error.name}::${error.error.message}`;
-      if (!acc[key]) acc[key] = [];
-      acc[key].push(error);
-      return acc;
-    }, {});
+  // Hierarchical grouping: ProjectID -> Employee Code -> Error Type
+  const hierarchicalGroups = useMemo(() => {
+    const groups = {};
 
-    return Object.entries(groups)
-      .map(([key, errors]) => {
-        errors.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-        return [key, errors];
-      })
-      .sort((a, b) => {
-        const aLatest = new Date(a[1][0].timestamp);
-        const bLatest = new Date(b[1][0].timestamp);
-        return sortOrder === "asc" ? aLatest - bLatest : bLatest - aLatest;
+    processedErrors.forEach((error) => {
+      const projectId = error.projectId || "Unknown Project";
+      const employeeCode =
+        error.deviceInfo?.employeeDetails?.code || "Unknown Employee";
+      const employeeName =
+        error.deviceInfo?.employeeDetails?.name || "Unknown Name";
+      const errorType = error.error.name || "Unknown Error";
+
+      // Initialize project group if not exists
+      if (!groups[projectId]) {
+        groups[projectId] = {};
+      }
+
+      // Initialize employee group if not exists
+      if (!groups[projectId][employeeCode]) {
+        groups[projectId][employeeCode] = {
+          employeeName,
+          errorTypeGroups: {},
+        };
+      }
+
+      // Initialize error type group if not exists
+      if (!groups[projectId][employeeCode].errorTypeGroups[errorType]) {
+        groups[projectId][employeeCode].errorTypeGroups[errorType] = [];
+      }
+
+      // Add error to the appropriate group
+      groups[projectId][employeeCode].errorTypeGroups[errorType].push(error);
+    });
+
+    // Sort errors within each group by timestamp
+    Object.values(groups).forEach((projectGroup) => {
+      Object.values(projectGroup).forEach((employeeGroup) => {
+        Object.values(employeeGroup.errorTypeGroups).forEach(
+          (errorTypeGroup) => {
+            errorTypeGroup.sort(
+              (a, b) => new Date(b.timestamp) - new Date(a.timestamp),
+            );
+          },
+        );
       });
-  }, [processedErrors, sortOrder]);
+    });
 
-  // Stats
-  const stats = useMemo(() => {
-    const pending = processedErrors.filter(
-      (e) => e.status === "pending",
-    ).length;
-    const resolved = processedErrors.filter(
-      (e) => e.status === "resolved",
-    ).length;
-    const critical = processedErrors.filter((e) => e.priority >= 4).length;
-    const uniqueUsers = new Set(processedErrors.map((e) => e.userId)).size;
-    const uniqueEmployees = new Set(
-      processedErrors
-        .map((e) => e.deviceInfo?.employeeDetails?.code)
-        .filter(Boolean),
-    ).size;
-    return {
-      pending,
-      resolved,
-      critical,
-      uniqueUsers,
-      uniqueEmployees,
-      total: processedErrors.length,
-    };
+    return groups;
+  }, [processedErrors]);
+
+  // Simple list view (fallback)
+  const simpleErrors = useMemo(() => {
+    return processedErrors;
   }, [processedErrors]);
 
   // Reset filters
   const resetFilters = () => {
-    setFilters({ status: "", priority: "", dateRange: "" });
+    setFilters({ status: "", dateRange: "" });
     setSearchTerm("");
   };
 
@@ -1010,10 +1087,9 @@ export default function ErrorTrackingDashboard() {
     }
   };
 
-  // Bulk helpers (aligned to route.js)
+  // Bulk helpers
   const bulkUpdateStatus = async (ids, status) => {
     if (!ids?.length || !ALLOWED_STATUSES.includes(status)) return;
-    // optimistic
     setRawErrors((errors) =>
       errors.map((e) => (ids.includes(e._id) ? { ...e, status } : e)),
     );
@@ -1031,7 +1107,6 @@ export default function ErrorTrackingDashboard() {
 
   const bulkDelete = async (ids) => {
     if (!ids?.length) return;
-    // optimistic
     setRawErrors((errors) => errors.filter((e) => !ids.includes(e._id)));
     try {
       await fetch(API, {
@@ -1064,7 +1139,7 @@ export default function ErrorTrackingDashboard() {
     clearSelection();
   };
 
-  // Bulk on selected (visible subset)
+  // Bulk on selected
   const resolveSelected = async () => {
     const ids = processedErrors
       .filter((e) => selectedIds.has(e._id))
@@ -1089,7 +1164,7 @@ export default function ErrorTrackingDashboard() {
     clearSelection();
   };
 
-  // Select-all helpers
+  // Selection helpers
   const allVisibleSelected = useMemo(() => {
     if (processedErrors.length === 0) return false;
     for (const e of processedErrors) if (!selectedIds.has(e._id)) return false;
@@ -1134,7 +1209,7 @@ export default function ErrorTrackingDashboard() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      {/* Header */}
+      {/* Header with Total Error Count */}
       <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-40 p-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -1148,6 +1223,12 @@ export default function ErrorTrackingDashboard() {
               <p className="text-sm text-gray-500 dark:text-gray-400">
                 Monitor and resolve application errors
               </p>
+            </div>
+            {/* Total Error Count in Navbar */}
+            <div className="ml-6 px-3 py-1 bg-red-100 dark:bg-red-900/30 rounded-lg">
+              <span className="text-sm font-medium text-red-700 dark:text-red-300">
+                Total: {rawErrors.length} errors
+              </span>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -1181,40 +1262,6 @@ export default function ErrorTrackingDashboard() {
       </header>
 
       <main className="p-4 max-w-7xl mx-auto space-y-6">
-        {/* Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-          <StatsCard
-            icon={FaExclamationTriangle}
-            label="Pending Errors"
-            value={stats.pending}
-            color="bg-yellow-500"
-          />
-          <StatsCard
-            icon={FaCheckCircle}
-            label="Resolved"
-            value={stats.resolved}
-            color="bg-green-500"
-          />
-          <StatsCard
-            icon={FaFireAlt}
-            label="Critical"
-            value={stats.critical}
-            color="bg-red-500"
-          />
-          <StatsCard
-            icon={FaUsers}
-            label="Affected Users"
-            value={stats.uniqueUsers}
-            color="bg-blue-500"
-          />
-          <StatsCard
-            icon={FaUser}
-            label="Employees"
-            value={stats.uniqueEmployees}
-            color="bg-purple-500"
-          />
-        </div>
-
         {/* Filters */}
         <FilterPanel
           filters={filters}
@@ -1255,14 +1302,14 @@ export default function ErrorTrackingDashboard() {
               </span>
               <div className="flex bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
                 <button
-                  onClick={() => setViewMode("grouped")}
+                  onClick={() => setViewMode("hierarchical")}
                   className={`px-3 py-1 text-sm rounded-md ${
-                    viewMode === "grouped"
+                    viewMode === "hierarchical"
                       ? "bg-white dark:bg-gray-600 shadow-sm"
                       : ""
                   }`}
                 >
-                  Grouped
+                  Project Hierarchy
                 </button>
                 <button
                   onClick={() => setViewMode("list")}
@@ -1272,14 +1319,13 @@ export default function ErrorTrackingDashboard() {
                       : ""
                   }`}
                 >
-                  List
+                  Simple List
                 </button>
               </div>
             </div>
           </div>
 
           <div className="flex gap-2 flex-wrap">
-            {/* Bulk on selected */}
             <Button
               variant="success"
               size="sm"
@@ -1308,7 +1354,6 @@ export default function ErrorTrackingDashboard() {
               Delete Selected
             </Button>
 
-            {/* Bulk on all visible */}
             <Button
               variant="success"
               size="sm"
@@ -1351,7 +1396,7 @@ export default function ErrorTrackingDashboard() {
           ) : null}
         </div>
 
-        {/* Error List */}
+        {/* Error Display */}
         <div className="space-y-4">
           {loading ? (
             <LoadingSkeleton />
@@ -1372,23 +1417,39 @@ export default function ErrorTrackingDashboard() {
                 Clear Filters
               </Button>
             </div>
-          ) : viewMode === "grouped" ? (
-            <div className="space-y-4">
-              {groupedErrors.map(([key, errors]) => (
-                <ErrorGroup
-                  key={key}
-                  group={errors}
-                  onView={setSelectedError}
-                  onResolve={(id) => updateErrorStatus(id, "resolved")}
-                  onDelete={deleteError}
-                  isSelected={isSelected}
-                  toggleSelect={toggleSelect}
-                />
-              ))}
+          ) : viewMode === "hierarchical" ? (
+            <div className="space-y-6">
+              {Object.entries(hierarchicalGroups)
+                .sort(([, a], [, b]) => {
+                  // Sort projects by total error count
+                  const aCount = Object.values(a).reduce(
+                    (acc, emp) =>
+                      acc + Object.values(emp.errorTypeGroups).flat().length,
+                    0,
+                  );
+                  const bCount = Object.values(b).reduce(
+                    (acc, emp) =>
+                      acc + Object.values(emp.errorTypeGroups).flat().length,
+                    0,
+                  );
+                  return bCount - aCount;
+                })
+                .map(([projectId, employeeGroups]) => (
+                  <ProjectGroup
+                    key={projectId}
+                    projectId={projectId}
+                    employeeGroups={employeeGroups}
+                    onView={setSelectedError}
+                    onResolve={(id) => updateErrorStatus(id, "resolved")}
+                    onDelete={deleteError}
+                    isSelected={isSelected}
+                    toggleSelect={toggleSelect}
+                  />
+                ))}
             </div>
           ) : (
             <div className="space-y-3">
-              {processedErrors.map((error) => (
+              {simpleErrors.map((error) => (
                 <ErrorCard
                   key={error._id}
                   error={error}

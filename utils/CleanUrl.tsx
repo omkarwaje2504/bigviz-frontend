@@ -12,3 +12,18 @@ export default function cleanUrls(dataArray: any[]) {
     }
   });
 }
+
+export const cleanName = (name: string) => {
+  const prefixes = ["Dr", "Prof", "Mr", "Mrs", "dr", "prof", "mr", "mrs"];
+  let newName = name;
+  for (const p of prefixes) {
+    if (newName.startsWith(`${p}. `) || newName.startsWith(`${p} `)) {
+      newName = newName.substring(p.length + 1).trim();
+      break;
+    } else if (newName.startsWith(`${p}.`)) {
+      newName = newName.substring(p.length).trim();
+      break;
+    }
+  }
+  return newName;
+};

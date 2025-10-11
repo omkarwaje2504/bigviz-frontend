@@ -69,7 +69,7 @@ export default function data() {
   return null;
 }
 
-export type FormData = Record<string, any>;
+export type FormData = Record<string, unknown>;
 
 interface Field {
   additional_config: string[];
@@ -115,7 +115,7 @@ export interface ProjectInfo {
       approval_required: boolean;
       Decline_Comments: boolean;
       Enable_hierarchy: boolean;
-      employee_login_type: any;
+      employee_login_type: undefined;
       employee_login_using_number: boolean;
       final_artwork_allow_download: boolean;
       reprint_button: boolean;
@@ -125,13 +125,14 @@ export interface ProjectInfo {
     };
   };
   product_name: string;
+  name: string;
 }
 export type MemberTableProps = {
   ui: any;
   projectData: ProjectInfo;
   userInfo: UserInfo;
   members: Doctor[];
-  onEdit: (id: string) => void;
+  onEdit:  (member: Doctor) => void;
   approvalState?: boolean;
   approvingStatus?: any;
   onApprove?: (member: Doctor) => void;

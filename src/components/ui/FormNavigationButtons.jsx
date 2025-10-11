@@ -1,5 +1,6 @@
 "use client";
 
+import MyError from "@services/MyError";
 import { FaChevronLeft, FaChevronRight, FaSpinner } from "react-icons/fa";
 
 const FormNavigationButtons = ({
@@ -11,6 +12,7 @@ const FormNavigationButtons = ({
   projectData,
   isSubmitLoading,
   onSaveDoctor,
+  handleExtraGameButton,
 }) => {
   const projectType = projectData?.product_type;
   const disablePhotoUpload = projectData?.config?.doctor?.disable_photo_upload;
@@ -34,28 +36,33 @@ const FormNavigationButtons = ({
     disablePhotoUpload ||
     (projectType !== "DeskCalendar" && !!formData?.photo?.croppedImage) ||
     (projectType === "DeskCalendar" &&
-      Array.isArray(formData?.calendarData) &&
-      formData.calendarData.length === 12 &&
-      formData.calendarData.every((item) => !!item.images[0]?.croppedImage));
+      Array.isArray(formData?.calendar_images) &&
+      formData?.calendar_images?.length > 0);
+
+  const isPage3Valid = currentStep !== 3 || !!formData?.calendar_consent;
 
   const isLastStepForProject =
-    (projectType === "Evideo" && currentStep === 2 && formData.photo) ||
+    (projectType === "EVideo" && currentStep === 2 && formData.photo) ||
     (projectType === "RxPad" && currentStep === 2 && formData.photo) ||
     (disablePhotoUpload && currentStep === 1 && isPage1Valid) ||
-    (projectType === "DeskCalendar" && currentStep === 2 && isPage2Valid) ||
+    (projectType === "DeskCalendar" && currentStep === 3 && isPage3Valid) ||
     (projectType === "PhotoFrame" && currentStep === 2 && isPage2Valid) ||
-    (projectType !== "Evideo" && currentStep === 4);
+    (projectType !== "EVideo" && currentStep === 4);
 
   const canProceed =
     (currentStep === 1 && isPage1Valid) ||
     (currentStep === 2 && isPage2Valid) ||
-    (currentStep === 3 && projectType !== "Evideo");
+    (currentStep === 3 && projectType !== "EVideo");
 
   const handleNext = async () => {
     if (currentStep === 1) {
-      const success = await onSaveDoctor();
-      if (!success) {
-        return;
+      try {
+        const success = await onSaveDoctor();
+        if (!success) {
+          return;
+        }
+      } catch (e) {
+        MyError(e);
       }
     }
 
@@ -70,20 +77,42 @@ const FormNavigationButtons = ({
     setCurrentStep(currentStep - 1);
   };
 
+  const handleCalendarBack = () => {
+    const url = new URL(window.location.href);
+    const params = url.searchParams;
+
+    const photoCollectionType = params.get("photo-collection-type");
+    const themeType = params.get("theme-type");
+
+    if (photoCollectionType && themeType) {
+      params.delete("theme-type");
+      window.history.replaceState({}, "", url.toString());
+      window.dispatchEvent(new PopStateEvent("popstate"));
+    } else if (photoCollectionType && !themeType) {
+      params.delete("photo-collection-type");
+      window.history.replaceState({}, "", url.toString());
+      window.dispatchEvent(new PopStateEvent("popstate"));
+    } else {
+      setCurrentStep(currentStep - 1);
+    }
+  };
+
   return (
-    <div className="mt-8 flex justify-between">
+    <div className="mt-8 flex flex-wrap justify-between">
       {currentStep > 1 && currentStep !== 99 && (
         <button
           type="button"
-          onClick={handleBack}
-          className="flex items-center bg-gray-700 hover:bg-gray-600 text-white py-2 px-4 rounded"
+          onClick={
+            projectType !== "DeskCalendar" ? handleBack : handleCalendarBack
+          }
+          className="flex items-center bg-gray-700 hover:bg-gray-600 text-white py-2 px-4 rounded h-fit"
         >
           <FaChevronLeft size={16} className="mr-1" />
           Back
         </button>
       )}
 
-      {!isLastStepForProject && canProceed && (
+      {!isLastStepForProject && canProceed && currentStep !== 3 && (
         <button
           type="button"
           onClick={handleNext}
@@ -93,21 +122,39 @@ const FormNavigationButtons = ({
           <FaChevronRight size={16} className="ml-1" />
         </button>
       )}
-
-      {isLastStepForProject && (
-        <button
-          type="submit"
-          className="flex items-center ml-auto bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded"
-          disabled={isSubmitLoading}
-        >
-          {ui?.DoctorRegistrationForm?.SubmitButtonLable}
-          {isSubmitLoading ? (
-            <FaSpinner className="gap-2 w-4 h-4 animate-spin fill-white" />
-          ) : (
-            <FaChevronRight size={16} className="ml-1" />
+      <div className="md:flex gap-2">
+        {ui?.DoctorRegistrationForm?.HomeRedirection &&
+          isLastStepForProject && (
+            <button
+              type="button"
+              onClick={handleExtraGameButton}
+              className="flex items-center ml-auto bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded mb-2"
+              disabled={isSubmitLoading}
+            >
+              Start Flag Hosting
+              {isSubmitLoading ? (
+                <FaSpinner className="gap-2 w-4 h-4 animate-spin fill-white" />
+              ) : (
+                <FaChevronRight size={16} className="ml-1" />
+              )}
+            </button>
           )}
-        </button>
-      )}
+
+        {isLastStepForProject && (
+          <button
+            type="submit"
+            className="flex items-center ml-auto bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded"
+            disabled={isSubmitLoading}
+          >
+            {ui?.DoctorRegistrationForm?.SubmitButtonLable}
+            {isSubmitLoading ? (
+              <FaSpinner className="gap-2 w-4 h-4 animate-spin fill-white" />
+            ) : (
+              <FaChevronRight size={16} className="ml-1" />
+            )}
+          </button>
+        )}
+      </div>
     </div>
   );
 };

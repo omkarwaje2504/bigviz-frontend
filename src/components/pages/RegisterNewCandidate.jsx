@@ -1,7 +1,7 @@
 "use client";
 import Footer from "@components/ui/Footer";
 import Header from "@components/ui/Header";
-import { DecryptData, EncryptData } from "@utils/cryptoUtils";
+import { DecryptData, EncryptData, RemoveData } from "@utils/cryptoUtils";
 import FormNavigationButtons from "@components/ui/FormNavigationButtons";
 import RenderStepContent from "@components/ui/RenderStepContent";
 import RenderStepIndicator from "@components/ui/RenderStepIndicator";
@@ -14,8 +14,18 @@ import { SaveDoctors } from "@actions/user";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
-export default function RegisterNewCandidate({ projectData, projectId, ui }) {
+function generateRandomString(length) {
+  const characters =
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+  let result = "";
+  const charactersLength = characters.length;
+  for (let i = 0; i < length; i++) {
+    result += characters.charAt(Math.floor(Math.random() * charactersLength));
+  }
+  return result;
+}
 
+export default function RegisterNewCandidate({ projectData, projectId, ui }) {
   const [currentStep, setCurrentStep] = useState(1);
   const [photoUploadStatus, setPhotoUploadStatus] = useState(false);
   const [audioUploadStatus, setAudioUploadStatus] = useState(false);
@@ -33,17 +43,56 @@ export default function RegisterNewCandidate({ projectData, projectId, ui }) {
   const [formData, setFormData] = useState({
     name: "",
     prefix: "Dr",
-    photo: null,
   });
   const [doctorHash, setDoctorHash] = useState(null);
+  const [isDark, setIsDark] = useState(false);
 
   const router = useRouter();
 
   useEffect(() => {
-    const gitFormData = DecryptData("formData");
+    const url = new URL(window.location.href);
+    const params = url.searchParams;
+    const urlCheck = params.get("dh");
+    const photoCollectionType = params.get("photo-collection-type");
+
+    if (!projectData?.config?.employee && !urlCheck) {
+      params.set("dh", `${generateRandomString(8)}-new`);
+      window.history.replaceState({}, "", url.toString());
+    }
+    if (projectData?.product_type === "DeskCalendar" && photoCollectionType) {
+      setCurrentStep(2);
+    }
+  }, []);
+
+  useEffect(() => {
+    const media = window.matchMedia("(prefers-color-scheme: dark)");
+    setIsDark(media.matches);
+
+    const listener = (e) => setIsDark(e.matches);
+    media.addEventListener("change", listener);
+
+    return () => media.removeEventListener("change", listener);
+  }, []);
+
+  useEffect(() => {
+    RemoveData("videoGenerated");
+    RemoveData("videoUrl");
+    const url = new URL(window.location.href);
+    const params = url.searchParams;
+    const dh = params.get("dh");
+    if (!projectData?.config?.employee) {
+      RemoveData(`${dh}-formData`);
+    }
+    setDoctorHash(dh);
+
+    if (dh) {
+      setDoctorHash(dh);
+    }
+    const getFormData = DecryptData(`${dh}-formData`);
+
     const getUserInfo = DecryptData("empData");
-    if (gitFormData) {
-      setFormData(gitFormData);
+    if (getFormData) {
+      setFormData(getFormData);
     }
     if (getUserInfo) {
       setUserInfo({
@@ -54,40 +103,49 @@ export default function RegisterNewCandidate({ projectData, projectId, ui }) {
         hash: getUserInfo?.hash,
       });
     }
-
-    const storedDoctorHash = localStorage.getItem("doctorHash");
-    if (storedDoctorHash) {
-      setDoctorHash(storedDoctorHash);
-    }
   }, []);
 
   useEffect(() => {
+    const url = new URL(window.location.href);
+    const params = url.searchParams;
+    const dh = params.get("dh");
     if (formData) {
-      EncryptData("formData", formData);
+      EncryptData(`${dh}-formData`, formData);
     }
   }, [formData]);
 
   const handleSaveDoctor = async () => {
-    let doctorHash = DecryptData("doctorHash");
-    if (doctorHash) {
-      return true;
+    const url = new URL(window.location.href);
+    const params = url.searchParams;
+    const doctorHash = params.get("dh");
+
+    if (!doctorHash) {
+      toast.error("Id is missing. Please go to homepage and try again.");
+      return;
     }
     setIsSaveLoading(true);
     try {
-      let doctorCode = DecryptData("doctorHash");
       const save = await SaveDoctors(
         projectData,
         userInfo?.hash,
         formData,
-        doctorCode,
+        doctorHash?.includes("-new") ? null : doctorHash,
       );
       if (save.success) {
-        EncryptData("doctorHash", save.doctorHash);
+        localStorage.setItem("doctorHash", save.doctorHash);
         setDoctorHash(save.doctorHash);
+        localStorage.removeItem(`${doctorHash}-formData`);
+        localStorage.removeItem(`null-formData`);
+        EncryptData(`${save.doctorHash}-formData`, formData);
+
+        const url = new URL(window.location.href);
+        const params = url.searchParams;
+        params.set("dh", save.doctorHash);
+        window.history.replaceState({}, "", url.toString());
+
         setIsSaveLoading(false);
         return true;
       } else {
-        console.log(save.message);
         toast.error(save.message || "Failed to save doctor");
         setIsSaveLoading(false);
         return false;
@@ -95,17 +153,43 @@ export default function RegisterNewCandidate({ projectData, projectId, ui }) {
     } catch (error) {
       console.error(error);
       MyError(error);
-      toast.error("An error occurred while saving doctor");
+      toast.error(
+        "An error occurred while saving doctor. Please logout and try again.",
+      );
       setIsSaveLoading(false);
       return false;
     }
   };
 
-  const handleSubmit = async (e) => {
+  const handleExtraGameButton = async (e) => {
+    e.preventDefault();
+    setIsSubmitLoading(true);
+    const url = new URL(window.location.href);
+    const params = url.searchParams;
+    const dh = params.get("dh");
+
+    try {
+      const save = await SaveDoctors(projectData, userInfo.hash, formData, dh);
+      if (!save.success) {
+        toast.error("Submission failed");
+      } else {
+        toast.success("Doctor Added Successfully!");
+
+        router.push(
+          `https://platform.informatia.ai/${projectId}/game?dh=${dh}&h=${userInfo?.hash}`,
+        );
+      }
+    } catch (error) {
+      console.error(error);
+      MyError(error);
+      toast.error("Unexpected error occurred");
+    }
+  };
+  const handleFormRedirection = async (e) => {
     e.preventDefault();
     setIsSubmitLoading(true);
     try {
-      let doctorCode = DecryptData("doctorHash");
+      let doctorCode = localStorage.getItem("doctorHash");
       const save = await SaveDoctors(
         projectData,
         userInfo.hash,
@@ -119,15 +203,19 @@ export default function RegisterNewCandidate({ projectData, projectId, ui }) {
 
         setTimeout(() => {
           if (projectData?.config?.game) {
-            router.push("game");
+            if (ui?.DoctorRegistrationForm?.HomeRedirection) {
+              localStorage.removeItem("isEdit");
+              localStorage.removeItem("doctorHash");
+              router.push("homepage");
+            } else {
+              router.push("game");
+            }
           } else if (projectData?.product_type === "RxPad") {
-            localStorage.removeItem("isEdit")
+            localStorage.removeItem("isEdit");
             localStorage.removeItem("doctorHash");
             router.push("homepage");
-          } else if (projectData?.product_type === "Evideo") {
-            router.push(
-              `/${projectData.project_hash}/generate-video`,
-            );
+          } else if (projectData?.product_type === "EVideo") {
+            router.push(`/${projectData.project_hash}/generate-video`);
           } else {
             router.push("homepage");
           }
@@ -146,6 +234,7 @@ export default function RegisterNewCandidate({ projectData, projectId, ui }) {
       <ToastContainer position="bottom-center" autoClose={3000} />
 
       <Header
+        isHomePage={true}
         ui={ui}
         userInfo={userInfo}
         projectData={projectData}
@@ -154,32 +243,12 @@ export default function RegisterNewCandidate({ projectData, projectId, ui }) {
 
       <div className="container mx-auto px-4 py-3">
         <div className="max-w-3xl mx-auto">
-          <div className="flex gap-1">
-            {projectData?.config?.employee && (
-              <Link
-                className="text-xl font-bold flex gap-2 items-center text-gray-800 dark:text-white"
-                href={`/${projectId}/homepage`}
-              >
-                <IoArrowBackCircleSharp
-                  className="w-10 h-10"
-                  style={{ fill: ui?.basic?.secondaryColor || "white" }}
-                />
-              </Link>
-            )}
-            <h1 className="text-xl font-bold flex gap-2 items-center text-gray-800 dark:text-white">
-              {ui?.DoctorRegistrationForm?.FormHeading}
-            </h1>
-          </div>
-          <p className="text-gray-400 mb-4 text-sm md:text-md">
-            {ui?.DoctorRegistrationForm?.FormSubHeading}
-          </p>
-
           <RenderStepIndicator
             projectData={projectData}
             currentStep={currentStep}
           />
           <form
-            onSubmit={(e) => handleSubmit(e)}
+            onSubmit={(e) => handleFormRedirection(e)}
             className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4 border border-gray-300 dark:border-gray-800"
           >
             <RenderStepContent
@@ -203,6 +272,7 @@ export default function RegisterNewCandidate({ projectData, projectId, ui }) {
               isSubmitLoading={isSubmitLoading}
               onSaveDoctor={handleSaveDoctor}
               isSaveLoading={isSaveLoading}
+              handleExtraGameButton={handleExtraGameButton}
             />
           </form>
         </div>

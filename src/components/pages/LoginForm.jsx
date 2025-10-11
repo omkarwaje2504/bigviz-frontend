@@ -9,6 +9,7 @@ import config from "@utils/Config";
 import { LoginSubmission } from "@actions/loginApis";
 import { DecryptData, EncryptData } from "@utils/cryptoUtils";
 import MyError from "@services/MyError";
+import { BsFillPersonLinesFill } from "react-icons/bs";
 
 const validations = {
   code: {
@@ -95,7 +96,7 @@ const LoginForm = ({ ui, loginType, projectData }) => {
             ui={ui}
             id="code"
             label={ui.loginPage.loginLabel}
-            icon={<FaTicketAlt className="text-gray-400" />}
+            icon={projectData?.product_type === "EVideo"?<BsFillPersonLinesFill  className="text-gray-400" />:<BsFillPersonLinesFill className="text-gray-400" />}
             type="text"
             value={formData.code}
             onChange={handleChange("code")}

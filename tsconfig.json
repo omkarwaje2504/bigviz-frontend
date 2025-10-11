@@ -43,6 +43,6 @@
     "src/components/*/*.jsx",
     "src/remotion/index.ts",
     "src/remotion/compositions/*.jsx"
-  ],
+, "src/components/ui/PhotoUpload.jsx", "src/components/ui/ImageCropper.jsx", "src/components/ui/ImageUploadButton.jsx"  ],
   "exclude": ["node_modules", "remotion.config.ts"]
 }

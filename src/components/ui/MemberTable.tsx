@@ -10,6 +10,7 @@ import {
   FaSearch,
   FaSpinner,
   FaUser,
+  FaLink,
 } from "react-icons/fa";
 import InputField from "./InputField";
 import { ImCross } from "react-icons/im";
@@ -25,9 +26,13 @@ import {
   ApprovalLogic,
   RoleNames,
   MemberTableProps,
+  UserInfo,
 } from "utils/types";
 import { FaFilePrescription } from "react-icons/fa";
-import { EncryptData } from "@utils/cryptoUtils";
+import { DecryptData, EncryptData } from "@utils/cryptoUtils";
+import { GiGamepadCross } from "react-icons/gi";
+import Link from "next/link";
+import PreviewModal from "./PreviewModal";
 
 const ITEMS_PER_PAGE = 4;
 
@@ -62,8 +67,17 @@ const MemberTable: React.FC<MemberTableProps> = ({
   const [memberToDisapprove, setMemberToDisapprove] = useState<Doctor | null>(
     null,
   );
-
+  const [empData, setempData] = useState<UserInfo>();
   const [isDark, setIsDark] = useState(false);
+
+  useEffect(() => {
+    if (projectData?.config?.employee) {
+      const empData = DecryptData("empData");
+      if (empData) {
+        setempData(empData);
+      }
+    }
+  }, []);
 
   useEffect(() => {
     const media = window.matchMedia("(prefers-color-scheme: dark)");
@@ -164,7 +178,7 @@ const MemberTable: React.FC<MemberTableProps> = ({
 
         return acc;
       },
-      {} as Record<number, any>,
+      {} as Record<number, Doctor["approval_history"][number]>,
     );
 
     // Get approved and disapproved roles based on latest status
@@ -240,37 +254,37 @@ const MemberTable: React.FC<MemberTableProps> = ({
     };
   };
   const onDownload = async (member: Doctor) => {
-    const link = member.download_url || member.extras.video_url;
+    const link = member.download_url || member?.extras?.video_url;
     try {
       const response = await fetch(link, { method: "GET", cache: "no-cache" });
 
       if (!response.ok) {
-        console.error(`Download failed. Status: ${response.status}`);
-        MyError(`Download failed. Status: ${response.status}`);
+        console.error(`Download failed. Status: ${response?.status}`);
+        MyError(`Download failed. Status: ${response?.status}`);
         return;
       }
 
-      setDownloadingStatus((prev) => [...prev, member.doctor_hash]);
+      setDownloadingStatus((prev) => [...prev, member?.doctor_hash]);
 
       // @ts-expect-error this is a dynamic import
       const FileSaver = (await import("file-saverjs")).default;
       const contentBlob = await response.blob();
 
-      let fileName = slugify(member.name || "download", {
+      let fileName = slugify(member?.name || "download", {
         replacement: "",
         remove: /[*+~.()'"!:@]/g,
         lower: false,
       });
-      switch (projectData.product_type) {
+      switch (projectData?.product_type) {
         case "PhotoFrame":
           fileName += ".jpg";
           break;
         case "E-Greeting":
-          fileName += projectData.features.includes("pdf_ecard")
+          fileName += projectData?.features?.includes("pdf_ecard")
             ? ".pdf"
             : ".jpg";
           break;
-        case "Evideo":
+        case "EVideo":
           fileName += ".mp4";
           break;
         default:
@@ -281,13 +295,13 @@ const MemberTable: React.FC<MemberTableProps> = ({
       FileSaver(contentBlob, fileName);
 
       setDownloadingStatus((prev) =>
-        prev.filter((hash) => hash !== member.doctor_hash),
+        prev.filter((hash) => hash !== member?.doctor_hash),
       );
     } catch (error) {
       console.error("Download error:", error);
 
       setDownloadingStatus((prev) =>
-        prev.filter((h) => h !== member.doctor_hash),
+        prev.filter((h) => h !== member?.doctor_hash),
       );
 
       try {
@@ -370,7 +384,7 @@ const MemberTable: React.FC<MemberTableProps> = ({
       );
     }
     const isApproving =
-      (approvingStatus && approvingStatus[member.doctor_hash]) || false;
+      (approvingStatus && approvingStatus[member?.doctor_hash]) || false;
 
     // Only show approval buttons if user is in approval flow
     if (currentUserCanApprove || userHasActed) {
@@ -695,66 +709,14 @@ const MemberTable: React.FC<MemberTableProps> = ({
     }
   };
 
-  const bgColor = ui?.basic?.primaryColor || "#fb2c36";
-  const textColor = ui?.basic?.primaryText || "#ffffff";
-
   return (
     <div className="mt-6 text-gray-900 dark:text-white">
       {previewMode && (
-        <div className="fixed top-0 left-0 w-full h-full flex items-center justify-center z-10 bg-slate-900/80 transition-all duration-300 ease-in-out">
-          <div className="flex flex-col items-center justify-center p-3 w-full md:max-w-[50%] h-full max-h-[75%] relative">
-            <MdOutlineCancel
-              className="w-10 h-10 fill-black mb-2 z-10 self-end cursor-pointer absolute top-0 bg-white rounded-full border border-black"
-              onClick={() => setPreviewMode(false)}
-            />
-
-            {/* Image Preview */}
-            {previewType === "IMAGE" && (
-              <div className="w-full h-full flex items-center justify-center">
-                {previewUrl ? (
-                  <img
-                    src={previewUrl}
-                    alt="Preview"
-                    className="max-h-full max-w-full object-contain border-4 border-white rounded-2xl overflow-hidden"
-                  />
-                ) : previewImageType === "DOCTOR_IMAGE" ? (
-                  <div className="w-64 h-64 p-10 bg-gray-800 flex flex-col items-center justify-center">
-                    No Doctor Photo
-                  </div>
-                ) : (
-                  <div className="w-64 h-64 p-10 bg-gray-800 flex flex-col items-center justify-center">
-                    <RiArtboardFill className="text-6xl text-gray-400" />
-                    No Artwork Uploaded
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* PDF Preview */}
-            {previewType === "PDF" && previewUrl && (
-              <div className="w-full h-full">
-                <iframe
-                  src={previewUrl}
-                  className="w-full h-full border-4 border-white rounded-2xl"
-                  title="PDF Preview"
-                />
-              </div>
-            )}
-
-            {/* Video Preview */}
-            {previewType === "VIDEO" && previewUrl && (
-              <div className="w-full h-full flex items-center justify-center">
-                <video
-                  controls
-                  className="max-w-full max-h-full border-4 border-white rounded-2xl"
-                  src={previewUrl}
-                >
-                  Your browser does not support the video tag.
-                </video>
-              </div>
-            )}
-          </div>
-        </div>
+        <PreviewModal
+          previewType={previewType}
+          previewUrl={previewUrl}
+          setPreviewMode={setPreviewMode}
+        />
       )}
       <CommentModal
         showModal={showCommentModal}
@@ -767,6 +729,7 @@ const MemberTable: React.FC<MemberTableProps> = ({
       <div className="flex w-full items-center gap-2 mb-4">
         <div className="w-full">
           <InputField
+            doctorHash={null}
             ui={ui}
             id="search"
             label=""
@@ -858,13 +821,15 @@ const MemberTable: React.FC<MemberTableProps> = ({
                     {!projectData?.config?.game && (
                       <span
                         className={`text-xs font-medium px-1 py-0.5 rounded ${
-                          member.download_url
+                          member.download_url || member.extras.video_url
                             ? "bg-green-500/20 text-green-600 dark:text-green-400"
                             : "bg-gray-500/20 text-gray-600 dark:text-gray-400"
                         }`}
                       >
-                        {member.download_url
-                          ? "Artwork Generated"
+                        {member.download_url || member.extras.video_url
+                          ? projectData?.product_type === "EVideo"
+                            ? "Video Generated"
+                            : "Artwork Generated"
                           : "Artwork Pending"}
                       </span>
                     )}
@@ -884,7 +849,7 @@ const MemberTable: React.FC<MemberTableProps> = ({
                 <div className="mt-2">
                   <div className="flex justify-between gap-2">
                     {projectData?.config?.doctor?.preview_enabled &&
-                      member.download_url && (
+                      (member.download_url || member.extras.video_url) && (
                         <button
                           className="w-full justify-center flex items-center space-x-1 text-xs text-white bg-blue-600 p-2 rounded-sm"
                           onClick={() => onPreview(member, "PREVIEW")}
@@ -893,13 +858,44 @@ const MemberTable: React.FC<MemberTableProps> = ({
                           <span>Preview</span>
                         </button>
                       )}
+                    {projectData?.config?.doctor &&
+                      ui?.DoctorRegistrationForm?.HomeRedirection && (
+                        <Link
+                          href={`https://platform.informatia.ai/${projectData?.project_hash}/game?dh=${member?.doctor_hash}&h=${empData?.hash}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{
+                            backgroundColor: ui.basic.primaryColor,
+                            color: ui.basic.primaryText,
+                          }}
+                          className={`w-full justify-center flex items-center space-x-1 text-xs text-white p-2 rounded-sm`}
+                        >
+                          <FaLink />
+                          <span>Preview link</span>
+                        </Link>
+                      )}
+
+                    {projectData?.config?.doctor &&
+                      ui?.DoctorRegistrationForm?.HomeRedirection && (
+                        <Link
+                          href={`https://wa.me/${`${member?.mobile?.replace(/^0/, "")}`}?text=${encodeURIComponent(
+                            `https://platform.informatia.ai/${projectData?.project_hash}/game?dh=${member?.doctor_hash}&h=${empData?.hash}`,
+                          )}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="w-full justify-center flex items-center space-x-1 text-xs text-white bg-blue-600 p-2 rounded-sm"
+                        >
+                          <GiGamepadCross />
+                          <span>Share Link</span>
+                        </Link>
+                      )}
 
                     {projectData?.config?.doctor?.edit_enabled && (
                       <button
                         className="w-full justify-center flex items-center space-x-1 text-xs text-white bg-purple-600 p-2 rounded-sm"
                         onClick={() => {
                           EncryptData("isEdit", "true");
-                          onEdit(member.doctor_hash);
+                          onEdit(member);
                         }}
                       >
                         <FaEdit />
@@ -980,7 +976,7 @@ const MemberTable: React.FC<MemberTableProps> = ({
                           {" "}
                           {member?.image ? (
                             <div
-                              className="relative w-full h-[200px] rounded overflow-hidden cursor-pointer"
+                              className="relative w-14 h-14 rounded overflow-hidden cursor-pointer"
                               onClick={() => onPreview(member, "DOCTOR_IMAGE")}
                             >
                               <Image
@@ -996,11 +992,12 @@ const MemberTable: React.FC<MemberTableProps> = ({
                           ) : (
                             <></>
                           )}
-                          {member.name}
-                        </p>
-
-                        <p className="text-xs text-gray-600 dark:text-gray-400 block md:hidden">
-                          {member.mobile}
+                          <div>
+                            {member.name}
+                            <p className="text-xs text-gray-600 dark:text-gray-400 block md:hidden">
+                              {member.mobile}
+                            </p>
+                          </div>
                         </p>
                       </div>
                     </td>
@@ -1051,27 +1048,60 @@ const MemberTable: React.FC<MemberTableProps> = ({
                               : "bg-gray-500/20 text-gray-600 dark:text-gray-400"
                           }`}
                         >
-                          {member.download_url
-                            ? "Artwork Generated"
+                          {member.download_url || member.extras.video_url
+                            ? projectData?.product_type === "EVideo"
+                              ? "Video Generated"
+                              : "Artwork Generated"
                             : "Artwork Pending"}
                         </span>
                       )}
                     </td>
                     <td className="px-6 py-4 text-right">
                       <div className="flex justify-end items-center space-x-2">
-                        {(member.download_url || member?.extras?.video_url) && (
-                          <button
-                            onClick={() => onPreview(member, "PREVIEW")}
-                            title="Preview"
-                          >
-                            <FaEye className="w-5 h-5 fill-yellow-500 hover:fill-yellow-600" />
-                          </button>
-                        )}
-                        {projectData?.config?.doctor?.enable_edit_button && (
+                        {(member.download_url || member?.extras?.video_url) &&
+                          projectData?.config?.doctor?.preview_enabled && (
+                            <button
+                              onClick={() => onPreview(member, "PREVIEW")}
+                              title="Preview"
+                            >
+                              <FaEye className="w-5 h-5 fill-yellow-500 hover:fill-yellow-600" />
+                            </button>
+                          )}
+                        {projectData?.config?.game &&
+                          ui?.DoctorRegistrationForm?.HomeRedirection && (
+                            <Link
+                              href={`https://platform.informatia.ai/${projectData?.project_hash}/game`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              style={{
+                                backgroundColor: ui.basic.primaryColor,
+                                color: ui.basic.primaryText,
+                              }}
+                              title="Preview"
+                            >
+                              <FaEye className="w-5 h-5 fill-yellow-500 hover:fill-yellow-600 p-0.5" />
+                            </Link>
+                          )}
+
+                        {projectData?.config?.doctor &&
+                          ui?.DoctorRegistrationForm?.HomeRedirection && (
+                            <Link
+                              href={`https://wa.me/${`${member?.mobile?.replace(/^0/, "")}`}?text=${encodeURIComponent(
+                                `https://platform.informatia.ai/${projectData?.project_hash}/game`,
+                              )}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="w-full justify-center flex items-center space-x-1 text-xs text-white bg-blue-600 p-2 rounded-sm"
+                            >
+                              <GiGamepadCross />
+                            </Link>
+                          )}
+
+                        {projectData?.config?.doctor?.edit_enabled && (
                           <button
                             onClick={() => {
                               EncryptData("isEdit", "true");
-                              onEdit(member.doctor_hash);
+                              onEdit(member);
                             }}
                             title="Edit"
                           >

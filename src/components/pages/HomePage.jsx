@@ -15,11 +15,23 @@ import { FetchDoctor, FetchDoctors } from "@actions/user";
 import config from "@utils/Config";
 import { useRouter } from "next/navigation";
 import { ApprovalAction } from "@actions/approvalApis";
+import { FaCircleNotch } from "react-icons/fa6";
+
+function generateRandomString(length) {
+  const characters =
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+  let result = "";
+  const charactersLength = characters.length;
+  for (let i = 0; i < length; i++) {
+    result += characters.charAt(Math.floor(Math.random() * charactersLength));
+  }
+  return result;
+}
 
 const HomePage = ({ projectData, projectId, ui }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [members, setMembers] = useState([]);
-  const [doctorList,setDoctorList] = useState([])
+  const [doctorList, setDoctorList] = useState([]);
   const [loadMembers, setLoadMembers] = useState(true);
   const [userInfo, setUserInfo] = useState({
     name: "",
@@ -40,39 +52,52 @@ const HomePage = ({ projectData, projectId, ui }) => {
   });
   const [statistics, setStats] = useState();
   const [approvingStatus, setApprovingStatus] = useState({});
-
+  const [isDark, setIsDark] = useState(false);
   const router = useRouter();
 
-  // Fetch user info and members data
   useEffect(() => {
-    RemoveData("videoUrl")
-    RemoveData("videoGenerated")
+    const media = window.matchMedia("(prefers-color-scheme: dark)");
+    setIsDark(media.matches);
+    const listener = (e) => setIsDark(e.matches);
+    media.addEventListener("change", listener);
+
+    return () => media.removeEventListener("change", listener);
+  }, []);
+
+  useEffect(() => {
     const getUserInfo = DecryptData("empData");
+    const visitorHash = DecryptData("visitorHash");
     if (getUserInfo) {
       if (getUserInfo?.role !== 1) {
         localStorage.clear();
         router.push(`/${projectId}`);
+      } else {
+        EncryptData("projectHash", projectId);
+        setUserInfo({
+          name: getUserInfo?.name,
+          role: getUserInfo?.role,
+          designation: getUserInfo?.role_name,
+          hash: getUserInfo?.hash,
+          limit: getUserInfo?.limit,
+        });
       }
-      setUserInfo({
-        name: getUserInfo?.name,
-        role: getUserInfo?.role,
-        designation: getUserInfo?.role_name,
-        hash: getUserInfo?.hash,
-        limit: getUserInfo?.limit,
-      });
     }
     if (!getUserInfo) {
       router.push(`/${projectId}`);
     }
-
-    getMembers(getUserInfo);
+    RemoveData("doctorHash");
+    RemoveData("videoGenerated");
+    RemoveData("videoUrl");
+    RemoveData("isEdit");
     RemoveData("formData");
+    RemoveData("prevData");
+    getMembers(getUserInfo);
   }, []);
 
   const getMembers = async (getUserInfo) => {
     const membersData = await FetchDoctors(projectData, getUserInfo?.hash);
     if (membersData) {
-      setDoctorList(membersData.result)
+      setDoctorList(membersData.result);
       setMembers(membersData.data);
       setLoadMembers(false);
       // Recalculate stats after members are fetched
@@ -104,23 +129,20 @@ const HomePage = ({ projectData, projectId, ui }) => {
     }
   };
 
-  const editDoctor = async (id) => {
-    EncryptData("doctorHash", id);
-    let fetchDoctor = await FetchDoctor(projectData, id);
-
+  const editDoctor = async (member) => {
     let tempData = {
-      name: fetchDoctor?.data?.name,
-      mobile: fetchDoctor?.data?.mobile?.replace(/^\+91/, "") || "",
+      ...member,
+      mobile: member?.mobile?.replace(/^\+91/, "") || "",
       prefix: "Dr",
       photo: {
-        croppedImage: fetchDoctor?.data?.image,
-        originalImage: fetchDoctor?.data?.cropped_image,
+        originalImage: member?.image,
+        croppedImage: member?.cropped_image,
       },
     };
 
-    if (projectData?.config?.field?.length) {
+    if (projectData?.config?.field?.length > 0) {
       projectData.config.field.forEach((field) => {
-        const matchingField = fetchDoctor?.data?.fields?.find(
+        const matchingField = member?.fields?.find(
           (f) => String(f.id) === String(field.id),
         );
 
@@ -129,11 +151,11 @@ const HomePage = ({ projectData, projectId, ui }) => {
           : field.default_value || "";
       });
     }
-
     if (tempData) {
-      EncryptData("prevData", tempData);
-      EncryptData("formData", tempData);
-      router.push(`register-new-candidate`);
+      localStorage.setItem("doctorHash", member.doctor_hash);
+      EncryptData(`${member.doctor_hash}-prevData`, tempData);
+      EncryptData(`${member.doctor_hash}-formData`, tempData);
+      router.push(`register-new-candidate?dh=${member.doctor_hash}`);
     }
   };
 
@@ -156,12 +178,18 @@ const HomePage = ({ projectData, projectId, ui }) => {
         projectData={projectData}
         projectHash={projectId}
       />
+
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2 md:py-8">
         {projectData?.config?.theme?.enable_dashboard === true && (
-          <Dashboard members={doctorList} stats={statistics} ui={ui} projectData={projectData} />
+          <Dashboard
+            members={doctorList}
+            stats={statistics}
+            ui={ui}
+            projectData={projectData}
+          />
         )}
 
-        <div className="flex md:gap-10  md:flex-row justify-center items-start md:items-center mb-6 space-y-4 md:space-y-0">
+        <div className="flex md:gap-10  md:flex-row justify-between items-start md:items-center mb-6 space-y-4 md:space-y-0 mt-3">
           <div className="w-full md:w-auto">
             <h2 className="text-xl font-semibold">
               {ui.Dashboard.HomePageTitle}
@@ -170,33 +198,51 @@ const HomePage = ({ projectData, projectId, ui }) => {
               {ui.Dashboard.HomePageSubTitle}
             </p>
           </div>
-      
-          <div className="flex flex-col sm:flex-row sm:space-y-0 sm:space-x-3 w-full md:w-auto">
-          
-            {(projectData?.config?.doctor?.enable_add_new_doctor && (userInfo.limit !== members?.length)) && (
-              <Link href="register-new-candidate">
-                <Button
-                  type="button"
-                  fullWidth={false}
-                  leftIcon={<FaUserPlus />}
-                  ui={ui}
+
+
+          <div className="flex  md:w-auto">
+            {projectData?.config?.doctor?.enable_add_new_doctor &&
+              userInfo.limit !== members?.length && (
+                <Link
+                  href={`register-new-candidate?dh=${generateRandomString(8)}-new`}
                 >
-                  {ui.Dashboard.HomePageButtonLabel}
-                </Button>
-              </Link>
-            )}
-            { (projectData?.config?.doctor?.enable_add_new_doctor && (userInfo.limit == members?.length)) && (
-              <Link href="register-new-candidate">
+                  <Button
+                    type="button"
+                    fullWidth={false}
+                    leftIcon={
+                      <FaUserPlus
+                        style={{
+                          fill: isDark
+                            ? ui?.basic?.secondaryText || "white"
+                            : ui?.basic?.primaryText || "white",
+                        }}
+                      />
+                    }
+                    ui={ui}
+                  >
+                    {ui.Dashboard.HomePageButtonLabel}
+                  </Button>
+                </Link>
+              )}
+            {projectData?.config?.doctor?.enable_add_new_doctor &&
+              userInfo.limit == members?.length && (
                 <Button
                   type="button"
                   fullWidth={false}
-                  leftIcon={<FaUserPlus />}
+                  leftIcon={
+                    <FaCircleNotch
+                      style={{
+                        fill: isDark
+                          ? ui?.basic?.secondaryText || "white"
+                          : ui?.basic?.primaryText || "white",
+                      }}
+                    />
+                  }
                   ui={ui}
                 >
                   Reached Limit
                 </Button>
-              </Link>
-            )}
+              )}
           </div>
         </div>
         {!loadMembers ? (
@@ -207,7 +253,7 @@ const HomePage = ({ projectData, projectId, ui }) => {
             members={members}
             approvalState={projectData.config.employee.approval_required}
             approvingStatus={approvingStatus}
-            onEdit={(id) => editDoctor(id)}
+            onEdit={(member) => editDoctor(member)}
             onApprove={handleApprove}
             onDisapprove={handleApprove}
           />

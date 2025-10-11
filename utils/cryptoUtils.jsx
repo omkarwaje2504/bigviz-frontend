@@ -1,7 +1,7 @@
 "use client";
 import CryptoJS from "crypto-js";
 
-const SECRET_KEY = "aslcryywt6964897324bcw9@7439&*0#jbkhv5"; // keep this secure
+const SECRET_KEY = "aslcryywt6964897324bcw9@7439&*0#jbkhv5";
 
 export const EncryptData = (key, data) => {
   const encryptData = CryptoJS.AES.encrypt(
@@ -12,17 +12,21 @@ export const EncryptData = (key, data) => {
 };
 
 export const DecryptData = (key) => {
-  const cipherText = localStorage.getItem(key);
-  if (!cipherText) {
-    return null;
+  try {
+    const cipherText = localStorage.getItem(key);
+    if (!cipherText) {
+      return null;
+    }
+    const bytes = CryptoJS.AES.decrypt(cipherText, SECRET_KEY);
+    const decryptedData = bytes.toString(CryptoJS.enc.Utf8);
+    if (!decryptedData) {
+      console.error("Decryption failed or data not found for key:", key);
+      return null;
+    }
+    return JSON.parse(decryptedData);
+  } catch (e) {
+    console.log(e);
   }
-  const bytes = CryptoJS.AES.decrypt(cipherText, SECRET_KEY);
-  const decryptedData = bytes.toString(CryptoJS.enc.Utf8);
-  if (!decryptedData) {
-    console.error("Decryption failed or data not found for key:", key);
-    return null;
-  }
-  return JSON.parse(decryptedData);
 };
 
 export const RemoveData = async (key) => {

@@ -59,6 +59,7 @@ const Config = async (projectData) => {
       SubmitButtonLable:projectData?.config?.theme?.doctor_submit_button_label || "Submit",
       MobileInputLable:projectData?.config?.theme?.doctor_mobile_number_label || "Mobile Number",
       MobileValidation: projectData?.config?.theme?.enable_mobile_validation ?? true,
+      HomeRedirection:(projectData?.config?.game && projectData?.config?.game?.share_link) ? true : false
     },
     ErroMessageConfig:{
       isErrorMessageEnable: projectData?.config?.theme?.show_error_message ?? true,
