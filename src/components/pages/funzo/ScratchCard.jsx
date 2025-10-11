@@ -60,7 +60,8 @@ function ScratchCard({ projectData, projectId, ui }) {
 
   useEffect(() => {
     let empData = localStorage.getItem("empData");
-    let formData = localStorage.getItem("formData");
+    let doctorHash = localStorage.getItem("doctorHash");
+    let formData = DecryptData(`${doctorHash}-formData`);
     if (!empData) {
       router.push(`/${projectId}`);
     }
@@ -689,7 +690,8 @@ function ScratchCard({ projectData, projectId, ui }) {
 
     await SaveDoctors(projectData, userInfo.hash, updatedformData);
 
-    localStorage.removeItem("formData");
+
+    localStorage.removeItem(`${doctorHash}-formData`);
     router.push(`/${projectData?.project_hash}/homepage`);
   };
 
