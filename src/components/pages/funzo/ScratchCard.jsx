@@ -690,7 +690,7 @@ function ScratchCard({ projectData, projectId, ui }) {
 
     localStorage.setItem("scratchCardDuration", durationMinutes);
 
-    await SaveDoctors(projectData, userInfo.hash, updatedformData);
+    await SaveDoctors(projectData, userInfo.hash, updatedformData,doctorHash);
 
 
     localStorage.removeItem(`${doctorHash}-formData`);
