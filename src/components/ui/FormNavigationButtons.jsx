@@ -77,26 +77,25 @@ const FormNavigationButtons = ({
     setCurrentStep(currentStep - 1);
   };
 
-const handleCalendarBack = () => {
-  const url = new URL(window.location.href);
-  const params = url.searchParams;
+  const handleCalendarBack = () => {
+    const url = new URL(window.location.href);
+    const params = url.searchParams;
 
-  const photoCollectionType = params.get("photo-collection-type");
-  const themeType = params.get("theme-type");
+    const photoCollectionType = params.get("photo-collection-type");
+    const themeType = params.get("theme-type");
 
-  if (photoCollectionType && themeType) {
-    params.delete("theme-type");
-    window.history.replaceState({}, "", url.toString());
-    window.dispatchEvent(new Event("urlchange"));
-  } else if (photoCollectionType && !themeType) {
-    params.delete("photo-collection-type");
-    window.history.replaceState({}, "", url.toString());
-    window.dispatchEvent(new Event("urlchange"));
-  } else {
-    // No params: Go back to previous form step
-    setCurrentStep(currentStep - 1);
-  }
-};
+    if (photoCollectionType && themeType) {
+      params.delete("theme-type");
+      window.history.replaceState({}, "", url.toString());
+      window.dispatchEvent(new PopStateEvent("popstate"));
+    } else if (photoCollectionType && !themeType) {
+      params.delete("photo-collection-type");
+      window.history.replaceState({}, "", url.toString());
+      window.dispatchEvent(new PopStateEvent("popstate"));
+    } else {
+      setCurrentStep(currentStep - 1);
+    }
+  };
 
   return (
     <div className="mt-8 flex flex-wrap justify-between">

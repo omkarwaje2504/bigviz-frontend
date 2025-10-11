@@ -73,31 +73,14 @@ const CalendarPage = ({
 
     return { params, url };
   };
-  const handleRouteChange = () => {
-    const { params, url } = getParams();
-    const getPhotoCollectionType = params.get("photo-collection-type");
-    const getThemeType = params.get("theme-type");
-
-    if (getPhotoCollectionType) {
-      setPhotoCollectionType(photoCollectionType);
-    } else {
-      setPhotoCollectionType(null);
-    }
-    if (getThemeType) {
-      setThemeType(themeType);
-    } else {
-      setThemeType(null);
-    }
-
-    if (!getPhotoCollectionType && !getThemeType) {
-      setPhotoCollectionType(null);
-      setThemeType(null);
-    }
-  };
 
   useEffect(() => {
-    window.addEventListener("urlchange", handleRouteChange);
-  }, []);
+    const getPhotoCollectionType = searchParams.get("photo-collection-type");
+    const getThemeType = searchParams.get("theme-type");
+
+    setPhotoCollectionType(getPhotoCollectionType);
+    setThemeType(getThemeType);
+  }, [searchParams]);
 
   useEffect(() => {
     const { params, url } = getParams();

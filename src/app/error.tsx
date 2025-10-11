@@ -10,13 +10,13 @@ export default function GlobalError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
-  // useEffect(() => {
-  //   MyError(error);
-  //   if (typeof window !== "undefined") {
-  //     localStorage.clear();
-  //     window.location.href = "/";
-  //   }
-  // }, [error]);
+  useEffect(() => {
+    MyError(error);
+    if (typeof window !== "undefined") {
+      localStorage.clear();
+      window.location.href = "/";
+    }
+  }, [error]);
 
   return null;
 }

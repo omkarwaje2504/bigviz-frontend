@@ -25,7 +25,7 @@ export const DecryptData = (key) => {
     }
     return JSON.parse(decryptedData);
   } catch (e) {
-    console.log(error);
+    console.log(e);
   }
 };
 

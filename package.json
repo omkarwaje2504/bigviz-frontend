@@ -32,6 +32,7 @@
     "next-pwa": "^5.6.0",
     "papaparse": "^5.5.3",
     "pixi.js": "^8.13.2",
+    "qrcode": "^1.5.4",
     "react": "^19.2.0",
     "react-advanced-cropper": "^0.20.1",
     "react-beautiful-dnd": "^13.1.1",
