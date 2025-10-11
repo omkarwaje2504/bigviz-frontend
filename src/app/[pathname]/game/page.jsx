@@ -3,6 +3,7 @@ import Config from "../../../../utils/Config";
 import NotFoundPage from "../NotFoundPage";
 import ScratchCard from "../../../components/pages/funzo/ScratchCard";
 import ShalinaNigeriaFlagHosting from "../../../components/pages/funzo/ShalinaNigeriaFlagHosting";
+import VideoArtworkFlow from "@components/pages/VideoArtworkFlow";
 
 export async function generateStaticParams() {
   const projects = await getAllProjectsCached();
