@@ -669,7 +669,8 @@ function ScratchCard({ projectData, projectId, ui }) {
 
   const handleGoBack = async () => {
     let doctorHash = localStorage.getItem("doctorHash");
-    let formData = DecryptData(`${doctorHash}-formData`);
+    let formDataValue = localStorage.getItem("formDataValue")
+    let formData = DecryptData(`${formDataValue}-formData`);
     const endTime = Date.now();
     const durationMs = endTime - startTime;
     const durationMinutes = Number((durationMs / 60000).toFixed(2));
@@ -693,7 +694,8 @@ function ScratchCard({ projectData, projectId, ui }) {
     await SaveDoctors(projectData, userInfo.hash, updatedformData,doctorHash);
 
 
-    localStorage.removeItem(`${doctorHash}-formData`);
+    localStorage.removeItem(`${formDataValue}-formData`);
+    localStorage.removeItem("formDataValue")
     router.push(`/${projectData?.project_hash}/homepage`);
   };
 
