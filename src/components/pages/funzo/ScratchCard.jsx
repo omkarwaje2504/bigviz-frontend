@@ -61,7 +61,9 @@ function ScratchCard({ projectData, projectId, ui }) {
   useEffect(() => {
     let empData = localStorage.getItem("empData");
     let doctorHash = localStorage.getItem("doctorHash");
-    let formData = DecryptData(`${doctorHash}-formData`);
+    let formDataValue = localStorage.getItem("formDataValue")
+    let formData = DecryptData(`${formDataValue}-formData`);
+    
     if (!empData) {
       router.push(`/${projectId}`);
     }

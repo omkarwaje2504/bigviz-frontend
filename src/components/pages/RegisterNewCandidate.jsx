@@ -199,6 +199,9 @@ export default function RegisterNewCandidate({ projectData, projectId, ui }) {
       if (!save.success) {
         toast.error(save.message || "Submission failed");
       } else {
+        if(projectData?.config?.game?.scratch_card){
+          localStorage.setItem("doctorHash", save.doctorHash);
+        }
         toast.success("Doctor Added Successfully!");
 
         setTimeout(() => {
@@ -208,6 +211,12 @@ export default function RegisterNewCandidate({ projectData, projectId, ui }) {
               localStorage.removeItem("doctorHash");
               router.push("homepage");
             } else {
+              
+              const urlParams = new URLSearchParams(window.location.search);
+              const dhValue = urlParams.get("dh");
+              if(projectData?.config?.game?.scratch_card){
+                localStorage.setItem("formDataValue",dhValue)
+              }
               router.push("game");
             }
           } else if (projectData?.product_type === "RxPad") {
