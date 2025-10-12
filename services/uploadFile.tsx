@@ -1,7 +1,4 @@
-import {
-  S3Client,
-  DeleteObjectCommand,
-} from "@aws-sdk/client-s3";
+import { S3Client, DeleteObjectCommand } from "@aws-sdk/client-s3";
 import { DecryptData } from "@utils/cryptoUtils";
 import MyError from "@services/MyError";
 import { ProjectInfo } from "@utils/types";
@@ -45,13 +42,12 @@ const s3 = new S3Client({
     : {}),
 });
 
-
 async function GenerateFilePath(
   fileName: string,
   projectInfo: ProjectInfo,
   doctorHash: string | null,
 ) {
-  let d_Hash=doctorHash;
+  let d_Hash = doctorHash;
 
   if (!doctorHash) {
     const employeeInfo = DecryptData("empData");
@@ -82,7 +78,13 @@ const UploadFile = async (
     throw new Error("AWS credentials are not defined");
   }
 
-  const filePath = await GenerateFilePath(fileName, projectData, doctorHash);
+  let filePath;
+
+  if (doctorHash === "canvas") {
+    filePath = `production/canvas/${fileName}`;
+  } else {
+    filePath = await GenerateFilePath(fileName, projectData, doctorHash);
+  }
   let buffer: Buffer;
   if (file instanceof Blob) {
     const arrayBuffer = await file.arrayBuffer();

@@ -17,10 +17,9 @@ import Konva from "konva";
 import QRCode from "qrcode";
 import { graphicsLibrary } from "./graphicsLibrary";
 import "./App.css";
+import UploadFile, { createS3Url } from "@services/uploadFile";
 
 const DesignStudio = () => {
-  // Core state
-  const [backgroundImage, setBackgroundImage] = useState(null);
   const [elements, setElements] = useState([]);
   const [selectedId, setSelectedId] = useState(null);
   const [elementCounter, setElementCounter] = useState(1);
@@ -32,10 +31,34 @@ const DesignStudio = () => {
   // UI state
   const [activeTab, setActiveTab] = useState(null);
   const [showGraphicsPanel, setShowGraphicsPanel] = useState(false);
+  const [showLayerPanel, setShowLayerPanel] = useState(true);
+  const [showCanvasSizeModal, setShowCanvasSizeModal] = useState(false);
   const [graphicsCategory, setGraphicsCategory] = useState("icons");
+  const [showAddonsPanel, setShowAddonsPanel] = useState(false);
+
+  // Group editing state
+  const [editingGroupId, setEditingGroupId] = useState(null);
+  const [showGroupEditModal, setShowGroupEditModal] = useState(false);
+
+  // Calendar state
+  const [calendarYear, setCalendarYear] = useState(new Date().getFullYear());
+  const [calendarMonth, setCalendarMonth] = useState(new Date().getMonth() + 1);
+  const [calendarStartWeek, setCalendarStartWeek] = useState("monday");
+
+  const [calendarEditTab, setCalendarEditTab] = useState("group"); // "group" or "individual"
+  const [selectedChildId, setSelectedChildId] = useState(null);
+  const [weekendHighlight, setWeekendHighlight] = useState({
+    enabled: false,
+    highlightDays: "both", // "saturday", "sunday", "both"
+    color: "#ff6b6b",
+  });
 
   // Konva stage settings
   const [stageSize, setStageSize] = useState({ width: 1050, height: 600 });
+  const [tempStageSize, setTempStageSize] = useState({
+    width: 1050,
+    height: 600,
+  });
   const [stageScale, setStageScale] = useState(1);
   const [containerDimensions, setContainerDimensions] = useState({
     width: 0,
@@ -50,11 +73,68 @@ const DesignStudio = () => {
 
   // Load templates from localStorage
   useEffect(() => {
-    const savedTemplates = localStorage.getItem("design-templates");
-    if (savedTemplates) {
-      setTemplates(JSON.parse(savedTemplates));
-    }
+    const loadTemplatesFromS3 = async () => {
+      try {
+        const indexUrl = createS3Url({ name: "config/templates-index.json" });
+        const response = await fetch(indexUrl);
+
+        if (response.ok) {
+          const templatesList = await response.json();
+          setTemplates(templatesList);
+        }
+      } catch (error) {
+        console.error("Failed to load templates from S3:", error);
+        // Fallback to localStorage if S3 fails
+        const savedTemplates = localStorage.getItem("design-templates");
+        if (savedTemplates) {
+          setTemplates(JSON.parse(savedTemplates));
+        }
+      }
+    };
+
+    loadTemplatesFromS3();
   }, []);
+
+  const loadTemplateFromS3 = async (templateId) => {
+    try {
+      const templateUrl = createS3Url({ name: `config/${templateId}.json` });
+      const response = await fetch(templateUrl);
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch template");
+      }
+
+      const template = await response.json();
+
+      // Load images for elements
+      const loadedElements = await Promise.all(
+        template.elements.map(async (el) => {
+          if ((el.type === "image" || el.type === "graphic") && el.imageSrc) {
+            const img = await loadImage(el.imageSrc);
+            return { ...el, image: img };
+          }
+          if (el.type === "qr" && el.qrData) {
+            const qrDataUrl = await QRCode.toDataURL(el.qrData, {
+              width: 300,
+              margin: 1,
+            });
+            const img = await loadImage(qrDataUrl);
+            return { ...el, image: img, imageSrc: qrDataUrl };
+          }
+          return el;
+        }),
+      );
+
+      setCurrentTemplateName(template.name);
+      setCurrentTemplateId(template.id);
+      setStageSize(template.stageSize);
+      setElements(loadedElements);
+      setSelectedId(null);
+    } catch (error) {
+      console.error("Error loading template from S3:", error);
+      alert("Failed to load template from S3");
+    }
+  };
 
   // Track container dimensions
   useEffect(() => {
@@ -126,36 +206,68 @@ const DesignStudio = () => {
     return Math.max(...elements.map((e) => e.layer || 0)) + 1;
   }, [elements]);
 
-  // File handling
-  const handleBackgroundUpload = (event) => {
-    const file = event.target.files[0];
-    if (!file) return;
+  //   useEffect(() => {
+  //   const autoSyncInterval = setInterval(() => {
+  //     if (elements.length > 0 && currentTemplateId) {
+  //       // Silent auto-save without prompts
+  //       saveTemplateToS3(false).catch(console.error);
+  //     }
+  //   }, 60000); // Auto-sync every 60 seconds
 
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const img = new window.Image();
-      img.onload = () => {
-        setBackgroundImage(img);
+  //   return () => clearInterval(autoSyncInterval);
+  // }, [elements, currentTemplateId]);
 
-        setElements((prev) => {
-          const filtered = prev.filter((e) => e.type !== "background");
-          const backgroundElement = {
-            id: "background",
-            type: "background",
-            name: "Background Image",
-            layer: 0,
-            visible: true,
-            locked: false,
-            opacity: 1,
-            image: img,
-            imageSrc: e.target.result,
+  // Drag & Drop handlers
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const files = e.dataTransfer.files;
+    if (files.length > 0) {
+      const file = files[0];
+      if (file.type.startsWith("image/")) {
+        const reader = new FileReader();
+        reader.onload = (evt) => {
+          const img = new window.Image();
+          img.onload = () => {
+            const stage = stageRef.current;
+            const pointerPosition = stage.getPointerPosition();
+
+            const element = {
+              id: `image-${elementCounter}`,
+              type: "image",
+              name: `Image ${elementCounter}`,
+              x: pointerPosition
+                ? pointerPosition.x - img.width / 4
+                : stageSize.width / 2 - img.width / 4,
+              y: pointerPosition
+                ? pointerPosition.y - img.height / 4
+                : stageSize.height / 2 - img.height / 4,
+              width: img.width / 2,
+              height: img.height / 2,
+              rotation: 0,
+              opacity: 1,
+              image: img,
+              imageSrc: evt.target.result,
+              layer: getNextLayer(),
+              visible: true,
+              locked: false,
+              draggable: true,
+            };
+            setElements((prev) => [...prev, element]);
+            setSelectedId(element.id);
+            setElementCounter((prev) => prev + 1);
           };
-          return [backgroundElement, ...filtered];
-        });
-      };
-      img.src = e.target.result;
-    };
-    reader.readAsDataURL(file);
+          img.src = evt.target.result;
+        };
+        reader.readAsDataURL(file);
+      }
+    }
   };
 
   // Add text element
@@ -175,6 +287,7 @@ const DesignStudio = () => {
       letterSpacing: 0,
       rotation: 0,
       width: null,
+      opacity: 1,
       layer: getNextLayer(),
       visible: true,
       locked: false,
@@ -185,31 +298,6 @@ const DesignStudio = () => {
     setSelectedId(element.id);
     setElementCounter((prev) => prev + 1);
     setActiveTab(null);
-  };
-
-  // Add image element
-  const addImageElement = () => {
-    const element = {
-      id: `image-${elementCounter}`,
-      type: "image",
-      name: `Image ${elementCounter}`,
-      x: stageSize.width / 2 - 100,
-      y: stageSize.height / 2 - 100,
-      width: 200,
-      height: 200,
-      rotation: 0,
-      opacity: 1,
-      image: null,
-      imageSrc: null,
-      layer: getNextLayer(),
-      visible: true,
-      locked: false,
-      draggable: true,
-    };
-
-    setElements((prev) => [...prev, element]);
-    setSelectedId(element.id);
-    setElementCounter((prev) => prev + 1);
   };
 
   // Add graphic from library
@@ -235,7 +323,6 @@ const DesignStudio = () => {
       draggable: true,
     };
 
-    // If it's an image type, load the image
     if (graphic.type === "image" && graphic.url) {
       loadImage(graphic.url).then((img) => {
         element.image = img;
@@ -262,7 +349,6 @@ const DesignStudio = () => {
     if (!qrData) return;
 
     try {
-      // Generate QR code as data URL
       const qrDataUrl = await QRCode.toDataURL(qrData, {
         width: 300,
         margin: 1,
@@ -296,10 +382,271 @@ const DesignStudio = () => {
       setElements((prev) => [...prev, element]);
       setSelectedId(element.id);
       setElementCounter((prev) => prev + 1);
+      setShowAddonsPanel(false);
     } catch (error) {
       console.error("Failed to generate QR code:", error);
       alert("Failed to generate QR code");
     }
+  };
+
+  // Generate Calendar as Group
+  const generateCalendar = () => {
+    const year = calendarYear;
+    const month = calendarMonth - 1;
+    const startWeek = calendarStartWeek;
+
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    const daysInMonth = lastDay.getDate();
+
+    let firstDayOfWeek = firstDay.getDay();
+
+    if (startWeek === "monday") {
+      firstDayOfWeek = firstDayOfWeek === 0 ? 6 : firstDayOfWeek - 1;
+    }
+
+    const cellWidth = 120;
+    const cellHeight = 100;
+    const headerHeight = 50;
+    const padding = 20;
+    const calendarWidth = cellWidth * 7 + padding * 2;
+    const totalRows = Math.ceil((daysInMonth + firstDayOfWeek) / 7);
+    const calendarHeight = headerHeight + cellHeight * totalRows + padding * 2;
+
+    const startX = (stageSize.width - calendarWidth) / 2;
+    const startY = (stageSize.height - calendarHeight) / 2;
+
+    const monthNames = [
+      "January",
+      "February",
+      "March",
+      "April",
+      "May",
+      "June",
+      "July",
+      "August",
+      "September",
+      "October",
+      "November",
+      "December",
+    ];
+
+    const dayNames =
+      startWeek === "monday"
+        ? ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+        : ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+    // Create group children
+    const groupChildren = [];
+    const groupId = `calendar-group-${elementCounter}`;
+
+    // Add title
+    groupChildren.push({
+      id: `${groupId}-title`,
+      type: "calendar-text",
+      role: "title",
+      text: `${monthNames[month]} ${year}`,
+      x: padding,
+      y: padding,
+      fontSize: 32,
+      fontFamily: "Arial",
+      fill: "#000000",
+      fontStyle: "bold",
+      align: "center",
+      width: calendarWidth - padding * 2,
+    });
+
+    // Add day headers
+    dayNames.forEach((day, index) => {
+      groupChildren.push({
+        id: `${groupId}-day-${index}`,
+        type: "calendar-text",
+        role: "dayHeader",
+        text: day,
+        x: padding + index * cellWidth,
+        y: padding + headerHeight,
+        fontSize: 18,
+        fontFamily: "Arial",
+        fill: "#666666",
+        fontStyle: "bold",
+        align: "center",
+        width: cellWidth,
+      });
+    });
+
+    // Add date numbers
+    let dayCounter = 1;
+    for (let week = 0; week < totalRows; week++) {
+      for (let dayOfWeek = 0; dayOfWeek < 7; dayOfWeek++) {
+        if (
+          (week === 0 && dayOfWeek < firstDayOfWeek) ||
+          dayCounter > daysInMonth
+        ) {
+          continue;
+        }
+
+        groupChildren.push({
+          id: `${groupId}-date-${dayCounter}`,
+          type: "calendar-text",
+          role: "date",
+          text: dayCounter.toString(),
+          x: padding + dayOfWeek * cellWidth,
+          y: padding + headerHeight + 30 + week * cellHeight,
+          fontSize: 28,
+          fontFamily: "Arial",
+          fill: "#000000",
+          originalFill: "#000000", // Store original color
+          fontStyle: "normal",
+          align: "center",
+          width: cellWidth,
+          dayOfWeek: dayOfWeek, // Store day of week (0=Sunday, 6=Saturday)
+          letterSpacing: 0,
+        });
+        dayCounter++;
+      }
+    }
+
+    // Create the calendar group element
+    const calendarGroup = {
+      id: groupId,
+      type: "calendarGroup",
+      name: `Calendar ${monthNames[month]} ${year}`,
+      x: startX,
+      y: startY,
+      width: calendarWidth,
+      height: calendarHeight,
+      rotation: 0,
+      opacity: 1,
+      fontSize: 28, // Default font size for dates
+      fontFamily: "Arial",
+      fill: "#000000",
+      fontStyle: "normal",
+      layer: getNextLayer(),
+      visible: true,
+      locked: false,
+      draggable: true,
+      isGrouped: true,
+      children: groupChildren,
+    };
+
+    setElements((prev) => [...prev, calendarGroup]);
+    setSelectedId(groupId);
+    setElementCounter((prev) => prev + 1);
+    setShowAddonsPanel(false);
+  };
+
+  // Ungroup calendar (for editing)
+  const ungroupCalendar = (groupId) => {
+    const group = elements.find((el) => el.id === groupId);
+    if (!group || group.type !== "calendarGroup") return;
+
+    setEditingGroupId(groupId);
+    setShowGroupEditModal(true);
+  };
+
+  // Regroup calendar (after editing)
+  const regroupCalendar = () => {
+    setEditingGroupId(null);
+    setShowGroupEditModal(false);
+  };
+
+  // Update the updateGroupProperty function to handle role-based updates
+  const updateGroupPropertyByRole = (groupId, role, property, value) => {
+    setElements((prev) =>
+      prev.map((el) => {
+        if (el.id === groupId && el.type === "calendarGroup") {
+          const updatedChildren = el.children.map((child) => {
+            if (child.role === role) {
+              return { ...child, [property]: value };
+            }
+            return child;
+          });
+          return { ...el, children: updatedChildren };
+        }
+        return el;
+      }),
+    );
+  };
+
+  // Function to apply weekend highlighting
+  const applyWeekendHighlight = (groupId, config) => {
+    setElements((prev) =>
+      prev.map((el) => {
+        if (el.id === groupId && el.type === "calendarGroup") {
+          const updatedChildren = el.children.map((child) => {
+            if (child.role === "date" && child.dayOfWeek !== undefined) {
+              // Check if it's a weekend day
+              const isSaturday = child.dayOfWeek === 6;
+              const isSunday = child.dayOfWeek === 0;
+
+              let shouldHighlight = false;
+              if (config.enabled) {
+                if (
+                  config.highlightDays === "both" &&
+                  (isSaturday || isSunday)
+                ) {
+                  shouldHighlight = true;
+                } else if (config.highlightDays === "saturday" && isSaturday) {
+                  shouldHighlight = true;
+                } else if (config.highlightDays === "sunday" && isSunday) {
+                  shouldHighlight = true;
+                }
+              }
+
+              return {
+                ...child,
+                fill: shouldHighlight
+                  ? config.color
+                  : child.originalFill || "#000000",
+                isWeekendHighlighted: shouldHighlight,
+              };
+            }
+            return child;
+          });
+          return { ...el, children: updatedChildren, weekendHighlight: config };
+        }
+        return el;
+      }),
+    );
+  };
+
+  // Update group property (applies to all children)
+  const updateGroupProperty = (groupId, property, value) => {
+    setElements((prev) =>
+      prev.map((el) => {
+        if (el.id === groupId && el.type === "calendarGroup") {
+          const updatedChildren = el.children.map((child) => {
+            // Update the property for all children
+            if (
+              property === "fontFamily" ||
+              property === "fontSize" ||
+              property === "fill" ||
+              property === "fontStyle"
+            ) {
+              return { ...child, [property]: value };
+            }
+            return child;
+          });
+          return { ...el, [property]: value, children: updatedChildren };
+        }
+        return el;
+      }),
+    );
+  };
+
+  // Update individual child in group
+  const updateGroupChild = (groupId, childId, updates) => {
+    setElements((prev) =>
+      prev.map((el) => {
+        if (el.id === groupId && el.type === "calendarGroup") {
+          const updatedChildren = el.children.map((child) =>
+            child.id === childId ? { ...child, ...updates } : child,
+          );
+          return { ...el, children: updatedChildren };
+        }
+        return el;
+      }),
+    );
   };
 
   // Update QR code
@@ -334,7 +681,7 @@ const DesignStudio = () => {
   };
 
   const deleteElement = (id) => {
-    if (!id || id === "background") return;
+    if (!id) return;
     setElements((prev) => prev.filter((e) => e.id !== id));
     if (selectedId === id) {
       setSelectedId(null);
@@ -342,7 +689,7 @@ const DesignStudio = () => {
   };
 
   const duplicateElement = () => {
-    if (!currentElement || currentElement.type === "background") return;
+    if (!currentElement) return;
 
     const copy = {
       ...currentElement,
@@ -353,13 +700,103 @@ const DesignStudio = () => {
       layer: getNextLayer(),
     };
 
+    // If it's a calendar group, duplicate children with new IDs
+    if (copy.type === "calendarGroup" && copy.children) {
+      copy.children = copy.children.map((child, index) => ({
+        ...child,
+        id: `${copy.id}-child-${index}`,
+      }));
+    }
+
     setElements((prev) => [...prev, copy]);
     setSelectedId(copy.id);
     setElementCounter((prev) => prev + 1);
   };
 
+  // Layer management
+  const moveLayerUp = (elementId) => {
+    const element = elements.find((el) => el.id === elementId);
+    if (!element) return;
+
+    const sortedElements = [...elements].sort(
+      (a, b) => (a.layer || 0) - (b.layer || 0),
+    );
+    const currentIndex = sortedElements.findIndex((el) => el.id === elementId);
+
+    if (currentIndex < sortedElements.length - 1) {
+      const nextElement = sortedElements[currentIndex + 1];
+      setElements((prev) =>
+        prev.map((el) => {
+          if (el.id === elementId) return { ...el, layer: nextElement.layer };
+          if (el.id === nextElement.id) return { ...el, layer: element.layer };
+          return el;
+        }),
+      );
+    }
+  };
+
+  const moveLayerDown = (elementId) => {
+    const element = elements.find((el) => el.id === elementId);
+    if (!element) return;
+
+    const sortedElements = [...elements].sort(
+      (a, b) => (a.layer || 0) - (b.layer || 0),
+    );
+    const currentIndex = sortedElements.findIndex((el) => el.id === elementId);
+
+    if (currentIndex > 0) {
+      const prevElement = sortedElements[currentIndex - 1];
+      setElements((prev) =>
+        prev.map((el) => {
+          if (el.id === elementId) return { ...el, layer: prevElement.layer };
+          if (el.id === prevElement.id) return { ...el, layer: element.layer };
+          return el;
+        }),
+      );
+    }
+  };
+
   // Template management
   const saveTemplate = (saveAsNew = false) => {
+    // const templateName = prompt(
+    //   saveAsNew ? "Enter new template name:" : "Save template as:",
+    //   currentTemplateName,
+    // );
+    // if (!templateName) return;
+
+    // const template = {
+    //   id: saveAsNew
+    //     ? `template-${Date.now()}`
+    //     : currentTemplateId || `template-${Date.now()}`,
+    //   name: templateName,
+    //   timestamp: new Date().toISOString(),
+    //   stageSize,
+    //   elements: elements.map((el) => {
+    //     if (el.type === "image" || el.type === "graphic" || el.type === "qr") {
+    //       return { ...el, image: null };
+    //     }
+    //     return el;
+    //   }),
+    // };
+
+    // const updatedTemplates = saveAsNew
+    //   ? [...templates, template]
+    //   : templates.map((t) => (t.id === template.id ? template : t));
+
+    // if (!templates.find((t) => t.id === template.id) && !saveAsNew) {
+    //   updatedTemplates.push(template);
+    // }
+
+    // setTemplates(updatedTemplates);
+    // localStorage.setItem("design-templates", JSON.stringify(updatedTemplates));
+
+    // setCurrentTemplateName(templateName);
+    // setCurrentTemplateId(template.id);
+    saveTemplateToS3(saveAsNew);
+    alert(`Template saved successfully!`);
+  };
+
+  const saveTemplateToS3 = async (saveAsNew = false) => {
     const templateName = prompt(
       saveAsNew ? "Enter new template name:" : "Save template as:",
       currentTemplateName,
@@ -374,33 +811,91 @@ const DesignStudio = () => {
       timestamp: new Date().toISOString(),
       stageSize,
       elements: elements.map((el) => {
-        if (
-          el.type === "image" ||
-          el.type === "background" ||
-          el.type === "graphic" ||
-          el.type === "qr"
-        ) {
+        if (el.type === "image" || el.type === "graphic" || el.type === "qr") {
           return { ...el, image: null };
         }
         return el;
       }),
     };
 
-    const updatedTemplates = saveAsNew
-      ? [...templates, template]
-      : templates.map((t) => (t.id === template.id ? template : t));
+    // Convert template to JSON blob
+    const jsonBlob = new Blob([JSON.stringify(template, null, 2)], {
+      type: "application/json",
+    });
 
-    if (!templates.find((t) => t.id === template.id) && !saveAsNew) {
-      updatedTemplates.push(template);
+    // Upload to S3 using existing utility
+    try {
+      const fileName = `${template.id}.json`;
+      const fileUrl = await UploadFile(
+        "canvas", // Pass appropriate hash
+        null, // Pass project info
+        jsonBlob,
+        fileName,
+        "config",
+      );
+
+      // Update local state
+      setCurrentTemplateName(templateName);
+      setCurrentTemplateId(template.id);
+
+      // Also save to config index file
+      await updateConfigIndex(template);
+
+      alert(`Template "${templateName}" saved to S3 successfully!`);
+    } catch (error) {
+      console.error("Failed to save template to S3:", error);
+      alert("Failed to save template. Please try again.");
     }
+  };
 
-    setTemplates(updatedTemplates);
-    localStorage.setItem("design-templates", JSON.stringify(updatedTemplates));
+  // Store a master index of all templates in S3
+  const updateConfigIndex = async (newTemplate) => {
+    try {
+      // Fetch existing index
+      const indexUrl = createS3Url({ name: "config/templates-index.json" });
+      let templates = [];
 
-    setCurrentTemplateName(templateName);
-    setCurrentTemplateId(template.id);
+      try {
+        const response = await fetch(indexUrl);
+        if (response.ok) {
+          templates = await response.json();
+        }
+      } catch (e) {
+        // Index doesn't exist yet, start fresh
+        templates = [];
+      }
 
-    alert(`Template "${templateName}" saved successfully!`);
+      // Update or add template
+      const existingIndex = templates.findIndex((t) => t.id === newTemplate.id);
+      if (existingIndex >= 0) {
+        templates[existingIndex] = {
+          id: newTemplate.id,
+          name: newTemplate.name,
+          timestamp: newTemplate.timestamp,
+        };
+      } else {
+        templates.push({
+          id: newTemplate.id,
+          name: newTemplate.name,
+          timestamp: newTemplate.timestamp,
+        });
+      }
+
+      // Upload updated index
+      const indexBlob = new Blob([JSON.stringify(templates, null, 2)], {
+        type: "application/json",
+      });
+
+      await UploadFile(
+        "canvas",
+        null,
+        indexBlob,
+        "templates-index.json",
+        "config",
+      );
+    } catch (error) {
+      console.error("Failed to update config index:", error);
+    }
   };
 
   const loadTemplate = async (template) => {
@@ -410,12 +905,7 @@ const DesignStudio = () => {
 
     const loadedElements = await Promise.all(
       template.elements.map(async (el) => {
-        if (
-          (el.type === "image" ||
-            el.type === "background" ||
-            el.type === "graphic") &&
-          el.imageSrc
-        ) {
+        if ((el.type === "image" || el.type === "graphic") && el.imageSrc) {
           const img = await loadImage(el.imageSrc);
           return { ...el, image: img };
         }
@@ -432,12 +922,6 @@ const DesignStudio = () => {
     );
 
     setElements(loadedElements);
-
-    const bgElement = loadedElements.find((el) => el.type === "background");
-    if (bgElement && bgElement.image) {
-      setBackgroundImage(bgElement.image);
-    }
-
     setSelectedId(null);
   };
 
@@ -457,12 +941,7 @@ const DesignStudio = () => {
       name: currentTemplateName,
       stageSize,
       elements: elements.map((el) => {
-        if (
-          el.type === "image" ||
-          el.type === "background" ||
-          el.type === "graphic" ||
-          el.type === "qr"
-        ) {
+        if (el.type === "image" || el.type === "graphic" || el.type === "qr") {
           return { ...el, image: null };
         }
         return el;
@@ -511,7 +990,6 @@ const DesignStudio = () => {
   const newDesign = () => {
     if (!confirm("Create new design? Unsaved changes will be lost.")) return;
     setElements([]);
-    setBackgroundImage(null);
     setCurrentTemplateName("Untitled Design");
     setCurrentTemplateId(null);
     setSelectedId(null);
@@ -538,9 +1016,44 @@ const DesignStudio = () => {
     }
 
     const clickedElement = elements.find((el) => el.id === e.target.id());
-    if (clickedElement && clickedElement.type !== "background") {
+    if (clickedElement) {
       setSelectedId(e.target.id());
     }
+  };
+
+  const handleElementDoubleClick = (e, element) => {
+    if (element.type === "calendarGroup") {
+      e.cancelBubble = true;
+      ungroupCalendar(element.id);
+    }
+  };
+
+  // Render calendar group
+  const renderCalendarGroup = (element, commonProps) => {
+    if (!element.children) return null;
+
+    return (
+      <Group
+        {...commonProps}
+        onDblClick={(e) => handleElementDoubleClick(e, element)}
+        onDblTap={(e) => handleElementDoubleClick(e, element)}
+      >
+        {element.children.map((child) => (
+          <Text
+            key={child.id}
+            text={child.text}
+            x={child.x}
+            y={child.y}
+            fontSize={child.fontSize}
+            fontFamily={child.fontFamily}
+            fill={child.fill}
+            fontStyle={child.fontStyle}
+            align={child.align}
+            width={child.width}
+          />
+        ))}
+      </Group>
+    );
   };
 
   // Render elements
@@ -558,7 +1071,7 @@ const DesignStudio = () => {
         x: element.x,
         y: element.y,
         rotation: element.rotation || 0,
-        draggable: !element.locked && element.type !== "background",
+        draggable: !element.locked,
         onDragEnd: (e) => {
           const updatedElements = elements.map((el) =>
             el.id === element.id
@@ -569,17 +1082,12 @@ const DesignStudio = () => {
         },
       };
 
-      switch (element.type) {
-        case "background":
-          return (
-            <Image
-              {...commonProps}
-              image={element.image}
-              opacity={element.opacity}
-              listening={false}
-            />
-          );
+      // Render calendar group
+      if (element.type === "calendarGroup") {
+        return renderCalendarGroup(element, commonProps);
+      }
 
+      switch (element.type) {
         case "text":
           return (
             <Text
@@ -592,6 +1100,7 @@ const DesignStudio = () => {
               align={element.align}
               letterSpacing={element.letterSpacing || 0}
               width={element.width}
+              opacity={element.opacity}
               onTransformEnd={(e) => {
                 const node = e.target;
                 const scaleX = node.scaleX();
@@ -859,21 +1368,24 @@ const DesignStudio = () => {
     <div className="h-screen flex flex-col bg-gray-50">
       {/* Top Header */}
       <header className="bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-between shadow-sm">
-        <div className="flex items-center gap-6">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-blue-500 rounded flex items-center justify-center">
-              <span className="text-white font-bold text-sm">DS</span>
+        <div className="flex items-center gap-2">
+          <div className="flex items-center">
+            <div className="px-3 py-2 bg-blue-500 rounded flex items-center justify-center">
+              <span className="text-white font-bold text-md">CloudBoard</span>
             </div>
-            <h1 className="text-lg font-semibold text-gray-800">My Projects</h1>
           </div>
-          <span className="text-gray-400">—</span>
           <input
             type="text"
             value={currentTemplateName}
             onChange={(e) => setCurrentTemplateName(e.target.value)}
-            className="px-3 py-1.5 border-0 bg-transparent text-gray-700 focus:outline-none font-medium"
+            className="px-3 py-1.5 rounded-lg bg-transparent text-gray-700 focus:outline font-medium"
             style={{ minWidth: "200px" }}
           />
+          <div className="bg-white rounded-lg px-4 py-2 border border-gray-200">
+            <div className="text-xs font-medium text-gray-600">
+              Canvas: {stageSize.width} × {stageSize.height} px
+            </div>
+          </div>
         </div>
 
         <div className="flex items-center gap-3">
@@ -911,10 +1423,30 @@ const DesignStudio = () => {
         </div>
       </header>
 
+      {/* Properties Ribbon */}
+
       {/* Main Content */}
       <div className="flex-1 flex overflow-hidden">
         {/* Left Sidebar */}
         <div className="w-20 bg-white border-r border-gray-200 flex flex-col items-center py-4 gap-6">
+          <button
+            onClick={() => setShowCanvasSizeModal(true)}
+            className="flex flex-col items-center gap-1 p-2 rounded transition-colors text-gray-600 hover:text-gray-900"
+            title="Canvas Size"
+          >
+            <svg
+              width="24"
+              height="24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <rect x="3" y="3" width="18" height="18" rx="2" />
+              <path d="M3 9h18M9 3v18" />
+            </svg>
+            <span className="text-xs font-medium">Canvas</span>
+          </button>
+
           <button
             onClick={addTextElement}
             className={`flex flex-col items-center gap-1 p-2 rounded transition-colors ${
@@ -1022,37 +1554,16 @@ const DesignStudio = () => {
           </button>
 
           <button
-            onClick={addQRElement}
-            className={`flex flex-col items-center gap-1 p-2 rounded transition-colors ${
-              activeTab === "qr"
-                ? "text-blue-500"
-                : "text-gray-600 hover:text-gray-900"
-            }`}
-            title="QR Code"
-          >
-            <svg width="24" height="24" fill="currentColor">
-              <rect x="3" y="3" width="7" height="7" />
-              <rect x="14" y="3" width="7" height="7" />
-              <rect x="3" y="14" width="7" height="7" />
-              <rect x="14" y="14" width="7" height="7" />
-            </svg>
-            <span className="text-xs">QR codes</span>
-          </button>
-
-          <button
             onClick={() => {
-              const input = document.createElement("input");
-              input.type = "file";
-              input.accept = "image/*";
-              input.onchange = handleBackgroundUpload;
-              input.click();
+              setShowAddonsPanel(!showAddonsPanel);
+              setActiveTab("addons");
             }}
             className={`flex flex-col items-center gap-1 p-2 rounded transition-colors ${
-              activeTab === "background"
+              activeTab === "addons"
                 ? "text-blue-500"
                 : "text-gray-600 hover:text-gray-900"
             }`}
-            title="Background"
+            title="Add-ons"
           >
             <svg
               width="24"
@@ -1062,9 +1573,9 @@ const DesignStudio = () => {
               strokeWidth="2"
             >
               <rect x="3" y="3" width="18" height="18" rx="2" />
-              <path d="M3 15l6-6 6 6 6-6" />
+              <path d="M12 8v8M8 12h8" />
             </svg>
-            <span className="text-xs">Background</span>
+            <span className="text-xs">Add-ons</span>
           </button>
 
           <button
@@ -1090,6 +1601,782 @@ const DesignStudio = () => {
           </button>
         </div>
 
+        {/* Canvas Size Modal */}
+        {showCanvasSizeModal && (
+          <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center">
+            <div className="bg-white rounded-lg p-6 w-96">
+              <h3 className="text-lg font-semibold mb-4">Canvas Size</h3>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Width (px)
+                  </label>
+                  <input
+                    type="number"
+                    value={tempStageSize.width}
+                    onChange={(e) =>
+                      setTempStageSize({
+                        ...tempStageSize,
+                        width: parseInt(e.target.value) || 1050,
+                      })
+                    }
+                    className="w-full p-2 border border-gray-300 rounded-lg"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Height (px)
+                  </label>
+                  <input
+                    type="number"
+                    value={tempStageSize.height}
+                    onChange={(e) =>
+                      setTempStageSize({
+                        ...tempStageSize,
+                        height: parseInt(e.target.value) || 600,
+                      })
+                    }
+                    className="w-full p-2 border border-gray-300 rounded-lg"
+                  />
+                </div>
+                <div className="flex gap-2 pt-4">
+                  <button
+                    onClick={() => {
+                      setStageSize(tempStageSize);
+                      setShowCanvasSizeModal(false);
+                    }}
+                    className="flex-1 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+                  >
+                    Apply
+                  </button>
+                  <button
+                    onClick={() => {
+                      setTempStageSize(stageSize);
+                      setShowCanvasSizeModal(false);
+                    }}
+                    className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Group Edit Modal */}
+        {showGroupEditModal && editingGroupId && (
+          <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center">
+            <div className="bg-white rounded-lg p-6 w-[800px] max-h-[90vh] overflow-y-auto">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-xl font-semibold">Edit Calendar</h3>
+                <button
+                  onClick={regroupCalendar}
+                  className="text-gray-400 hover:text-gray-600 text-2xl"
+                >
+                  ✕
+                </button>
+              </div>
+
+              {/* Tab Switcher */}
+              <div className="flex gap-2 mb-6 border-b">
+                <button
+                  onClick={() => setCalendarEditTab("group")}
+                  className={`px-6 py-3 font-medium transition-colors ${
+                    calendarEditTab === "group"
+                      ? "border-b-2 border-blue-500 text-blue-600"
+                      : "text-gray-600 hover:text-gray-900"
+                  }`}
+                >
+                  Group Settings
+                </button>
+                <button
+                  onClick={() => setCalendarEditTab("individual")}
+                  className={`px-6 py-3 font-medium transition-colors ${
+                    calendarEditTab === "individual"
+                      ? "border-b-2 border-blue-500 text-blue-600"
+                      : "text-gray-600 hover:text-gray-900"
+                  }`}
+                >
+                  Individual Elements
+                </button>
+              </div>
+
+              {/* Group Settings Tab */}
+              {calendarEditTab === "group" && (
+                <div className="space-y-6">
+                  {/* Title Settings */}
+                  <div className="border border-gray-200 rounded-lg p-4">
+                    <h4 className="text-md font-semibold mb-4 flex items-center gap-2">
+                      <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
+                      Title Settings
+                    </h4>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Font Family
+                        </label>
+                        <select
+                          value={
+                            elements
+                              .find((el) => el.id === editingGroupId)
+                              ?.children.find((c) => c.role === "title")
+                              ?.fontFamily || "Arial"
+                          }
+                          onChange={(e) => {
+                            updateGroupPropertyByRole(
+                              editingGroupId,
+                              "title",
+                              "fontFamily",
+                              e.target.value,
+                            );
+                          }}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                        >
+                          <option value="Arial">Arial</option>
+                          <option value="Times New Roman">
+                            Times New Roman
+                          </option>
+                          <option value="Helvetica">Helvetica</option>
+                          <option value="Georgia">Georgia</option>
+                          <option value="Courier New">Courier New</option>
+                          <option value="Verdana">Verdana</option>
+                          <option value="Comic Sans MS">Comic Sans MS</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Font Size
+                        </label>
+                        <input
+                          type="number"
+                          value={
+                            elements
+                              .find((el) => el.id === editingGroupId)
+                              ?.children.find((c) => c.role === "title")
+                              ?.fontSize || 32
+                          }
+                          onChange={(e) => {
+                            updateGroupPropertyByRole(
+                              editingGroupId,
+                              "title",
+                              "fontSize",
+                              parseInt(e.target.value) || 32,
+                            );
+                          }}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                          min="8"
+                          max="100"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Color
+                        </label>
+                        <input
+                          type="color"
+                          value={
+                            elements
+                              .find((el) => el.id === editingGroupId)
+                              ?.children.find((c) => c.role === "title")
+                              ?.fill || "#000000"
+                          }
+                          onChange={(e) => {
+                            updateGroupPropertyByRole(
+                              editingGroupId,
+                              "title",
+                              "fill",
+                              e.target.value,
+                            );
+                          }}
+                          className="w-full h-10 border border-gray-300 rounded-lg cursor-pointer"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Font Style
+                        </label>
+                        <select
+                          value={
+                            elements
+                              .find((el) => el.id === editingGroupId)
+                              ?.children.find((c) => c.role === "title")
+                              ?.fontStyle || "bold"
+                          }
+                          onChange={(e) => {
+                            updateGroupPropertyByRole(
+                              editingGroupId,
+                              "title",
+                              "fontStyle",
+                              e.target.value,
+                            );
+                          }}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                        >
+                          <option value="normal">Normal</option>
+                          <option value="bold">Bold</option>
+                          <option value="italic">Italic</option>
+                          <option value="bold italic">Bold Italic</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Day Headers Settings */}
+                  <div className="border border-gray-200 rounded-lg p-4">
+                    <h4 className="text-md font-semibold mb-4 flex items-center gap-2">
+                      <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                      Day Headers Settings
+                    </h4>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Font Family
+                        </label>
+                        <select
+                          value={
+                            elements
+                              .find((el) => el.id === editingGroupId)
+                              ?.children.find((c) => c.role === "dayHeader")
+                              ?.fontFamily || "Arial"
+                          }
+                          onChange={(e) => {
+                            updateGroupPropertyByRole(
+                              editingGroupId,
+                              "dayHeader",
+                              "fontFamily",
+                              e.target.value,
+                            );
+                          }}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                        >
+                          <option value="Arial">Arial</option>
+                          <option value="Times New Roman">
+                            Times New Roman
+                          </option>
+                          <option value="Helvetica">Helvetica</option>
+                          <option value="Georgia">Georgia</option>
+                          <option value="Courier New">Courier New</option>
+                          <option value="Verdana">Verdana</option>
+                          <option value="Comic Sans MS">Comic Sans MS</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Font Size
+                        </label>
+                        <input
+                          type="number"
+                          value={
+                            elements
+                              .find((el) => el.id === editingGroupId)
+                              ?.children.find((c) => c.role === "dayHeader")
+                              ?.fontSize || 18
+                          }
+                          onChange={(e) => {
+                            updateGroupPropertyByRole(
+                              editingGroupId,
+                              "dayHeader",
+                              "fontSize",
+                              parseInt(e.target.value) || 18,
+                            );
+                          }}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                          min="8"
+                          max="100"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Color
+                        </label>
+                        <input
+                          type="color"
+                          value={
+                            elements
+                              .find((el) => el.id === editingGroupId)
+                              ?.children.find((c) => c.role === "dayHeader")
+                              ?.fill || "#666666"
+                          }
+                          onChange={(e) => {
+                            updateGroupPropertyByRole(
+                              editingGroupId,
+                              "dayHeader",
+                              "fill",
+                              e.target.value,
+                            );
+                          }}
+                          className="w-full h-10 border border-gray-300 rounded-lg cursor-pointer"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Font Style
+                        </label>
+                        <select
+                          value={
+                            elements
+                              .find((el) => el.id === editingGroupId)
+                              ?.children.find((c) => c.role === "dayHeader")
+                              ?.fontStyle || "bold"
+                          }
+                          onChange={(e) => {
+                            updateGroupPropertyByRole(
+                              editingGroupId,
+                              "dayHeader",
+                              "fontStyle",
+                              e.target.value,
+                            );
+                          }}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                        >
+                          <option value="normal">Normal</option>
+                          <option value="bold">Bold</option>
+                          <option value="italic">Italic</option>
+                          <option value="bold italic">Bold Italic</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Date Numbers Settings */}
+                  <div className="border border-gray-200 rounded-lg p-4">
+                    <h4 className="text-md font-semibold mb-4 flex items-center gap-2">
+                      <span className="w-2 h-2 bg-purple-500 rounded-full"></span>
+                      Date Numbers Settings
+                    </h4>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Font Family
+                        </label>
+                        <select
+                          value={
+                            elements
+                              .find((el) => el.id === editingGroupId)
+                              ?.children.find((c) => c.role === "date")
+                              ?.fontFamily || "Arial"
+                          }
+                          onChange={(e) => {
+                            updateGroupPropertyByRole(
+                              editingGroupId,
+                              "date",
+                              "fontFamily",
+                              e.target.value,
+                            );
+                          }}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                        >
+                          <option value="Arial">Arial</option>
+                          <option value="Times New Roman">
+                            Times New Roman
+                          </option>
+                          <option value="Helvetica">Helvetica</option>
+                          <option value="Georgia">Georgia</option>
+                          <option value="Courier New">Courier New</option>
+                          <option value="Verdana">Verdana</option>
+                          <option value="Comic Sans MS">Comic Sans MS</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Font Size
+                        </label>
+                        <input
+                          type="number"
+                          value={
+                            elements
+                              .find((el) => el.id === editingGroupId)
+                              ?.children.find((c) => c.role === "date")
+                              ?.fontSize || 28
+                          }
+                          onChange={(e) => {
+                            updateGroupPropertyByRole(
+                              editingGroupId,
+                              "date",
+                              "fontSize",
+                              parseInt(e.target.value) || 28,
+                            );
+                          }}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                          min="8"
+                          max="100"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Color
+                        </label>
+                        <input
+                          type="color"
+                          value={
+                            elements
+                              .find((el) => el.id === editingGroupId)
+                              ?.children.find((c) => c.role === "date")?.fill ||
+                            "#000000"
+                          }
+                          onChange={(e) => {
+                            updateGroupPropertyByRole(
+                              editingGroupId,
+                              "date",
+                              "fill",
+                              e.target.value,
+                            );
+                          }}
+                          className="w-full h-10 border border-gray-300 rounded-lg cursor-pointer"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Font Style
+                        </label>
+                        <select
+                          value={
+                            elements
+                              .find((el) => el.id === editingGroupId)
+                              ?.children.find((c) => c.role === "date")
+                              ?.fontStyle || "normal"
+                          }
+                          onChange={(e) => {
+                            updateGroupPropertyByRole(
+                              editingGroupId,
+                              "date",
+                              "fontStyle",
+                              e.target.value,
+                            );
+                          }}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                        >
+                          <option value="normal">Normal</option>
+                          <option value="bold">Bold</option>
+                          <option value="italic">Italic</option>
+                          <option value="bold italic">Bold Italic</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Weekend Highlighting */}
+                  <div className="border border-gray-200 rounded-lg p-4">
+                    <h4 className="text-md font-semibold mb-4 flex items-center gap-2">
+                      <span className="w-2 h-2 bg-red-500 rounded-full"></span>
+                      Weekend Highlighting
+                    </h4>
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-3">
+                        <input
+                          type="checkbox"
+                          id="weekend-enable"
+                          checked={weekendHighlight.enabled}
+                          onChange={(e) => {
+                            const newConfig = {
+                              ...weekendHighlight,
+                              enabled: e.target.checked,
+                            };
+                            setWeekendHighlight(newConfig);
+                            applyWeekendHighlight(editingGroupId, newConfig);
+                          }}
+                          className="w-4 h-4"
+                        />
+                        <label
+                          htmlFor="weekend-enable"
+                          className="text-sm font-medium text-gray-700"
+                        >
+                          Enable weekend highlighting
+                        </label>
+                      </div>
+
+                      {weekendHighlight.enabled && (
+                        <>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              Highlight Days
+                            </label>
+                            <select
+                              value={weekendHighlight.highlightDays}
+                              onChange={(e) => {
+                                const newConfig = {
+                                  ...weekendHighlight,
+                                  highlightDays: e.target.value,
+                                };
+                                setWeekendHighlight(newConfig);
+                                applyWeekendHighlight(
+                                  editingGroupId,
+                                  newConfig,
+                                );
+                              }}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                            >
+                              <option value="both">
+                                Both Saturday & Sunday
+                              </option>
+                              <option value="saturday">Saturday Only</option>
+                              <option value="sunday">Sunday Only</option>
+                            </select>
+                          </div>
+
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              Highlight Color
+                            </label>
+                            <input
+                              type="color"
+                              value={weekendHighlight.color}
+                              onChange={(e) => {
+                                const newConfig = {
+                                  ...weekendHighlight,
+                                  color: e.target.value,
+                                };
+                                setWeekendHighlight(newConfig);
+                                applyWeekendHighlight(
+                                  editingGroupId,
+                                  newConfig,
+                                );
+                              }}
+                              className="w-full h-10 border border-gray-300 rounded-lg cursor-pointer"
+                            />
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Individual Elements Tab */}
+              {calendarEditTab === "individual" && (
+                <div className="space-y-4">
+                  <p className="text-sm text-gray-600 mb-4">
+                    Click on an element to customize it individually
+                  </p>
+
+                  {/* Elements List */}
+                  <div className="grid grid-cols-1 gap-2 max-h-[400px] overflow-y-auto">
+                    {elements
+                      .find((el) => el.id === editingGroupId)
+                      ?.children?.map((child) => (
+                        <div
+                          key={child.id}
+                          className={`border rounded-lg p-4 cursor-pointer transition-colors ${
+                            selectedChildId === child.id
+                              ? "border-blue-500 bg-blue-50"
+                              : "border-gray-200 hover:border-gray-300"
+                          }`}
+                          onClick={() => setSelectedChildId(child.id)}
+                        >
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-sm font-medium">
+                              {child.role === "title"
+                                ? "📅 Title"
+                                : child.role === "dayHeader"
+                                  ? `📌 Day: ${child.text}`
+                                  : `📆 Date: ${child.text}`}
+                            </span>
+                            <span className="text-xs text-gray-500 px-2 py-1 bg-gray-100 rounded">
+                              {child.fontFamily} {child.fontSize}px
+                            </span>
+                          </div>
+
+                          {/* Show editing controls when selected */}
+                          {selectedChildId === child.id && (
+                            <div className="mt-4 pt-4 border-t space-y-3">
+                              <div>
+                                <label className="block text-xs font-medium text-gray-700 mb-1">
+                                  Text Content
+                                </label>
+                                <input
+                                  type="text"
+                                  value={child.text}
+                                  onChange={(e) => {
+                                    updateGroupChild(editingGroupId, child.id, {
+                                      text: e.target.value,
+                                    });
+                                  }}
+                                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                                />
+                              </div>
+
+                              <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                  <label className="block text-xs font-medium text-gray-700 mb-1">
+                                    Font Family
+                                  </label>
+                                  <select
+                                    value={child.fontFamily}
+                                    onChange={(e) => {
+                                      updateGroupChild(
+                                        editingGroupId,
+                                        child.id,
+                                        { fontFamily: e.target.value },
+                                      );
+                                    }}
+                                    className="w-full px-2 py-1.5 border border-gray-300 rounded-lg text-xs"
+                                  >
+                                    <option value="Arial">Arial</option>
+                                    <option value="Times New Roman">
+                                      Times New Roman
+                                    </option>
+                                    <option value="Helvetica">Helvetica</option>
+                                    <option value="Georgia">Georgia</option>
+                                    <option value="Courier New">
+                                      Courier New
+                                    </option>
+                                    <option value="Verdana">Verdana</option>
+                                    <option value="Comic Sans MS">
+                                      Comic Sans MS
+                                    </option>
+                                  </select>
+                                </div>
+
+                                <div>
+                                  <label className="block text-xs font-medium text-gray-700 mb-1">
+                                    Font Size
+                                  </label>
+                                  <input
+                                    type="number"
+                                    value={child.fontSize}
+                                    onChange={(e) => {
+                                      updateGroupChild(
+                                        editingGroupId,
+                                        child.id,
+                                        {
+                                          fontSize:
+                                            parseInt(e.target.value) || 12,
+                                        },
+                                      );
+                                    }}
+                                    className="w-full px-2 py-1.5 border border-gray-300 rounded-lg text-xs"
+                                    min="8"
+                                    max="100"
+                                  />
+                                </div>
+
+                                <div>
+                                  <label className="block text-xs font-medium text-gray-700 mb-1">
+                                    Color
+                                  </label>
+                                  <input
+                                    type="color"
+                                    value={child.fill}
+                                    onChange={(e) => {
+                                      updateGroupChild(
+                                        editingGroupId,
+                                        child.id,
+                                        {
+                                          fill: e.target.value,
+                                          originalFill: e.target.value,
+                                        },
+                                      );
+                                    }}
+                                    className="w-full h-8 border border-gray-300 rounded-lg cursor-pointer"
+                                  />
+                                </div>
+
+                                <div>
+                                  <label className="block text-xs font-medium text-gray-700 mb-1">
+                                    Font Style
+                                  </label>
+                                  <select
+                                    value={child.fontStyle}
+                                    onChange={(e) => {
+                                      updateGroupChild(
+                                        editingGroupId,
+                                        child.id,
+                                        { fontStyle: e.target.value },
+                                      );
+                                    }}
+                                    className="w-full px-2 py-1.5 border border-gray-300 rounded-lg text-xs"
+                                  >
+                                    <option value="normal">Normal</option>
+                                    <option value="bold">Bold</option>
+                                    <option value="italic">Italic</option>
+                                    <option value="bold italic">
+                                      Bold Italic
+                                    </option>
+                                  </select>
+                                </div>
+
+                                <div>
+                                  <label className="block text-xs font-medium text-gray-700 mb-1">
+                                    Alignment
+                                  </label>
+                                  <select
+                                    value={child.align}
+                                    onChange={(e) => {
+                                      updateGroupChild(
+                                        editingGroupId,
+                                        child.id,
+                                        { align: e.target.value },
+                                      );
+                                    }}
+                                    className="w-full px-2 py-1.5 border border-gray-300 rounded-lg text-xs"
+                                  >
+                                    <option value="left">Left</option>
+                                    <option value="center">Center</option>
+                                    <option value="right">Right</option>
+                                  </select>
+                                </div>
+
+                                <div>
+                                  <label className="block text-xs font-medium text-gray-700 mb-1">
+                                    Letter Spacing
+                                  </label>
+                                  <input
+                                    type="number"
+                                    value={child.letterSpacing || 0}
+                                    onChange={(e) => {
+                                      updateGroupChild(
+                                        editingGroupId,
+                                        child.id,
+                                        {
+                                          letterSpacing:
+                                            parseInt(e.target.value) || 0,
+                                        },
+                                      );
+                                    }}
+                                    className="w-full px-2 py-1.5 border border-gray-300 rounded-lg text-xs"
+                                    min="-10"
+                                    max="50"
+                                  />
+                                </div>
+                              </div>
+
+                              <button
+                                onClick={() => setSelectedChildId(null)}
+                                className="w-full px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-xs font-medium"
+                              >
+                                Close
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Footer Buttons */}
+              <div className="flex gap-3 pt-6 mt-6 border-t">
+                <button
+                  onClick={() => {
+                    setCalendarEditTab("group");
+                    setSelectedChildId(null);
+                  }}
+                  className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium"
+                >
+                  Reset Selection
+                </button>
+                <button
+                  onClick={regroupCalendar}
+                  className="flex-1 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-medium"
+                >
+                  Done Editing
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Graphics Panel */}
         {showGraphicsPanel && (
           <div className="w-80 bg-white border-r border-gray-200 overflow-y-auto">
@@ -1104,7 +2391,6 @@ const DesignStudio = () => {
                 </button>
               </div>
 
-              {/* Category tabs */}
               <div className="flex gap-2 mb-4 overflow-x-auto">
                 {["icons", "shapes", "images", "illustrations"].map((cat) => (
                   <button
@@ -1121,7 +2407,6 @@ const DesignStudio = () => {
                 ))}
               </div>
 
-              {/* Graphics grid */}
               <div className="grid grid-cols-3 gap-3">
                 {graphicsLibrary[graphicsCategory]?.map((graphic, index) => (
                   <button
@@ -1154,6 +2439,116 @@ const DesignStudio = () => {
                     )}
                   </button>
                 ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Add-ons Panel */}
+        {showAddonsPanel && (
+          <div className="w-80 bg-white border-r border-gray-200 overflow-y-auto">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-semibold">Add-ons</h2>
+                <button
+                  onClick={() => setShowAddonsPanel(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  ✕
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                <div className="border border-gray-200 rounded-lg p-4">
+                  <h3 className="text-sm font-semibold mb-2">QR Code</h3>
+                  <p className="text-xs text-gray-600 mb-3">
+                    Generate a QR code with custom URL or text
+                  </p>
+                  <button
+                    onClick={addQRElement}
+                    className="w-full px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-sm font-medium"
+                  >
+                    Add QR Code
+                  </button>
+                </div>
+
+                <div className="border border-gray-200 rounded-lg p-4">
+                  <h3 className="text-sm font-semibold mb-2">Calendar</h3>
+                  <p className="text-xs text-gray-600 mb-3">
+                    Generate a calendar for any month
+                  </p>
+
+                  <div className="space-y-3">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">
+                        Year
+                      </label>
+                      <input
+                        type="number"
+                        value={calendarYear}
+                        onChange={(e) =>
+                          setCalendarYear(parseInt(e.target.value) || 2025)
+                        }
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                        min="1900"
+                        max="2100"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">
+                        Month
+                      </label>
+                      <select
+                        value={calendarMonth}
+                        onChange={(e) =>
+                          setCalendarMonth(parseInt(e.target.value))
+                        }
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                      >
+                        {[
+                          "January",
+                          "February",
+                          "March",
+                          "April",
+                          "May",
+                          "June",
+                          "July",
+                          "August",
+                          "September",
+                          "October",
+                          "November",
+                          "December",
+                        ].map((month, index) => (
+                          <option key={index} value={index + 1}>
+                            {month}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">
+                        Week Starts On
+                      </label>
+                      <select
+                        value={calendarStartWeek}
+                        onChange={(e) => setCalendarStartWeek(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                      >
+                        <option value="monday">Monday</option>
+                        <option value="sunday">Sunday</option>
+                      </select>
+                    </div>
+
+                    <button
+                      onClick={generateCalendar}
+                      className="w-full px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors text-sm font-medium"
+                    >
+                      Generate Calendar
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -1239,193 +2634,509 @@ const DesignStudio = () => {
         <div
           ref={containerRef}
           className="flex-1 bg-gray-100 overflow-hidden flex items-center justify-center relative"
+          onDragOver={handleDragOver}
+          onDrop={handleDrop}
         >
-          {/* Top Toolbar - Text formatting */}
-          {currentElement && currentElement.type === "text" && (
-            <div className="absolute top-6 left-1/2 transform -translate-x-1/2 z-10 flex items-center gap-2 bg-white rounded-lg shadow-lg px-4 py-2 border border-gray-200">
-              <select
-                value={currentElement.fontFamily}
-                onChange={(e) => {
-                  setElements((prev) =>
-                    prev.map((el) =>
-                      el.id === currentElement.id
-                        ? { ...el, fontFamily: e.target.value }
-                        : el,
-                    ),
-                  );
-                }}
-                className="px-3 py-1.5 border border-gray-300 rounded text-sm"
-              >
-                <option value="Arial">Arial</option>
-                <option value="Times New Roman">Times New Roman</option>
-                <option value="Helvetica">Helvetica</option>
-                <option value="Georgia">Georgia</option>
-                <option value="Courier New">Courier New</option>
-              </select>
+          {currentElement && (
+            <div className="bg-gray-50 border-b border-gray-200 px-6 py-3 z-10 shadow-sm w-full absolute top-0 left-0">
+              <div className="flex items-center gap-4 flex-wrap">
+                {/* Common Properties */}
+                <div className="flex items-center gap-2">
+                  <label className="text-xs font-medium text-gray-600">
+                    Position:
+                  </label>
+                  <input
+                    type="number"
+                    value={Math.round(currentElement.x)}
+                    onChange={(e) => {
+                      setElements((prev) =>
+                        prev.map((el) =>
+                          el.id === currentElement.id
+                            ? { ...el, x: parseInt(e.target.value) || 0 }
+                            : el,
+                        ),
+                      );
+                    }}
+                    className="w-16 px-2 py-1 border border-gray-300 rounded text-xs"
+                    placeholder="X"
+                  />
+                  <input
+                    type="number"
+                    value={Math.round(currentElement.y)}
+                    onChange={(e) => {
+                      setElements((prev) =>
+                        prev.map((el) =>
+                          el.id === currentElement.id
+                            ? { ...el, y: parseInt(e.target.value) || 0 }
+                            : el,
+                        ),
+                      );
+                    }}
+                    className="w-16 px-2 py-1 border border-gray-300 rounded text-xs"
+                    placeholder="Y"
+                  />
+                </div>
 
-              <div className="flex items-center gap-1 border-x border-gray-300 px-2">
-                <button
-                  onClick={() => {
-                    const newSize = Math.max(8, currentElement.fontSize - 2);
-                    setElements((prev) =>
-                      prev.map((el) =>
-                        el.id === currentElement.id
-                          ? { ...el, fontSize: newSize }
-                          : el,
-                      ),
-                    );
-                  }}
-                  className="px-2 py-1 hover:bg-gray-100 rounded"
-                >
-                  −
-                </button>
-                <input
-                  type="number"
-                  value={currentElement.fontSize}
-                  onChange={(e) => {
-                    setElements((prev) =>
-                      prev.map((el) =>
-                        el.id === currentElement.id
-                          ? { ...el, fontSize: parseInt(e.target.value) || 48 }
-                          : el,
-                      ),
-                    );
-                  }}
-                  className="w-12 px-1 py-1 text-center border border-gray-300 rounded text-sm"
-                />
-                <button
-                  onClick={() => {
-                    const newSize = currentElement.fontSize + 2;
-                    setElements((prev) =>
-                      prev.map((el) =>
-                        el.id === currentElement.id
-                          ? { ...el, fontSize: newSize }
-                          : el,
-                      ),
-                    );
-                  }}
-                  className="px-2 py-1 hover:bg-gray-100 rounded"
-                >
-                  +
-                </button>
+                {/* Calendar Group Properties */}
+                {currentElement.type === "calendarGroup" && (
+                  <>
+                    <div className="flex items-center gap-2 border-l pl-4">
+                      <select
+                        value={currentElement.fontFamily}
+                        onChange={(e) => {
+                          updateGroupProperty(
+                            currentElement.id,
+                            "fontFamily",
+                            e.target.value,
+                          );
+                        }}
+                        className="px-3 py-1 border border-gray-300 rounded text-xs"
+                      >
+                        <option value="Arial">Arial</option>
+                        <option value="Times New Roman">Times New Roman</option>
+                        <option value="Helvetica">Helvetica</option>
+                        <option value="Georgia">Georgia</option>
+                        <option value="Courier New">Courier New</option>
+                      </select>
+                    </div>
+
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => {
+                          const newSize = Math.max(
+                            8,
+                            currentElement.fontSize - 2,
+                          );
+                          updateGroupProperty(
+                            currentElement.id,
+                            "fontSize",
+                            newSize,
+                          );
+                        }}
+                        className="px-2 py-1 hover:bg-gray-200 rounded text-xs"
+                      >
+                        −
+                      </button>
+                      <input
+                        type="number"
+                        value={currentElement.fontSize}
+                        onChange={(e) => {
+                          updateGroupProperty(
+                            currentElement.id,
+                            "fontSize",
+                            parseInt(e.target.value) || 28,
+                          );
+                        }}
+                        className="w-12 px-1 py-1 text-center border border-gray-300 rounded text-xs"
+                      />
+                      <button
+                        onClick={() => {
+                          const newSize = currentElement.fontSize + 2;
+                          updateGroupProperty(
+                            currentElement.id,
+                            "fontSize",
+                            newSize,
+                          );
+                        }}
+                        className="px-2 py-1 hover:bg-gray-200 rounded text-xs"
+                      >
+                        +
+                      </button>
+                      <div className="w-20 relative">
+                        <input
+                          type="color"
+                          value={currentElement.fill}
+                          onChange={(e) => {
+                            updateGroupProperty(
+                              currentElement.id,
+                              "fill",
+                              e.target.value,
+                            );
+                          }}
+                          className="w-32 h-8 rounded border border-gray-300 cursor-pointer"
+                        />
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={() => {
+                        const newStyle =
+                          currentElement.fontStyle === "bold"
+                            ? "normal"
+                            : "bold";
+                        updateGroupProperty(
+                          currentElement.id,
+                          "fontStyle",
+                          newStyle,
+                        );
+                      }}
+                      className={`px-3 py-1 rounded font-bold text-xs ${
+                        currentElement.fontStyle === "bold"
+                          ? "bg-gray-200"
+                          : "hover:bg-gray-200"
+                      }`}
+                    >
+                      B
+                    </button>
+
+                    <button
+                      onClick={() => ungroupCalendar(currentElement.id)}
+                      className="px-3 py-1 bg-purple-500 text-white rounded hover:bg-purple-600 transition-colors text-xs font-medium border-l pl-4 ml-4"
+                    >
+                      Edit Calendar
+                    </button>
+                  </>
+                )}
+
+                {currentElement.type === "text" && (
+                  <>
+                    <div className="flex items-center gap-2 border-l pl-4">
+                      <select
+                        value={currentElement.fontFamily}
+                        onChange={(e) => {
+                          setElements((prev) =>
+                            prev.map((el) =>
+                              el.id === currentElement.id
+                                ? { ...el, fontFamily: e.target.value }
+                                : el,
+                            ),
+                          );
+                        }}
+                        className="px-3 py-1 border border-gray-300 rounded text-xs"
+                      >
+                        <option value="Arial">Arial</option>
+                        <option value="Times New Roman">Times New Roman</option>
+                        <option value="Helvetica">Helvetica</option>
+                        <option value="Georgia">Georgia</option>
+                        <option value="Courier New">Courier New</option>
+                      </select>
+                    </div>
+
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => {
+                          const newSize = Math.max(
+                            8,
+                            currentElement.fontSize - 2,
+                          );
+                          setElements((prev) =>
+                            prev.map((el) =>
+                              el.id === currentElement.id
+                                ? { ...el, fontSize: newSize }
+                                : el,
+                            ),
+                          );
+                        }}
+                        className="px-2 py-1 hover:bg-gray-200 rounded text-xs"
+                      >
+                        −
+                      </button>
+                      <input
+                        type="number"
+                        value={currentElement.fontSize}
+                        onChange={(e) => {
+                          setElements((prev) =>
+                            prev.map((el) =>
+                              el.id === currentElement.id
+                                ? {
+                                    ...el,
+                                    fontSize: parseInt(e.target.value) || 48,
+                                  }
+                                : el,
+                            ),
+                          );
+                        }}
+                        className="w-12 px-1 py-1 text-center border border-gray-300 rounded text-xs"
+                      />
+                      <button
+                        onClick={() => {
+                          const newSize = currentElement.fontSize + 2;
+                          setElements((prev) =>
+                            prev.map((el) =>
+                              el.id === currentElement.id
+                                ? { ...el, fontSize: newSize }
+                                : el,
+                            ),
+                          );
+                        }}
+                        className="px-2 py-1 hover:bg-gray-200 rounded text-xs"
+                      >
+                        +
+                      </button>
+                      <div className="w-20 relative">
+                        <input
+                          type="color"
+                          value={currentElement.fill}
+                          onChange={(e) => {
+                            setElements((prev) =>
+                              prev.map((el) =>
+                                el.id === currentElement.id
+                                  ? { ...el, fill: e.target.value }
+                                  : el,
+                              ),
+                            );
+                          }}
+                          className="w-32 h-8 rounded border border-gray-300 cursor-pointer"
+                        />
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={() => {
+                        const newStyle =
+                          currentElement.fontStyle === "bold"
+                            ? "normal"
+                            : "bold";
+                        setElements((prev) =>
+                          prev.map((el) =>
+                            el.id === currentElement.id
+                              ? { ...el, fontStyle: newStyle }
+                              : el,
+                          ),
+                        );
+                      }}
+                      className={`px-3 py-1 rounded font-bold text-xs ${
+                        currentElement.fontStyle === "bold"
+                          ? "bg-gray-200"
+                          : "hover:bg-gray-200"
+                      }`}
+                    >
+                      B
+                    </button>
+
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => {
+                          setElements((prev) =>
+                            prev.map((el) =>
+                              el.id === currentElement.id
+                                ? { ...el, align: "left" }
+                                : el,
+                            ),
+                          );
+                        }}
+                        className={`px-2 py-1 rounded text-xs ${currentElement.align === "left" ? "bg-gray-200" : "hover:bg-gray-200"}`}
+                      >
+                        ≡
+                      </button>
+                      <button
+                        onClick={() => {
+                          setElements((prev) =>
+                            prev.map((el) =>
+                              el.id === currentElement.id
+                                ? { ...el, align: "center" }
+                                : el,
+                            ),
+                          );
+                        }}
+                        className={`px-2 py-1 rounded text-xs ${
+                          currentElement.align === "center"
+                            ? "bg-gray-200"
+                            : "hover:bg-gray-200"
+                        }`}
+                      >
+                        ≡
+                      </button>
+                      <button
+                        onClick={() => {
+                          setElements((prev) =>
+                            prev.map((el) =>
+                              el.id === currentElement.id
+                                ? { ...el, align: "right" }
+                                : el,
+                            ),
+                          );
+                        }}
+                        className={`px-2 py-1 rounded text-xs ${currentElement.align === "right" ? "bg-gray-200" : "hover:bg-gray-200"}`}
+                      >
+                        ≡
+                      </button>
+                    </div>
+
+                    <div className="flex items-center gap-2 border-l pl-4">
+                      <label className="text-xs font-medium text-gray-600">
+                        Letter Spacing:
+                      </label>
+                      <input
+                        type="number"
+                        value={currentElement.letterSpacing || 0}
+                        onChange={(e) =>
+                          setElements((prev) =>
+                            prev.map((el) =>
+                              el.id === currentElement.id
+                                ? {
+                                    ...el,
+                                    letterSpacing:
+                                      parseInt(e.target.value) || 0,
+                                  }
+                                : el,
+                            ),
+                          )
+                        }
+                        className="w-16 px-2 py-1 border border-gray-300 rounded text-xs"
+                      />
+                    </div>
+
+                    <div className="flex items-center gap-2 border-l pl-4">
+                      <label className="text-xs font-medium text-gray-600">
+                        Text:
+                      </label>
+                      <textarea
+                        rows="1"
+                        cols="50"
+                        value={currentElement.text}
+                        onChange={(e) => {
+                          setElements((prev) =>
+                            prev.map((el) =>
+                              el.id === currentElement.id
+                                ? { ...el, text: e.target.value }
+                                : el,
+                            ),
+                          );
+                        }}
+                        className="px-3 py-1 border border-gray-300 rounded text-xs"
+                        style={{ width: "300px" }}
+                      ></textarea>
+                    </div>
+                  </>
+                )}
+
+                {(currentElement.type === "image" ||
+                  currentElement.type === "graphic") && (
+                  <>
+                    <div className="flex items-center gap-2 border-l pl-4">
+                      <label className="text-xs font-medium text-gray-600">
+                        Opacity: {Math.round(currentElement.opacity * 100)}%
+                      </label>
+                      <input
+                        type="range"
+                        value={currentElement.opacity}
+                        onChange={(e) =>
+                          setElements((prev) =>
+                            prev.map((el) =>
+                              el.id === currentElement.id
+                                ? { ...el, opacity: parseFloat(e.target.value) }
+                                : el,
+                            ),
+                          )
+                        }
+                        min="0"
+                        max="1"
+                        step="0.1"
+                        className="w-32"
+                      />
+                    </div>
+                  </>
+                )}
+
+                {currentElement.type === "graphic" && (
+                  <>
+                    <div className="flex items-center gap-2 border-l pl-4">
+                      <label className="text-xs font-medium text-gray-600">
+                        Fill:
+                      </label>
+                      <div className="w-20">
+                        <input
+                          type="color"
+                          value={currentElement.fill}
+                          onChange={(e) =>
+                            setElements((prev) =>
+                              prev.map((el) =>
+                                el.id === currentElement.id
+                                  ? { ...el, fill: e.target.value }
+                                  : el,
+                              ),
+                            )
+                          }
+                          className="w-8 h-8 border border-gray-300 rounded"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <label className="text-xs font-medium text-gray-600">
+                        Stroke:
+                      </label>
+                      <div className="w-20">
+                        <input
+                          type="color"
+                          value={currentElement.stroke}
+                          onChange={(e) =>
+                            setElements((prev) =>
+                              prev.map((el) =>
+                                el.id === currentElement.id
+                                  ? { ...el, stroke: e.target.value }
+                                  : el,
+                              ),
+                            )
+                          }
+                          className="w-8 h-8 border border-gray-300 rounded"
+                        />
+                      </div>
+                      <input
+                        type="number"
+                        value={currentElement.strokeWidth}
+                        onChange={(e) =>
+                          setElements((prev) =>
+                            prev.map((el) =>
+                              el.id === currentElement.id
+                                ? {
+                                    ...el,
+                                    strokeWidth: parseInt(e.target.value) || 0,
+                                  }
+                                : el,
+                            ),
+                          )
+                        }
+                        className="w-16 px-2 py-1 border border-gray-300 rounded text-xs"
+                        placeholder="Width"
+                      />
+                    </div>
+                  </>
+                )}
+
+                {currentElement.type === "qr" && (
+                  <div className="flex items-center gap-2 border-l pl-4">
+                    <label className="text-xs font-medium text-gray-600">
+                      QR Data:
+                    </label>
+                    <input
+                      type="text"
+                      value={currentElement.qrData}
+                      onChange={(e) => {
+                        setElements((prev) =>
+                          prev.map((el) =>
+                            el.id === currentElement.id
+                              ? { ...el, qrData: e.target.value }
+                              : el,
+                          ),
+                        );
+                        updateQRCode(currentElement.id, e.target.value);
+                      }}
+                      className="px-3 py-1 border border-gray-300 rounded text-xs"
+                      style={{ width: "300px" }}
+                      placeholder="Enter URL or text"
+                    />
+                  </div>
+                )}
+
+                <div className="flex items-center gap-2 border-l pl-4 ml-auto">
+                  <button
+                    onClick={duplicateElement}
+                    className="px-3 py-1 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors text-xs font-medium"
+                  >
+                    Duplicate
+                  </button>
+                  <button
+                    onClick={() => deleteElement(selectedId)}
+                    className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 transition-colors text-xs font-medium"
+                  >
+                    Delete
+                  </button>
+                </div>
               </div>
-
-              <input
-                type="color"
-                value={currentElement.fill}
-                onChange={(e) => {
-                  setElements((prev) =>
-                    prev.map((el) =>
-                      el.id === currentElement.id
-                        ? { ...el, fill: e.target.value }
-                        : el,
-                    ),
-                  );
-                }}
-                className="w-8 h-8 rounded border border-gray-300 cursor-pointer"
-              />
-
-              <button
-                onClick={() => {
-                  const newStyle =
-                    currentElement.fontStyle === "bold" ? "normal" : "bold";
-                  setElements((prev) =>
-                    prev.map((el) =>
-                      el.id === currentElement.id
-                        ? { ...el, fontStyle: newStyle }
-                        : el,
-                    ),
-                  );
-                }}
-                className={`px-3 py-1 rounded font-bold ${
-                  currentElement.fontStyle === "bold"
-                    ? "bg-gray-200"
-                    : "hover:bg-gray-100"
-                }`}
-              >
-                B
-              </button>
-
-              <div className="flex items-center gap-1 border-l border-gray-300 pl-2">
-                <button
-                  onClick={() => {
-                    setElements((prev) =>
-                      prev.map((el) =>
-                        el.id === currentElement.id
-                          ? { ...el, align: "left" }
-                          : el,
-                      ),
-                    );
-                  }}
-                  className={`px-2 py-1 rounded ${currentElement.align === "left" ? "bg-gray-200" : "hover:bg-gray-100"}`}
-                >
-                  ≡
-                </button>
-                <button
-                  onClick={() => {
-                    setElements((prev) =>
-                      prev.map((el) =>
-                        el.id === currentElement.id
-                          ? { ...el, align: "center" }
-                          : el,
-                      ),
-                    );
-                  }}
-                  className={`px-2 py-1 rounded ${
-                    currentElement.align === "center"
-                      ? "bg-gray-200"
-                      : "hover:bg-gray-100"
-                  }`}
-                >
-                  ≡
-                </button>
-                <button
-                  onClick={() => {
-                    setElements((prev) =>
-                      prev.map((el) =>
-                        el.id === currentElement.id
-                          ? { ...el, align: "right" }
-                          : el,
-                      ),
-                    );
-                  }}
-                  className={`px-2 py-1 rounded ${currentElement.align === "right" ? "bg-gray-200" : "hover:bg-gray-100"}`}
-                >
-                  ≡
-                </button>
-              </div>
-
-              <button className="px-3 py-1 rounded hover:bg-gray-100">
-                Format
-              </button>
-              <button className="px-3 py-1 rounded hover:bg-gray-100">
-                Effects
-              </button>
-              <button className="px-2 py-1 rounded hover:bg-gray-100">⋯</button>
             </div>
           )}
-
-          {/* Editable text input overlay */}
-          {currentElement && currentElement.type === "text" && (
-            <input
-              type="text"
-              value={currentElement.text}
-              onChange={(e) => {
-                setElements((prev) =>
-                  prev.map((el) =>
-                    el.id === currentElement.id
-                      ? { ...el, text: e.target.value }
-                      : el,
-                  ),
-                );
-              }}
-              className="absolute top-20 left-1/2 transform -translate-x-1/2 z-10 px-4 py-2 border-2 border-blue-400 rounded-lg shadow-lg text-center"
-              style={{ width: "400px" }}
-              placeholder="Type text here"
-            />
-          )}
-
-          {/* Main canvas */}
           <div
             style={{
               transform: `scale(${stageScale})`,
@@ -1457,7 +3168,6 @@ const DesignStudio = () => {
             </Stage>
           </div>
 
-          {/* Bottom zoom controls */}
           <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 z-10 flex items-center gap-3 bg-white rounded-lg shadow-lg px-4 py-2 border border-gray-200">
             <button
               onClick={() => setStageScale((prev) => Math.max(prev - 0.1, 0.1))}
@@ -1489,292 +3199,149 @@ const DesignStudio = () => {
           </div>
         </div>
 
-        {/* Right Properties Panel */}
-        {currentElement && currentElement.type !== "background" && (
+        {/* Layer Panel */}
+        {showLayerPanel && (
           <div className="w-80 bg-white border-l border-gray-200 overflow-y-auto">
             <div className="p-6">
-              <h3 className="text-lg font-semibold mb-4">Properties</h3>
-
-              {currentElement.type === "text" && (
-                <TextPropertiesPanel
-                  element={currentElement}
-                  onUpdate={(updates) => {
-                    setElements((prev) =>
-                      prev.map((e) =>
-                        e.id === currentElement.id ? { ...e, ...updates } : e,
-                      ),
-                    );
-                  }}
-                />
-              )}
-
-              {currentElement.type === "image" && (
-                <ImagePropertiesPanel
-                  element={currentElement}
-                  onUpdate={(updates) => {
-                    setElements((prev) =>
-                      prev.map((e) =>
-                        e.id === currentElement.id ? { ...e, ...updates } : e,
-                      ),
-                    );
-                  }}
-                />
-              )}
-
-              {currentElement.type === "graphic" && (
-                <GraphicPropertiesPanel
-                  element={currentElement}
-                  onUpdate={(updates) => {
-                    setElements((prev) =>
-                      prev.map((e) =>
-                        e.id === currentElement.id ? { ...e, ...updates } : e,
-                      ),
-                    );
-                  }}
-                />
-              )}
-
-              {currentElement.type === "qr" && (
-                <QRPropertiesPanel
-                  element={currentElement}
-                  onUpdate={(updates) => {
-                    setElements((prev) =>
-                      prev.map((e) =>
-                        e.id === currentElement.id ? { ...e, ...updates } : e,
-                      ),
-                    );
-                  }}
-                  updateQRCode={updateQRCode}
-                />
-              )}
-
-              <div className="mt-6 pt-6 border-t border-gray-200 space-y-2">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold">Layers</h3>
                 <button
-                  onClick={duplicateElement}
-                  className="w-full px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium"
+                  onClick={() => setShowLayerPanel(false)}
+                  className="text-gray-400 hover:text-gray-600"
                 >
-                  Duplicate
+                  ✕
                 </button>
-                <button
-                  onClick={() => deleteElement(selectedId)}
-                  className="w-full px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors text-sm font-medium"
-                >
-                  Delete
-                </button>
+              </div>
+
+              <div className="space-y-2">
+                {[...elements]
+                  .sort((a, b) => (b.layer || 0) - (a.layer || 0))
+                  .map((element, index) => (
+                    <div
+                      key={element.id}
+                      draggable
+                      onDragStart={(e) => {
+                        e.dataTransfer.effectAllowed = "move";
+                        e.dataTransfer.setData("text/html", element.id);
+                      }}
+                      onDragOver={(e) => {
+                        e.preventDefault();
+                        e.dataTransfer.dropEffect = "move";
+                      }}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+
+                        const draggedId = e.dataTransfer.getData("text/html");
+                        const targetId = element.id;
+
+                        if (draggedId === targetId) return;
+
+                        const sortedElements = [...elements].sort(
+                          (a, b) => (b.layer || 0) - (a.layer || 0),
+                        );
+
+                        const draggedIndex = sortedElements.findIndex(
+                          (el) => el.id === draggedId,
+                        );
+                        const targetIndex = sortedElements.findIndex(
+                          (el) => el.id === targetId,
+                        );
+
+                        if (draggedIndex === -1 || targetIndex === -1) return;
+
+                        // Reorder layers
+                        const newElements = [...elements];
+                        const draggedElement = sortedElements[draggedIndex];
+                        const targetElement = sortedElements[targetIndex];
+
+                        // Swap layer values
+                        newElements.forEach((el) => {
+                          if (el.id === draggedElement.id) {
+                            el.layer = targetElement.layer;
+                          } else if (el.id === targetElement.id) {
+                            el.layer = draggedElement.layer;
+                          }
+                        });
+
+                        setElements(newElements);
+                      }}
+                      className={`p-3 border rounded-lg cursor-move transition-colors ${
+                        selectedId === element.id
+                          ? "border-blue-500 bg-blue-50"
+                          : "border-gray-200 hover:border-gray-300 hover:bg-gray-50"
+                      }`}
+                      onClick={() => setSelectedId(element.id)}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className="text-gray-400 cursor-grab active:cursor-grabbing">
+                            ⋮⋮
+                          </span>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setElements((prev) =>
+                                prev.map((el) =>
+                                  el.id === element.id
+                                    ? { ...el, visible: !el.visible }
+                                    : el,
+                                ),
+                              );
+                            }}
+                            className="text-gray-500 hover:text-gray-700"
+                          >
+                            {element.visible ? "👁️" : "👁️‍🗨️"}
+                          </button>
+                          <span className="text-sm font-medium">
+                            {element.name}
+                          </span>
+                        </div>
+
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setElements((prev) =>
+                                prev.map((el) =>
+                                  el.id === element.id
+                                    ? { ...el, locked: !el.locked }
+                                    : el,
+                                ),
+                              );
+                            }}
+                            className="p-1 px-2 hover:bg-gray-200 rounded bg-gray-300"
+                            title={element.locked ? "Unlock" : "Lock"}
+                          >
+                            {element.locked ? "🔒" : "🔓"}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
               </div>
             </div>
           </div>
         )}
-      </div>
-    </div>
-  );
-};
 
-// Property Panels
-const TextPropertiesPanel = ({ element, onUpdate }) => {
-  return (
-    <div className="space-y-4">
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Text Content
-        </label>
-        <textarea
-          value={element.text}
-          onChange={(e) => onUpdate({ text: e.target.value })}
-          className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm resize-none"
-          rows={3}
-        />
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Letter Spacing
-        </label>
-        <input
-          type="number"
-          value={element.letterSpacing || 0}
-          onChange={(e) =>
-            onUpdate({ letterSpacing: parseInt(e.target.value) || 0 })
-          }
-          className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-        />
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Position
-        </label>
-        <div className="grid grid-cols-2 gap-2">
-          <input
-            type="number"
-            value={Math.round(element.x)}
-            onChange={(e) => onUpdate({ x: parseInt(e.target.value) || 0 })}
-            placeholder="X"
-            className="p-2 border border-gray-300 rounded-lg text-sm"
-          />
-          <input
-            type="number"
-            value={Math.round(element.y)}
-            onChange={(e) => onUpdate({ y: parseInt(e.target.value) || 0 })}
-            placeholder="Y"
-            className="p-2 border border-gray-300 rounded-lg text-sm"
-          />
-        </div>
-      </div>
-    </div>
-  );
-};
-
-const ImagePropertiesPanel = ({ element, onUpdate }) => {
-  const handleImageUpload = (event) => {
-    const file = event.target.files[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const img = new window.Image();
-      img.onload = () => {
-        onUpdate({ image: img, imageSrc: e.target.result });
-      };
-      img.src = e.target.result;
-    };
-    reader.readAsDataURL(file);
-  };
-
-  return (
-    <div className="space-y-4">
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Replace Image
-        </label>
-        <input
-          type="file"
-          accept="image/*"
-          onChange={handleImageUpload}
-          className="w-full p-2 border border-gray-300 rounded-lg text-sm"
-        />
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Opacity: {Math.round(element.opacity * 100)}%
-        </label>
-        <input
-          type="range"
-          value={element.opacity}
-          onChange={(e) => onUpdate({ opacity: parseFloat(e.target.value) })}
-          min="0"
-          max="1"
-          step="0.1"
-          className="w-full"
-        />
-      </div>
-    </div>
-  );
-};
-
-const GraphicPropertiesPanel = ({ element, onUpdate }) => {
-  return (
-    <div className="space-y-4">
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Fill Color
-        </label>
-        <input
-          type="color"
-          value={element.fill}
-          onChange={(e) => onUpdate({ fill: e.target.value })}
-          className="w-full h-10 border border-gray-300 rounded-lg"
-        />
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Stroke Color
-        </label>
-        <input
-          type="color"
-          value={element.stroke}
-          onChange={(e) => onUpdate({ stroke: e.target.value })}
-          className="w-full h-10 border border-gray-300 rounded-lg"
-        />
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Stroke Width
-        </label>
-        <input
-          type="number"
-          value={element.strokeWidth}
-          onChange={(e) =>
-            onUpdate({ strokeWidth: parseInt(e.target.value) || 0 })
-          }
-          className="w-full p-2 border border-gray-300 rounded-lg text-sm"
-        />
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Opacity: {Math.round(element.opacity * 100)}%
-        </label>
-        <input
-          type="range"
-          value={element.opacity}
-          onChange={(e) => onUpdate({ opacity: parseFloat(e.target.value) })}
-          min="0"
-          max="1"
-          step="0.1"
-          className="w-full"
-        />
-      </div>
-    </div>
-  );
-};
-
-const QRPropertiesPanel = ({ element, onUpdate, updateQRCode }) => {
-  return (
-    <div className="space-y-4">
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          QR Data (URL or Text)
-        </label>
-        <textarea
-          value={element.qrData}
-          onChange={(e) => {
-            onUpdate({ qrData: e.target.value });
-            updateQRCode(element.id, e.target.value);
-          }}
-          className="w-full p-2 border border-gray-300 rounded-lg text-sm"
-          rows={3}
-          placeholder="Enter URL or text"
-        />
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Size
-        </label>
-        <div className="grid grid-cols-2 gap-2">
-          <input
-            type="number"
-            value={Math.round(element.width)}
-            onChange={(e) => {
-              const size = parseInt(e.target.value) || 200;
-              onUpdate({ width: size, height: size });
-            }}
-            className="p-2 border border-gray-300 rounded-lg text-sm"
-          />
-          <input
-            type="number"
-            value={Math.round(element.height)}
-            onChange={(e) => {
-              const size = parseInt(e.target.value) || 200;
-              onUpdate({ width: size, height: size });
-            }}
-            className="p-2 border border-gray-300 rounded-lg text-sm"
-          />
-        </div>
+        {!showLayerPanel && (
+          <button
+            onClick={() => setShowLayerPanel(true)}
+            className="fixed right-4 top-1/2 transform -translate-y-1/2 bg-white border border-gray-200 rounded-lg shadow-lg p-3 hover:bg-gray-50"
+          >
+            <svg
+              width="24"
+              height="24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <rect x="3" y="3" width="18" height="4" />
+              <rect x="3" y="10" width="18" height="4" />
+              <rect x="3" y="17" width="18" height="4" />
+            </svg>
+          </button>
+        )}
       </div>
     </div>
   );

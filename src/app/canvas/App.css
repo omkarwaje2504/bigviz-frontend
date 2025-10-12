@@ -1,8 +1,4 @@
-/* CertificateDesigner.css */
 
-/* Custom CSS styles that work alongside Tailwind CSS */
-
-/* Canvas specific styles */
 .certificate-canvas {
   cursor: crosshair;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);

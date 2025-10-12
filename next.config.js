@@ -30,8 +30,8 @@ const nextConfig = {
     return config;
   },
   reactStrictMode: false,
-  output: "export",
-  distDir: "dist",
+  // output: "export",
+  // distDir: "dist",
   images: {
     unoptimized: true,
     remotePatterns: [
