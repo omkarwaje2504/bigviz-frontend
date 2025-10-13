@@ -73,7 +73,7 @@ const Config = async (projectData) => {
       addedonLabel: projectData?.config?.theme?.added_on_label ||"Added On"
     },
     Dashboard: {
-      HomePageTitle: projectData?.config?.theme?.home_title?  projectData?.config?.theme?.home_title : "Doctor Management",
+      HomePageTitle: projectData?.config?.theme?.home_title?  projectData?.config?.theme?.home_title : "Doctor List",
       HomePageSubTitle:projectData?.config?.theme?.home_page_subtitle?  projectData?.config?.theme?.home_page_subtitle : "Manage all your doctor from here",
       HomePageButtonLabel:projectData?.config?.theme?.home_page_button_label?  projectData?.config?.theme?.home_page_button_label : "Add New Doctor",
       title:projectData?.config?.theme?.home_title?  projectData?.config?.theme?.home_title : "Dashboard Overview",

@@ -568,7 +568,6 @@ const CalendarPage = ({
               className="hidden"
             />
           </label>
-
           <label
             className={`
             py-2 rounded-lg text-white font-medium text-sm w-full text-center
