@@ -319,7 +319,7 @@ const MemberTable: React.FC<MemberTableProps> = ({
       if (type === "DOCTOR_IMAGE") {
         setPreviewType("IMAGE");
         setPreviewImageType(type);
-        setPreviewUrl(member.image || "");
+        setPreviewUrl(member.image || process.env.NEXT_PUBLIC_R2_PUBLIC_URL+ "/" + member.media.january_cropped);
       } else {
         setPreviewImageType("");
         switch (projectData.product_type) {
@@ -812,7 +812,20 @@ const MemberTable: React.FC<MemberTableProps> = ({
                           />
                         </div>
                       ) : (
-                        <></>
+                        <div
+                          className="relative w-full h-[200px] rounded overflow-hidden cursor-pointer"
+                          onClick={() => onPreview(member, "DOCTOR_IMAGE")}
+                        >
+                          <Image
+                            src={`${process.env.NEXT_PUBLIC_R2_PUBLIC_URL}/${member.media.january_cropped}`}
+                            alt={member.name}
+                            fill
+                            quality={10}
+                            blurDataURL={member.image}
+                            sizes="(max-width: 640px) 100px, (min-width: 641px) 150px, (min-width: 1024px) 200px"
+                            className="object-cover object-top opacity-50"
+                          />
+                        </div>
                       )}
                     </div>
                   )}

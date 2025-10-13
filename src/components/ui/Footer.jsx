@@ -34,10 +34,13 @@ const Footer = ({ projectData }) => {
               />
             ) : (
               <Image
-                src="/sai-logo.png"
+                src="/Informatia.png"
                 alt="Sai Logo"
-                width={120}
-                height={50}
+                width={0}
+                height={0}
+
+                sizes="100vw"
+                className="h-32 w-full"
               />
             )}
           </div>

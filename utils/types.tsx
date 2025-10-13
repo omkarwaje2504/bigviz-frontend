@@ -59,6 +59,7 @@ export interface Doctor {
   name: string;
   image: string;
   values: Record<string, string>;
+  media:Record<string, string>
   updated_at: string;
    extras:{
         video_url: string
