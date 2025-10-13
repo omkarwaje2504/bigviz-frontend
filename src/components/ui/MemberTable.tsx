@@ -846,6 +846,7 @@ const MemberTable: React.FC<MemberTableProps> = ({
                           : "Artwork Pending"}
                       </span>
                     )}
+                    
                     <h3 className="font-bold text-lg">{member.name}</h3>
                     <p className="text-gray-600 dark:text-gray-400 text-sm">
                       {member.mobile}
