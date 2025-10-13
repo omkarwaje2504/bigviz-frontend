@@ -101,7 +101,11 @@ const Header = ({ ui, userInfo, projectData, projectHash, isHomePage }) => {
                     </h1>
                     <p className="text-gray-400 text-sm md:text-md">
                       {isNew
-                        ? ui?.DoctorRegistrationForm?.FormSubHeading: ui?.DoctorRegistrationForm?.FormSubHeading?.replace("add","edit") }
+                        ? ui?.DoctorRegistrationForm?.FormSubHeading
+                        : ui?.DoctorRegistrationForm?.FormSubHeading?.replace(
+                            "add",
+                            "edit",
+                          )}
                     </p>
                   </div>
                 </div>
@@ -112,17 +116,14 @@ const Header = ({ ui, userInfo, projectData, projectHash, isHomePage }) => {
 
                 <div>
                   <h1
-                    className="text-sm md:text-xl font-bold"
+                    className="text-lg md:text-xl font-bold"
                     style={{ color: textColor }}
                   >
                     {projectData?.config?.theme?.loading_title ||
                       projectData?.name ||
                       "Platform Partner"}
                   </h1>
-                  <p
-                    className="text-sm md:text-[13px]"
-                    style={{ color: textColor }}
-                  >
+                  <p className="text-sm md:text-[13px] text-gray-800 dark:text-white">
                     {projectData?.company?.name || "Achieve your goals with us"}
                   </p>
                 </div>
@@ -135,10 +136,10 @@ const Header = ({ ui, userInfo, projectData, projectHash, isHomePage }) => {
                 <div className="flex items-center space-x-3">
                   <div className="hidden md:block text-right">
                     <p className="font-medium text-gray-800 dark:text-white">
-                      {userInfo.name}
+                      {userInfo?.name}
                     </p>
                     <p className="text-xs text-gray-500 dark:text-gray-400">
-                      {userInfo.designation}
+                      {userInfo?.designation}
                     </p>
                   </div>
 

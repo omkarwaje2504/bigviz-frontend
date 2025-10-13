@@ -319,7 +319,12 @@ const MemberTable: React.FC<MemberTableProps> = ({
       if (type === "DOCTOR_IMAGE") {
         setPreviewType("IMAGE");
         setPreviewImageType(type);
-        setPreviewUrl(member.image || process.env.NEXT_PUBLIC_R2_PUBLIC_URL+ "/" + member.media.january_cropped);
+        setPreviewUrl(
+          member.image ||
+            process.env.NEXT_PUBLIC_R2_PUBLIC_URL +
+              "/" +
+              member.media.january_cropped,
+        );
       } else {
         setPreviewImageType("");
         switch (projectData.product_type) {
@@ -831,21 +836,22 @@ const MemberTable: React.FC<MemberTableProps> = ({
                   )}
 
                   <div>
-                    {!projectData?.config?.game && (
-                      <span
-                        className={`text-xs font-medium px-1 py-0.5 rounded ${
-                          member.download_url || member.extras.video_url
-                            ? "bg-green-500/20 text-green-600 dark:text-green-400"
-                            : "bg-gray-500/20 text-gray-600 dark:text-gray-400"
-                        }`}
-                      >
-                        {member.download_url || member.extras.video_url
-                          ? projectData?.product_type === "EVideo"
-                            ? "Video Generated"
-                            : "Artwork Generated"
-                          : ""}
-                      </span>
-                    )}
+                    {!projectData?.config?.game &&
+                      projectData?.product_type !== "DeskCalendar" && (
+                        <span
+                          className={`text-xs font-medium px-1 py-0.5 rounded ${
+                            member.download_url || member.extras.video_url
+                              ? "bg-green-500/20 text-green-600 dark:text-green-400"
+                              : "bg-gray-500/20 text-gray-600 dark:text-gray-400"
+                          }`}
+                        >
+                          {member.download_url || member.extras.video_url
+                            ? projectData?.product_type === "EVideo"
+                              ? "Video Generated"
+                              : "Artwork Generated"
+                            : "Artwork Pending"}
+                        </span>
+                      )}
 
                     <h3 className="font-bold text-lg">{member.name}</h3>
                     <p className="text-gray-600 dark:text-gray-400 text-sm">
@@ -1055,19 +1061,23 @@ const MemberTable: React.FC<MemberTableProps> = ({
                           </span>
                         </div>
                       ) : (
-                        <span
-                          className={`text-xs font-medium px-1 py-0.5 rounded ${
-                            member.download_url
-                              ? "bg-green-500/20 text-green-600 dark:text-green-400"
-                              : "bg-gray-500/20 text-gray-600 dark:text-gray-400"
-                          }`}
-                        >
-                          {member.download_url || member.extras.video_url
-                            ? projectData?.product_type === "EVideo"
-                              ? "Video Generated"
-                              : "Artwork Generated"
-                            : ""}
-                        </span>
+                        <>
+                          {projectData?.product_type !== "DeskCalendar" && (
+                            <span
+                              className={`text-xs font-medium px-1 py-0.5 rounded ${
+                                member.download_url
+                                  ? "bg-green-500/20 text-green-600 dark:text-green-400"
+                                  : "bg-gray-500/20 text-gray-600 dark:text-gray-400"
+                              }`}
+                            >
+                              {member.download_url || member.extras.video_url
+                                ? projectData?.product_type === "EVideo"
+                                  ? "Video Generated"
+                                  : "Artwork Generated"
+                                : "Artwork Pending"}
+                            </span>
+                          )}
+                        </>
                       )}
                     </td>
                     <td className="px-6 py-4 text-right">
