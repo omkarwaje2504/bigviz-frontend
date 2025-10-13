@@ -64,9 +64,8 @@ const CalendarPage = ({
   const cameraInputRef = useRef(null);
   const [photoCollectionType, setPhotoCollectionType] = useState(null);
   const [themeType, setThemeType] = useState(null);
-
+  const AI_ENABLED = projectData?.config?.calendar?.enable_ai;
   const searchParams = useSearchParams();
-
   const getParams = () => {
     const url = new URL(window.location.href);
     const params = url.searchParams;
@@ -419,7 +418,7 @@ const CalendarPage = ({
 
   const handlePreviewOpen = async (image, index) => {
     const previewUrl = await generateCalendarPreviewBlob(
-      image.croppedImage,
+      image,
       CALENDAR_PREVIEW_CONFIG,
     );
     setPreviewData(previewUrl);
@@ -431,7 +430,7 @@ const CalendarPage = ({
     return MONTH_NAMES[index] || `Month ${index + 1}`;
   };
 
-  if (!photoCollectionType) {
+  if (AI_ENABLED && !photoCollectionType) {
     return (
       <div>
         <h2 className="text-2xl font-bold text-white">
@@ -465,7 +464,7 @@ const CalendarPage = ({
         </div>
       </div>
     );
-  } else if (photoCollectionType && !themeType) {
+  } else if (AI_ENABLED && photoCollectionType && !themeType) {
     switch (photoCollectionType) {
       case "with-doctor":
         return null;
@@ -520,7 +519,7 @@ const CalendarPage = ({
     }
   } else {
     return (
-      <div className="bg-gray-900">
+      <div className="dark:bg-gray-900">
         {previewData && (
           <PreviewModal
             previewType="IMAGE"
@@ -528,7 +527,9 @@ const CalendarPage = ({
             setPreviewMode={setPreviewData}
           />
         )}
-        <h2 className="text-2xl font-bold text-white mb-6">Calendar Images</h2>
+        <h2 className="text-xl font-semibold text-gray-800 dark:text-white mb-6">
+          Calendar Images
+        </h2>
 
         {error && (
           <div className="text-red-400 mb-4 text-sm bg-red-900 bg-opacity-30 p-3 rounded-lg border border-red-800">
@@ -598,37 +599,7 @@ const CalendarPage = ({
             />
           </label>
         </div>
-        <div className="mb-2 flex gap-1">
-          <label
-            className={`
-            py-2 rounded-lg text-white font-medium text-sm w-full text-center
-            inline-block transition-all duration-200 cursor-pointer
-            ${
-              remainingSlots > 0 && !isProcessing
-                ? "bg-blue-600 hover:bg-blue-700 active:bg-blue-800 shadow-md hover:shadow-lg"
-                : "bg-gray-700 cursor-not-allowed opacity-60"
-            }
-          `}
-            title={
-              isProcessing
-                ? "Please finish cropping current images"
-                : remainingSlots > 0
-                  ? `Choose up to ${remainingSlots} photos from gallery`
-                  : "Maximum limit reached"
-            }
-          >
-            <FaBahai /> Generate with AI
-            <input
-              ref={fileInputRef}
-              type="file"
-              multiple
-              accept={CONFIG.acceptedFormats}
-              onChange={(e) => handleImageSelection(e, "gallery")}
-              disabled={remainingSlots === 0 || isProcessing}
-              className="hidden"
-            />
-          </label>
-        </div>
+
         {/* Processing Status */}
         {isProcessing && (
           <div className="mb-1 bg-blue-900 bg-opacity-30 border border-blue-700 rounded-lg">
@@ -645,7 +616,7 @@ const CalendarPage = ({
         {/* Selected Images Grid */}
         {selectedImages.length > 0 && (
           <div>
-            <h3 className="text-lg font-medium mb-3 text-gray-300">
+            <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-6">
               Selected Images ({selectedImages.length}/{CONFIG.maxImages})
             </h3>
             <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
@@ -665,9 +636,9 @@ const CalendarPage = ({
                   <div
                     key={image.id}
                     className={`
-                    flex flex-col bg-gray-800 border-2 rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-all duration-200 cursor-move
+                    flex flex-col bg-gray-200 dark:bg-gray-800 border-gray-400 border-2 rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-all duration-200 cursor-move
                     ${draggedItem === index ? "opacity-50 transform rotate-3 scale-105" : ""}
-                    ${dragOverIndex === index ? "border-blue-500 bg-blue-900 bg-opacity-30" : "border-gray-700"}
+                    ${dragOverIndex === index ? "border-blue-500 bg-blue-900 bg-opacity-30" : "border-gray-200"}
                   `}
                     draggable="true"
                     onDragStart={(e) => handleDragStart(e, index)}
@@ -677,7 +648,7 @@ const CalendarPage = ({
                     onDragEnd={handleDragEnd}
                   >
                     {/* Month Header */}
-                    <div className="bg-gray-700 text-white text-center py-0.5 text-sm font-semibold flex items-center justify-center gap-2">
+                    <div className="bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-white text-center py-0.5 text-sm font-semibold flex items-center justify-center gap-2">
                       <MdDragIndicator className="h-4 w-4 text-gray-400" />
                       {displayMonthName}
                     </div>
@@ -685,7 +656,7 @@ const CalendarPage = ({
                     {/* Image Preview */}
                     <div
                       className="relative w-full h-20 overflow-hidden"
-                      onClick={() => handlePreviewOpen(image, index)}
+                      onClick={() => handlePreviewOpen(previewSrc, index)}
                     >
                       <img
                         src={previewSrc}
@@ -702,7 +673,7 @@ const CalendarPage = ({
                     </div>
 
                     {/* Action Buttons */}
-                    <div className="flex gap-1 justify-center bg-gray-700 p-1">
+                    <div className="flex gap-1 justify-center bg-gray-200 dark:bg-gray-700 p-1">
                       <div className="relative flex-1">
                         <button
                           type="button"
@@ -715,14 +686,14 @@ const CalendarPage = ({
 
                         <div
                           id={`menu-${image.id}`}
-                          className="hidden absolute bottom-full left-0 mb-1 bg-gray-800 border border-gray-600 rounded-md shadow-lg z-50 min-w-32 overflow-hidden"
+                          className="hidden absolute bottom-full left-0 mb-1 bg-gray-100 dark:bg-gray-800 border border-gray-600 rounded-md shadow-lg z-50 min-w-32 overflow-hidden"
                         >
                           <button
                             type="button"
                             onClick={(e) =>
                               handleReplaceClick(image.id, "camera", e)
                             }
-                            className="block w-full px-3 py-2 text-left text-sm text-gray-200 hover:bg-gray-700 bg-gray-600 border-none transition-colors duration-200"
+                            className="block w-full px-3 py-2 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-700 bg-gray-200 dark:bg-gray-600 border-none transition-colors duration-200"
                           >
                             Camera
                           </button>
@@ -731,7 +702,7 @@ const CalendarPage = ({
                             onClick={(e) =>
                               handleReplaceClick(image.id, "gallery", e)
                             }
-                            className="block w-full px-3 py-2 text-left text-sm text-gray-200 hover:bg-gray-700 border-none border-t border-gray-600 transition-colors duration-200"
+                            className="block w-full px-3 py-2 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-700 border-none border-t border-gray-600 transition-colors duration-200"
                           >
                             Gallery
                           </button>
@@ -757,7 +728,7 @@ const CalendarPage = ({
         {/* Empty State */}
         {selectedImages.length === 0 && !isProcessing && (
           <div className="border-2 border-dashed border-gray-700 rounded-lg p-8 text-center h-40 flex flex-col items-center justify-center">
-            <div className="text-gray-500 mb-4 bg-gray-800 p-4 rounded-full">
+            <div className="text-gray-500 mb-4 bg-gray-200 dar:bg-gray-800 p-4 rounded-full">
               <FaRegImage size={32} />
             </div>
             <p className="text-gray-400 mb-2">No images selected yet</p>

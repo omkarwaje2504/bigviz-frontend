@@ -58,32 +58,30 @@ const CalendarConsent = ({
       try {
         const totalMonths = 12;
 
-        // ✅ Always create 12 months — cycle through images if fewer
+        // ✅ Always fill 12 months, cycling through available images
         const filledImages = Array.from({ length: totalMonths }, (_, i) => {
           if (images.length === 1) return images[0];
           if (images.length === 2) return images[i % 2];
           return images[i % images.length];
         });
 
-        // ✅ Generate previews for each month
+        // ✅ Generate previews with correct month names
         const blobUrls = await Promise.all(
           filledImages.map(async (calendarItem, index) => {
-            const monthKey =
-              calendarItem?.month?.toLowerCase() ||
-              MONTH_NAMES[index]?.toLowerCase();
-            const displayMonthName =
-              monthKey.charAt(0).toUpperCase() + monthKey.slice(1);
+            const monthName = MONTH_NAMES[index];
+            const monthKey = monthName.toLowerCase();
 
             // ✅ Prefer cropped > original > fallback (blank)
             const previewSrc =
               calendarItem?.[`${monthKey}_cropped`] ||
               calendarItem?.[monthKey] ||
+              calendarItem?.image ||
               "";
 
-            // Skip if no valid image URL
+            // No image? Still return month with empty preview
             if (!previewSrc) {
               return {
-                monthName: MONTH_NAMES[index],
+                monthName,
                 blobUrl: "",
                 originalData: calendarItem,
               };
@@ -95,14 +93,14 @@ const CalendarConsent = ({
             );
 
             return {
-              monthName: displayMonthName,
+              monthName,
               blobUrl,
               originalData: calendarItem,
             };
           }),
         );
 
-        // ✅ Always set previews for all 12 months
+        // ✅ Always 12 months, even if no images
         setCalendarPreviews(blobUrls);
       } catch (error) {
         console.error("Failed to generate calendar previews:", error);
@@ -114,7 +112,7 @@ const CalendarConsent = ({
 
     generatePreviews();
 
-    // ✅ Cleanup previous blob URLs to prevent memory leaks
+    // ✅ Cleanup URLs to prevent leaks
     return () => {
       calendarPreviews.forEach((preview) => {
         if (preview.blobUrl) URL.revokeObjectURL(preview.blobUrl);
@@ -123,10 +121,12 @@ const CalendarConsent = ({
   }, [formData?.calendar_images]);
 
   return (
-    <div className="bg-gray-900 rounded-lg">
-      <h2 className="text-xl font-bold text-white mb-2">Review Your Design</h2>
+    <div className="dark:bg-gray-900 rounded-lg">
+      <h2 className="text-xl font-bold text-gray-700 dark:text-white mb-2">
+        Review Your Design
+      </h2>
       <div className="text-gray-400 text-sm mb-6">
-        <h3 className="text-white text-md font-medium mb-2">
+        <h3 className="text-gray-700 dark:text-white text-md font-medium mb-2">
           It will be printed like this preview. Make sure you are happy before
           continuing.
         </h3>
@@ -147,7 +147,7 @@ const CalendarConsent = ({
 
       {/* Loading State */}
       {loading ? (
-        <div className="text-white text-center py-12">
+        <div className="text-gray-700 dark:text-white text-center py-12">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
           <p className="text-lg">Generating calendar previews...</p>
           <p className="text-sm text-gray-400 mt-2">This may take a moment</p>
@@ -162,7 +162,11 @@ const CalendarConsent = ({
                   {calendarPreviews.map((calendar, index) => (
                     <div
                       key={index}
-                      className="min-w-[250px] bg-gray-800 rounded-lg overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-200"
+                      style={{
+                        background: ui.basic.primaryColor,
+                        color: ui.basic.primaryColor,
+                      }}
+                      className="min-w-[250px] rounded-lg overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-200"
                     >
                       <img
                         src={calendar.blobUrl}
