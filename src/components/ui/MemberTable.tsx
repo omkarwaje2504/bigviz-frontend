@@ -843,10 +843,10 @@ const MemberTable: React.FC<MemberTableProps> = ({
                           ? projectData?.product_type === "EVideo"
                             ? "Video Generated"
                             : "Artwork Generated"
-                          : "Artwork Pending"}
+                          : ""}
                       </span>
                     )}
-                    
+
                     <h3 className="font-bold text-lg">{member.name}</h3>
                     <p className="text-gray-600 dark:text-gray-400 text-sm">
                       {member.mobile}
@@ -1066,7 +1066,7 @@ const MemberTable: React.FC<MemberTableProps> = ({
                             ? projectData?.product_type === "EVideo"
                               ? "Video Generated"
                               : "Artwork Generated"
-                            : "Artwork Pending"}
+                            : ""}
                         </span>
                       )}
                     </td>
