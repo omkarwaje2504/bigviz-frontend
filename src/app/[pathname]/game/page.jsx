@@ -4,6 +4,7 @@ import NotFoundPage from "../NotFoundPage";
 import ScratchCard from "../../../components/pages/funzo/ScratchCard";
 import ShalinaNigeriaFlagHosting from "../../../components/pages/funzo/ShalinaNigeriaFlagHosting";
 import VideoArtworkFlow from "@components/pages/VideoArtworkFlow";
+import Puzzle from '@components/pages/funzo/Puzzle'
 
 export async function generateStaticParams() {
   const projects = await getAllProjectsCached();
@@ -64,6 +65,8 @@ export default async function Home({ params }) {
       return (
         <ScratchCard projectData={projectInfo} projectId={pathname} ui={ui} />
       );
+    } else if(pathname==="xzpg9o2d"){
+      return <Puzzle/>
     } else return <VideoArtworkFlow projectData={projectInfo} projectId={pathname} ui={ui} />;
   } else {
     <NotFoundPage />;

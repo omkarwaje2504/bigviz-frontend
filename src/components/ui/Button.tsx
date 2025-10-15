@@ -68,6 +68,7 @@ const Button: React.FC<ButtonProps> = ({
       disabled={isLoading || disabled}
       className={finalClass}
       style={{
+        cursor: "pointer",
         backgroundColor: isLoading || disabled ? undefined : bgColor,
         color: isLoading || disabled ? undefined : textColor,
       }}
