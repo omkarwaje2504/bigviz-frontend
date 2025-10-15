@@ -195,7 +195,7 @@ const HomePage = ({ projectData, projectId, ui }) => {
               {ui.Dashboard.HomePageTitle}
             </h2>
             <p className="text-gray-600 dark:text-gray-400 text-xl">
-              {ui.Dashboard.HomePageSubTitle}: {members.length}
+              {ui.Dashboard.HomePageSubTitle}: {members?.length}
             </p>
           </div>
 

@@ -3,6 +3,17 @@ import React, { useState, useRef, useEffect } from "react";
 import { FetchDoctor } from "../../../../actions/user";
 import { Download } from "@actions/evideoApis";
 import { useRouter } from "next/navigation";
+import data from "@utils/types";
+
+function toTitleCase(str) {
+  return str
+    .toLowerCase() 
+    .split(' ') 
+    .filter(word => word.trim() !== '') 
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+}
+
 
 const ShalinaNigeriaFlagHosting = ({ projectData, projectId, ui }) => {
   const [stage, setStage] = useState("loading");
@@ -16,6 +27,7 @@ const ShalinaNigeriaFlagHosting = ({ projectData, projectId, ui }) => {
   const [downlaodLoading, setDownloadLaoding] = useState(false);
   const [videoSrc, setVideoSrc] = useState();
   const [showDoctorName, setShowDoctorName] = useState(true);
+  const [showGoBack,setShowGoBack] = useState(false)
   const router = useRouter();
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
@@ -146,7 +158,7 @@ const ShalinaNigeriaFlagHosting = ({ projectData, projectId, ui }) => {
       }
       // console.log(video.currentTime)
       if (showDoctorName && video.currentTime < nameEnd) {
-        const text = doctorData?.name || "";
+        const text = toTitleCase(doctorData?.name) || "";
         if (text) {
           const paddingX = 10;
           const paddingY = 8;
@@ -335,7 +347,7 @@ const ShalinaNigeriaFlagHosting = ({ projectData, projectId, ui }) => {
     const startX = 700;
     const startY = 410;
 
-    const name = data?.name || "Doctor Name";
+    const name = toTitleCase(data?.name) || "Doctor Name";
 
     const wrapText = (text, x, y, maxWidth, lineHeight) => {
       const words = text.split(" ");
@@ -375,10 +387,12 @@ const ShalinaNigeriaFlagHosting = ({ projectData, projectId, ui }) => {
     let downlaod = await Download(projectData, doctorHash, 25, empHash);
 
     const link = document.createElement("a");
-    link.download = "certificate.png";
+    const filename = toTitleCase(doctorData?.name)
+    link.download = `${filename}.png`;
     link.href = canvas.toDataURL("image/png");
     link.click();
     setDownloadLaoding(false);
+    setShowGoBack(true)
   };
 
   const shareCertificate = async () => {
@@ -598,7 +612,7 @@ const ShalinaNigeriaFlagHosting = ({ projectData, projectId, ui }) => {
                 </div>
 
                 {/* Button Content */}
-                <span className="relative z-10 flex items-center justify-center gap-4 font-extrabold tracking-wide">
+                <span className="relative z-10 flex items-center justify-center gap-4 font-extrabold tracking-wide cursor-pointer">
                   {/* Animated Play Icon */}
                   Click here to Start Flag Hosting Celebration
                   {/* Animated Arrow */}
@@ -720,6 +734,19 @@ const ShalinaNigeriaFlagHosting = ({ projectData, projectId, ui }) => {
                 </button>
               </div>
             )}
+
+            {
+              showGoBack && (
+                <div>
+                  <button
+                    onClick={()=>router.push(`homepage`)}
+                    className="px-8 mt-5 py-2 cursor-pointer bg-green-600 text-white rounded-lg text-lg font-bold hover:bg-green-700 transition-all duration-300 shadow-lg border-2 border-white transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Go Back
+                  </button>
+                </div>
+              )
+            }
           </div>
         );
 
