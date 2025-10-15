@@ -55,8 +55,7 @@ const LoadingPage = ({ ui, projectData }) => {
         ) : (
           <FiLoader
             size={50}
-            className="text-4xl absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 animate-spin"
-            style={{ stroke: primaryColor }}
+            className="text-4xl absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 animate-spin fill-black dark:fill-white"
           />
         )}
       </div>
@@ -70,12 +69,8 @@ const LoadingPage = ({ ui, projectData }) => {
       </h1>
 
       <p
-        className="mb-8"
-        style={{
-          color: isDark
-            ? ui?.basic?.primaryColor || "#dddddd"
-            : ui?.basic?.secondaryColor || "#666666",
-        }}
+        className="mb-8 text-gray-800 dark:text-white"
+       
       >
         {ui?.loaderPage?.loaderSubTitle}
       </p>
@@ -93,12 +88,8 @@ const LoadingPage = ({ ui, projectData }) => {
 
       {/* Progress Label */}
       <p
-        className="text-sm"
-        style={{
-          color: isDark
-            ? ui?.basic?.primaryColor || "#cccccc"
-            : ui?.basic?.secondaryColor || "#666666",
-        }}
+        className="text-sm text-gray-800 dark:text-white"
+        
       >
         {ui?.loaderPage?.assetLoader} {progress}%
       </p>

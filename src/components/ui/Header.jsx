@@ -72,7 +72,7 @@ const Header = ({ ui, userInfo, projectData, projectHash, isHomePage }) => {
 
   if (projectData?.config?.employee) {
     return (
-      <header className="bg-white dark:bg-black shadow-lg border-b border-gray-200 dark:border-gray-800 transition-colors duration-300">
+      <header className="bg-white dark:bg-black shadow-sm border-b border-gray-200 dark:border-gray-800 transition-colors duration-300">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2">
           <div className="flex justify-between items-center">
             {/* Left Logo/Title */}
@@ -86,7 +86,7 @@ const Header = ({ ui, userInfo, projectData, projectHash, isHomePage }) => {
                     >
                       <IoArrowBackCircleSharp
                         className="w-12 h-12"
-                        style={{ fill: ui?.basic?.secondaryColor || "white" }}
+                        style={{ color: ui?.basic?.secondaryColor || "white" }}
                       />
                     </Link>
                   )}
