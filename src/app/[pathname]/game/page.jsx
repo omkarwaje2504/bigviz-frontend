@@ -53,7 +53,8 @@ export default async function Home({ params }) {
   );
   const ui = await Config(projectInfo);
   if (projectInfo) {
-    if (pathname === "j02y1r2m" || pathname === "mg2n7zq8") {
+    console.log(pathname)
+    if (pathname === "j02y1r2m" || pathname === "polygel-independence") {
       return (
         <ShalinaNigeriaFlagHosting
           projectData={projectInfo}

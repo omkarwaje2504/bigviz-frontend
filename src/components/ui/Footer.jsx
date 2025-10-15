@@ -25,7 +25,7 @@ const Footer = ({ projectData }) => {
 
           {/* Right: Logo */}
           <div className="flex space-x-6">
-            {(projectData?.project_hash === "j02y1r2m"|| projectData?.project_hash === "mg2n7zq8") ? (
+            {(projectData?.project_hash === "j02y1r2m"|| projectData?.project_hash === "polygel-independence") ? (
               <Image
                 src={`/game/${projectData?.project_hash}.png`}
                 alt="Different Logo"

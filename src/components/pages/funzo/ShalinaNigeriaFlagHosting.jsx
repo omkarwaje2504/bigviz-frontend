@@ -3,7 +3,6 @@ import React, { useState, useRef, useEffect } from "react";
 import { FetchDoctor } from "../../../../actions/user";
 import { Download } from "@actions/evideoApis";
 import { useRouter } from "next/navigation";
-import data from "@utils/types";
 
 function toTitleCase(str) {
   return str
@@ -151,7 +150,7 @@ const ShalinaNigeriaFlagHosting = ({ projectData, projectId, ui }) => {
 
       let nameEnd
 
-      if(projectId==="mg2n7zq8"){
+      if(projectId==="polygel-independence"){
         nameEnd= 17
       }else{
         nameEnd= 18
