@@ -43,6 +43,9 @@ const FormNavigationButtons = ({
   const isPage3Valid = currentStep !== 3 || !!formData?.calendar_consent;
 
   const isLastStepForProject =
+    (projectData?.config?.doctor?.data_collection === true &&
+      currentStep === 2 &&
+      (optionalPhotoUpload ? true : formData.photo)) ||
     (projectType === "EVideo" &&
       currentStep === 2 &&
       (optionalPhotoUpload ? true : formData.photo)) ||

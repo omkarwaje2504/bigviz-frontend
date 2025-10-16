@@ -48,7 +48,7 @@ const Header = ({ ui, userInfo, projectData, projectHash, isHomePage }) => {
     if (urlCheck?.includes("-new")) {
       setIsNew(true);
     }
-  });
+  },[]);
 
   // detect system dark/light
   useEffect(() => {

@@ -53,7 +53,6 @@ export default async function Home({ params }) {
   );
   const ui = await Config(projectInfo);
   if (projectInfo) {
-    console.log(pathname)
     if (pathname === "j02y1r2m" || pathname === "polygel-independence") {
       return (
         <ShalinaNigeriaFlagHosting
@@ -63,11 +62,13 @@ export default async function Home({ params }) {
         />
       );
     } else if (projectInfo?.config?.game?.scratch_card) {
+      console.log("done")
       return (
         <ScratchCard projectData={projectInfo} projectId={pathname} ui={ui} />
       );
     } else if(pathname==="xzpg9o2d"){
-      return <Puzzle/>
+       console.log("done")
+      return <Puzzle projectData={projectInfo} projectId={pathname} ui={ui}/>
     } else return <VideoArtworkFlow projectData={projectInfo} projectId={pathname} ui={ui} />;
   } else {
     <NotFoundPage />;

@@ -1,187 +1,504 @@
 "use client";
-import { useEffect, useState } from "react";
-import Image from "next/image";
-import Confetti from "react-confetti";
+
 import { useRouter } from "next/navigation";
+import React, { useEffect, useRef, useState } from "react";
+import Confetti from "react-confetti";
 
-const images = [
-  "/puzzle/part1.jpg",
-  "/puzzle/part2.jpg",
-  "/puzzle/part3.jpg",
-  "/puzzle/part4.jpg",
-];
+const Puzzle = ({ projectData, projectId, ui }) => {
+  const canvasRef = useRef(null);
+  const containerRef = useRef(null);
+  const [positions, setPositions] = useState([]);
+  const [loadedImages, setLoadedImages] = useState([]);
+  const [complete, setComplete] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  const [dragging, setDragging] = useState(null);
+  const [scale, setScale] = useState(1);
+  const [showCongrats, setShowCongrats] = useState(false);
+  const [isFlipping, setIsFlipping] = useState(false);
+  const router = useRouter();
 
-const correctOrder = [0, 1, 2, 3];
-
-const arraysEqual = (a, b) =>
-  a.length === b.length && a.every((val, i) => val === b[i]);
-
-const shuffleArray = (arr) =>
-  arr
-    .map((item) => ({ item, sort: Math.random() }))
-    .sort((a, b) => a.sort - b.sort)
-    .map(({ item }) => item);
-
-export default function Puzzle() {
-  const [order, setOrder] = useState(shuffleArray(correctOrder));
-  const [draggedItem, setDraggedItem] = useState(null);
-  const [showPuzzle,setShowPuzzle] = useState(true)
-  const [solved, setSolved] = useState(false);
-  const [filpCard,setFilpCard] = useState(false)
-  const [showCongrats,setShowCongrats] = useState(false)
-  const [showConfetti, setShowConfetti] = useState(false);
-  const router = useRouter()
-
-  const swapItems = (arr, aIndex, bIndex) => {
-    const copy = [...arr];
-    [copy[aIndex], copy[bIndex]] = [copy[bIndex], copy[aIndex]];
-    return copy;
-  };
-
-  const handleDragStart = (item) => {
-    setDraggedItem(item);
-  };
-
-  const handleDrop = (targetItem) => {
-    if (draggedItem === null) return;
-
-    const newOrder = [...order];
-    const draggedIndex = newOrder.indexOf(draggedItem);
-    const targetIndex = newOrder.indexOf(targetItem);
-
-    if (draggedIndex === -1 || targetIndex === -1) {
-      setDraggedItem(null);
-      return;
-    }
-
-    const swapped = swapItems(newOrder, draggedIndex, targetIndex);
-    setOrder(swapped);
-    setDraggedItem(null);
-
-  };
-
-  const handleDragOver = (e) => e.preventDefault();
+  const [windowSize, setWindowSize] = useState({ width: 0, height: 0 });
 
   useEffect(() => {
-    if (!solved && arraysEqual(order, correctOrder)) {
-      setSolved(true);
-      setTimeout(()=>{
-        setShowPuzzle(false)
-        setFilpCard(true)
-      },2000)
-      setTimeout(()=>{
-        setFilpCard(false)
-        setShowCongrats(true)
-      },8000)
+    const handleResize = () =>
+      setWindowSize({ width: window.innerWidth, height: window.innerHeight });
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  const imagesData = [
+    {
+      src: `/game/puzzle/${projectId}/part1.png`,
+      seq: 1,
+      width: 548,
+      height: 662,
+    },
+    {
+      src: `/game/puzzle/${projectId}/part2.png`,
+      seq: 2,
+      width: 662,
+      height: 662,
+    },
+    {
+      src: `/game/puzzle/${projectId}/part3.png`,
+      seq: 3,
+      width: 548,
+      height: 548,
+    },
+    {
+      src: `/game/puzzle/${projectId}/part4.png`,
+      seq: 4,
+      width: 662,
+      height: 548,
+    },
+  ];
+
+  const virtualWidth = 1210;
+  const virtualHeight = 1210;
+  const overlap = 76.5;
+
+  const parts = [
+    {
+      seq: 1,
+      x: 0,
+      y: 0,
+      w: 548 + overlap,
+      h: 662 + overlap,
+      imgWidth: 548,
+      imgHeight: 662,
+    },
+    {
+      seq: 2,
+      x: 548 - overlap,
+      y: 0,
+      w: 662 + overlap,
+      h: 662 + overlap,
+      imgWidth: 662,
+      imgHeight: 662,
+    },
+    {
+      seq: 3,
+      x: 0,
+      y: 662 - overlap,
+      w: 548 + overlap,
+      h: 548 + overlap,
+      imgWidth: 548,
+      imgHeight: 548,
+    },
+    {
+      seq: 4,
+      x: 548 - overlap,
+      y: 662 - overlap,
+      w: 662 + overlap,
+      h: 548 + overlap,
+      imgWidth: 662,
+      imgHeight: 548,
+    },
+  ];
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!mounted) return;
+
+    const handleResize = () => {
+      const canvas = canvasRef.current;
+      const container = containerRef.current;
+      if (!canvas || !container) return; // safety check
+
+      const maxWidth = window.innerWidth - 40;
+      const maxHeight = window.innerHeight - 250;
+
+      const scaleX = maxWidth / virtualWidth;
+      const scaleY = maxHeight / virtualHeight;
+      const newScale = Math.min(scaleX, scaleY, 1);
+
+      setScale(newScale);
+
+      const displayWidth = virtualWidth * newScale;
+      const displayHeight = virtualHeight * newScale;
+
+      canvas.style.width = `${displayWidth}px`;
+      canvas.style.height = `${displayHeight}px`;
+
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = virtualWidth * dpr;
+      canvas.height = virtualHeight * dpr;
+
+      const ctx = canvas.getContext("2d");
+      ctx.scale(dpr, dpr);
+    };
+
+    if (canvasRef.current && containerRef.current) {
+      handleResize();
     }
-  }, [order, solved]);
+
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, [mounted, virtualWidth, virtualHeight]);
+
+  useEffect(() => {
+    if (!mounted) return;
+
+    const loadImages = async () => {
+      const imgs = await Promise.all(
+        imagesData.map(
+          (img) =>
+            new Promise((resolve) => {
+              const image = new Image();
+              image.crossOrigin = "anonymous";
+              image.onload = () => resolve(image);
+              image.onerror = (err) => {
+                console.error(`Failed to load image: ${img.src}`, err);
+                resolve(null);
+              };
+              image.src = img.src;
+            }),
+        ),
+      );
+      setLoadedImages(imgs.filter(Boolean));
+    };
+
+    loadImages();
+  }, [mounted]);
+
+  useEffect(() => {
+    if (loadedImages.length === 0) return;
+
+    const shuffledIndexes = [0, 1, 2, 3].sort(() => Math.random() - 0.5);
+    const pos = shuffledIndexes.map((imgIndex) => {
+      const imgData = imagesData[imgIndex];
+      const x = Math.random() * (virtualWidth - imgData.width - overlap);
+      const y = Math.random() * (virtualHeight - imgData.height - overlap);
+      return { imgIndex, x, y, locked: false };
+    });
+    setPositions(pos);
+
+    setComplete(false);
+  }, [loadedImages]);
+
+  useEffect(() => {
+    if (
+      !canvasRef.current ||
+      positions.length === 0 ||
+      loadedImages.length === 0
+    )
+      return;
+
+    const ctx = canvasRef.current.getContext("2d");
+    ctx.clearRect(0, 0, virtualWidth, virtualHeight);
+
+    ctx.fillStyle = "#ffffffff";
+    ctx.fillRect(0, 0, virtualWidth, virtualHeight);
+
+    if (!complete) {
+      ctx.strokeStyle = "rgba(63, 63, 63, 0.2)";
+      ctx.lineWidth = 2;
+      ctx.setLineDash([10, 5]);
+      ctx.beginPath();
+      ctx.moveTo(548, 0);
+      ctx.lineTo(548, virtualHeight);
+      ctx.moveTo(0, 662);
+      ctx.lineTo(virtualWidth, 662);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+
+    positions.forEach(({ imgIndex, x, y, locked }) => {
+      const img = loadedImages[imgIndex];
+      if (!img) return;
+
+      const imgData = imagesData[imgIndex];
+      const drawWidth = imgData.width + overlap;
+      const drawHeight = imgData.height + overlap;
+
+      ctx.drawImage(img, x, y, drawWidth, drawHeight);
+
+      if (!locked) {
+        ctx.fillStyle = "rgba(29, 29, 29, 0.85)";
+        ctx.fillRect(x + 8, y + 8, 40, 40);
+        ctx.fillStyle = "#ffffff";
+        ctx.font = "bold 26px Arial";
+        ctx.fillText(imagesData[imgIndex].seq, x + 20, y + 38);
+      } else {
+        ctx.fillStyle = "rgba(0, 255, 0, 0.15)";
+        ctx.fillRect(x, y, 45, 45);
+        ctx.fillStyle = "#00cc00";
+        ctx.font = "bold 24px Arial";
+        ctx.fillText("✓", x + 14, y + 32);
+      }
+    });
+  }, [positions, loadedImages, complete, scale]);
+
+  const shufflePositions = () => {
+    setPositions((pos) =>
+      pos.map((p) => {
+        if (p.locked) return p;
+        const imgData = imagesData[p.imgIndex];
+        return {
+          ...p,
+          x: Math.random() * (virtualWidth - imgData.width - overlap),
+          y: Math.random() * (virtualHeight - imgData.height - overlap),
+        };
+      }),
+    );
+    setComplete(false);
+  };
+
+  useEffect(() => {
+    if (positions.length === 0) return;
+    const allLocked = positions.every((p) => p.locked);
+    if (allLocked) {
+      setTimeout(() => {
+        setIsFlipping(true);
+        setTimeout(() => {
+          setComplete(true);
+          setTimeout(() => {
+            setShowCongrats(true);
+          }, 5000);
+        }, 5000); 
+      }, 2000);
+    }
+  }, [positions]);
+
+  const getCanvasCoords = (e) => {
+    const rect = canvasRef.current.getBoundingClientRect();
+    const x = ((e.clientX || e.touches?.[0]?.clientX) - rect.left) / scale;
+    const y = ((e.clientY || e.touches?.[0]?.clientY) - rect.top) / scale;
+    return { x, y };
+  };
+
+  const handleStart = (e) => {
+    e.preventDefault();
+    if (complete || isFlipping) return;
+
+    const { x: mouseX, y: mouseY } = getCanvasCoords(e);
+
+    for (let i = positions.length - 1; i >= 0; i--) {
+      const p = positions[i];
+      if (p.locked) continue;
+
+      const imgData = imagesData[p.imgIndex];
+      const drawWidth = imgData.width + overlap;
+      const drawHeight = imgData.height + overlap;
+
+      if (
+        mouseX >= p.x &&
+        mouseX <= p.x + drawWidth &&
+        mouseY >= p.y &&
+        mouseY <= p.y + drawHeight
+      ) {
+        setPositions((prev) => {
+          const newPos = [...prev];
+          const [item] = newPos.splice(i, 1);
+          newPos.push(item);
+          return newPos;
+        });
+
+        setDragging({
+          index: positions.length - 1,
+          offsetX: mouseX - p.x,
+          offsetY: mouseY - p.y,
+        });
+        break;
+      }
+    }
+  };
+
+  const handleMove = (e) => {
+    e.preventDefault();
+    if (!dragging) return;
+
+    const { x: mouseX, y: mouseY } = getCanvasCoords(e);
+
+    setPositions((prev) =>
+      prev.map((p, idx) => {
+        if (idx !== dragging.index) return p;
+
+        const imgData = imagesData[p.imgIndex];
+        let newX = mouseX - dragging.offsetX;
+        let newY = mouseY - dragging.offsetY;
+
+        newX = Math.max(-overlap, Math.min(newX, virtualWidth - imgData.width));
+        newY = Math.max(
+          -overlap,
+          Math.min(newY, virtualHeight - imgData.height),
+        );
+
+        return { ...p, x: newX, y: newY };
+      }),
+    );
+  };
+
+  const handleEnd = (e) => {
+    e.preventDefault();
+    if (!dragging) return;
+
+    setPositions((prev) =>
+      prev.map((p, idx) => {
+        if (idx !== dragging.index) return p;
+
+        const imgData = imagesData[p.imgIndex];
+        const centerX = p.x + (imgData.width + overlap) / 2;
+        const centerY = p.y + (imgData.height + overlap) / 2;
+
+        const part = parts.find(
+          (part) =>
+            imagesData[p.imgIndex].seq === part.seq &&
+            centerX >= part.x &&
+            centerX < part.x + part.w &&
+            centerY >= part.y &&
+            centerY < part.y + part.h,
+        );
+
+        if (part) {
+          return { ...p, x: part.x, y: part.y, locked: true };
+        }
+
+        return p;
+      }),
+    );
+
+    setDragging(null);
+  };
+
+  const tagline = `/game/puzzle/${projectId}/tagline.webp`;
+  const logo = `/game/puzzle/${projectId}/logo.webp`;
+
+  const cardTexts = {
+    xzpg9o2d: {
+      congratsText: "Congratulations",
+      goBackText: "Go Back",
+      message: "All-round protection. Proven relief. One trusted choice.",
+      packshot: `/game/puzzle/${projectId}/packet.webp`,
+    },
+  };
+
+  if (!mounted) return null;
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-white p-6">
+    <div
+      style={{
+        textAlign: "center",
+        padding: "20px",
+        minHeight: "100vh",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+    >
+      <img src={tagline} className="w-60 mx-auto mb-4" />
       
-      {
-        (showPuzzle && !filpCard && !showCongrats) && (
-          <div>
-            <h1 className="text-2xl text-center font-bold mb-4 text-[#f39500]">🧩 Drag & Drop Puzzle</h1>
-            <div className="grid grid-cols-2  bg-[#00acdf] p-2 rounded-xl shadow-md">
-              {order.map((item, gridIndex) => (
-                <div
-                  key={item}
-                  draggable
-                  onDragStart={() => handleDragStart(item)}
-                  onDrop={() => handleDrop(item)}
-                  onDragOver={handleDragOver}
-                  className="relative w-40 h-40  overflow-hidden cursor-move hover:scale-105 transition-transform duration-200"
-                >
-              
-                  <span className="absoluten hidden left-1 top-1 z-10 bg-white/80 text-xs px-1 rounded">
-                    G:{gridIndex} I:{item}
-                  </span>
-
-                  <Image
-                    src={images[item]}
-                    alt={`Part ${item + 1}`}
-                    width={160}
-                    height={160}
-                    className="object-cover w-full h-full"
-                  />
-                </div>
-              ))}
+      {/* Card flip container */}
+      <div 
+        ref={containerRef}
+        className="relative"
+        style={{
+          perspective: "1000px",
+          width: `${virtualWidth * scale}px`,
+          height: `${virtualHeight * scale}px`,
+        }}
+      >
+        <div 
+          className={`relative w-full h-full transition-all duration-2000 ${
+            isFlipping ? "rotate-y-180" : ""
+          }`}
+          style={{
+            transformStyle: "preserve-3d",
+            transform: isFlipping ? "rotateY(180deg)" : "rotateY(0deg)",
+            transition: "transform 2s",
+          }}
+        >
+          {/* Front side - Puzzle */}
+          <div 
+            className="absolute w-full h-full backface-hidden"
+            style={{
+              backfaceVisibility: "hidden",
+            }}
+          >
+            <canvas
+              ref={canvasRef}
+              style={{
+                border: "3px solid #333",
+                cursor: dragging ? "grabbing" : "grab",
+                display: "block",
+                backgroundColor: "#0e0e0eff",
+                maxWidth: "100%",
+                height: "auto",
+              }}
+              onMouseDown={handleStart}
+              onMouseMove={handleMove}
+              onMouseUp={handleEnd}
+              onMouseLeave={handleEnd}
+              onTouchStart={handleStart}
+              onTouchMove={handleMove}
+              onTouchEnd={handleEnd}
+            />
+          </div>
+          
+          {/* Back side - Complete content */}
+          <div 
+            className="absolute w-full h-full backface-hidden rotate-y-180 flex items-center justify-center"
+            style={{
+              backfaceVisibility: "hidden",
+              transform: "rotateY(180deg)",
+              backgroundColor: "#58237b",
+              borderRadius: "12px",
+              boxShadow: "0 10px 30px rgba(0,0,0,0.2)",
+              padding: "24px",
+            }}
+          >
+            <div className="flex flex-col items-center justify-center">
+              <h1 className="text-[#f39500] text-3xl text-center mb-5 font-bold">
+                {cardTexts[projectId]?.message}
+              </h1>
+              <img
+                src={cardTexts[projectId]?.packshot}
+                alt="Prize Card"
+                className="max-w-full max-h-[60vh]"
+              />
             </div>
           </div>
-        )
-      }
-      {filpCard && !showPuzzle && !showCongrats && (
-        <div className="bg-[#58237b] rounded-xl shadow-2xl p-4 transform transition-all duration-1000 animate-flip">
-          <img
-            src="/game/scratch-card/scratch-card-zambia/packet.webp"
-            alt="Prize Card"
-            className="rounded-lg border-4 border-[#f39500]"
-          />
         </div>
-      )}
-      {
-        (showCongrats && !showPuzzle && !filpCard) && (
-          <div className="absolute px-4 inset-0 flex items-center justify-center z-50 bg-black/60">
+      </div>
+      
+      <img src={logo} className="w-60 mx-auto mt-4" />
+     
+      {showCongrats && (
+        <div className="absolute px-4 inset-0 flex items-center justify-center z-50 bg-black/60">
           <div className="bg-white p-8 rounded-2xl shadow-2xl text-center max-w-lg animate-fadeIn">
             <h2 className="text-3xl font-bold text-[#58247b] mb-4">
-              🎉 Congratulations
+              🎉 {cardTexts[projectId]?.congratsText}
             </h2>
             <div>
               <button
                 className="w-fit px-3 py-2 font-bold mx-auto text-white bg-[#00acdf] text-lg border rounded-lg cursor-pointer"
-                onClick={router.push('homepage')}
+                onClick={() => router.push("homepage")}
               >
-                Go Back
+                {cardTexts[projectId]?.goBackText}
               </button>
             </div>
           </div>
         </div>
-        )
-      }
-      { 
-        (showCongrats && !showPuzzle && !filpCard) && (
-          <div className="fixed inset-0 z-[9999] pointer-events-none">
-            <Confetti
-              width="100%"
-              height="100%"
-              recycle={false}
-              numberOfPieces={200}
-              gravity={0.3}
-            />
-          </div>
-        )
-      }
+      )}
 
-       <style jsx global>{`
-        @keyframes bounce-in {
-          0% {
-            transform: scale(0.5);
-            opacity: 0;
-          }
-          60% {
-            transform: scale(1.1);
-          }
-          100% {
-            transform: scale(1);
-            opacity: 1;
-          }
-        }
-        @keyframes flip {
-          0% {
-            transform: rotateY(0deg);
-          }
-          100% {
-            transform: rotateY(360deg);
-          }
-        }
-        .animate-bounce-in {
-          animation: bounce-in 0.8s ease-out forwards;
-        }
-        .animate-flip {
-          animation: flip 1.5s ease-in-out;
-        }
-      `}</style>
+      {showCongrats && (
+        <div className="fixed inset-0 z-[9999] pointer-events-none">
+          <Confetti
+            width={windowSize.width}
+            height={windowSize.height}
+            recycle={false}
+            numberOfPieces={300}
+            gravity={0.3}
+          />
+        </div>
+      )}
     </div>
   );
-}
+};
+
+export default Puzzle;

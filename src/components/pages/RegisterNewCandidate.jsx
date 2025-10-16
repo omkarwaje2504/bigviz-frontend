@@ -218,7 +218,7 @@ export default function RegisterNewCandidate({ projectData, projectId, ui }) {
               }
               router.push("game");
             }
-          } else if (projectData?.product_type === "RxPad") {
+          } else if (projectData?.product_type === "RxPad" || projectData?.config?.doctor?.data_collection === true ) {
             localStorage.removeItem("isEdit");
             localStorage.removeItem("doctorHash");
             router.push("homepage");

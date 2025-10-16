@@ -36,8 +36,8 @@ type InputFieldProps = {
     | "tel"
     | "dropdown"
     | "date"
-    | "time"  // Added time type
-    | "file";
+    | "file"
+    | "time";
   value: string;
   countryCode?: string;
   onChange: (
@@ -57,16 +57,16 @@ type InputFieldProps = {
   onValidationChange?: (isValid: boolean) => void;
   prefix?: string;
   prefixOptions?: string[];
-  onBlur?: (e: React.FocusEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => void;
+  onBlur?: (
+    e: React.FocusEvent<
+      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+    >,
+  ) => void;
   onPrefixChange?: (
     e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>,
   ) => void;
   projectData?: any;
   doctorHash: string | null;
-  // New props for time input
-  step?: number;  // For time input step (in seconds, e.g., 60 for minute intervals)
-  min?: string;   // Minimum time (HH:mm format)
-  max?: string;   // Maximum time (HH:mm format)
 };
 
 const parseDateString = (dateStr: string): DateValue => {
@@ -88,29 +88,6 @@ function getFileNameFromUrl(url: string): string | null {
     return null;
   }
 }
-
-const isValidTimeFormat = (timeStr: string): boolean => {
-  const timeRegex = /^([01]?[0-9]|2[0-3]):[0-5][0-9]$/;
-  return timeRegex.test(timeStr);
-};
-
-const formatTimeValue = (timeStr: string): string => {
-  if (!timeStr) return "";
-  
-  if (isValidTimeFormat(timeStr)) return timeStr;
-
-  const timeParts = timeStr.split(":");
-  if (timeParts.length >= 2) {
-    const hours = parseInt(timeParts[0], 10);
-    const minutes = parseInt(timeParts[1], 10);
-    
-    if (!isNaN(hours) && !isNaN(minutes) && hours >= 0 && hours <= 23 && minutes >= 0 && minutes <= 59) {
-      return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
-    }
-  }
-  
-  return timeStr; 
-};
 
 const InputField: React.FC<InputFieldProps> = ({
   ui,
@@ -138,9 +115,6 @@ const InputField: React.FC<InputFieldProps> = ({
   onValidationChange,
   projectData,
   doctorHash,
-  step,
-  min,
-  max,
 }) => {
   const [error, setError] = useState<string>("");
   const [isOpen, setIsOpen] = useState(false);
@@ -150,7 +124,7 @@ const InputField: React.FC<InputFieldProps> = ({
   const [uploading, setUploading] = useState(false);
   const [uploadedUrl, setUploadedUrl] = useState<string | null>(null);
   const [uploadError, setUploadError] = useState<string>("");
-  const [fileName, setFileName] = useState<string | null>(null);
+  const [fileName, setFileName] = useState<string | null>(null); // 👈 new state
 
   useEffect(() => {
     if (
@@ -159,6 +133,7 @@ const InputField: React.FC<InputFieldProps> = ({
         formData?.photo?.croppedImage !== null)
     ) {
       setUploadedUrl(formData?.photo?.croppedImage);
+
       setFileName(getFileNameFromUrl(formData?.photo?.croppedImage));
     }
   }, []);
@@ -183,22 +158,6 @@ const InputField: React.FC<InputFieldProps> = ({
         errorMessage = "This field is required";
         isValid = false;
       }
-    } else if (type === "time") {
-      // Time validation
-      safeValue = typeof value === "string" ? value : String(value ?? "");
-      if (required && !safeValue.trim()) {
-        errorMessage = "This field is required";
-        isValid = false;
-      } else if (safeValue && !isValidTimeFormat(safeValue)) {
-        errorMessage = "Please enter a valid time (HH:mm format)";
-        isValid = false;
-      } else if (min && safeValue && safeValue < min) {
-        errorMessage = `Time must be ${min} or later`;
-        isValid = false;
-      } else if (max && safeValue && safeValue > max) {
-        errorMessage = `Time must be ${max} or earlier`;
-        isValid = false;
-      }
     } else {
       safeValue = typeof value === "string" ? value : String(value ?? "");
       if (required && !safeValue.trim()) {
@@ -218,39 +177,19 @@ const InputField: React.FC<InputFieldProps> = ({
     if (onValidationChangeRef.current) {
       onValidationChangeRef.current(isValid);
     }
-  }, [value, detectChange, required, min, max, type, validation]);
+  }, [value, detectChange]);
 
   const handleChange = (
     e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>,
   ) => {
     let val = e.target.value;
     setDetectChange(1);
-    
     if (validation.trim && type !== "radio") {
       val = val.trimStart();
     }
     if (validation.maxLength && val.length > validation.maxLength) {
       return;
     }
-    
-    const syntheticEvent = {
-      ...e,
-      target: { ...e.target, name: e.target.name, value: val },
-    };
-    onChange(syntheticEvent);
-  };
-
-  const handleTimeChange = (
-    e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>,
-  ) => {
-    let val = e.target.value;
-    setDetectChange(1);
-    
-    // Format time value if needed
-    if (val) {
-      val = formatTimeValue(val);
-    }
-    
     const syntheticEvent = {
       ...e,
       target: { ...e.target, name: e.target.name, value: val },
@@ -265,7 +204,7 @@ const InputField: React.FC<InputFieldProps> = ({
     if (!target.files?.length) return;
 
     const file = target.files[0];
-    setFileName(file.name);
+    setFileName(file.name); // 👈 store selected file name
     setUploadError("");
     setUploading(true);
     setUploadedUrl(null);
@@ -278,7 +217,13 @@ const InputField: React.FC<InputFieldProps> = ({
       else if (mimeType.startsWith("audio/")) type = "audio";
       else if (mimeType === "application/pdf") type = "pdf";
 
-      const uploadedUrl = await UploadFile(doctorHash, projectData, file, file.name, type);
+      const uploadedUrl = await UploadFile(
+        doctorHash,
+        projectData,
+        file,
+        file.name,
+        type,
+      );
 
       setUploadedUrl(uploadedUrl);
 
@@ -290,7 +235,7 @@ const InputField: React.FC<InputFieldProps> = ({
       onChange(synthetic);
     } catch (err: any) {
       setUploadError(err.message || "Upload failed");
-      setFileName(null);
+      setFileName(null); // reset file name on failure
     } finally {
       setUploading(false);
     }
@@ -362,34 +307,6 @@ const InputField: React.FC<InputFieldProps> = ({
             </option>
           ))}
         </select>
-      ) : // TIME INPUT
-      type === "time" ? (
-        <div className="relative">
-          {icon && (
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              {icon}
-            </div>
-          )}
-          <input
-            id={id}
-            name={name || id}
-            type="time"
-            value={value || ""}
-            onChange={handleTimeChange}
-            onBlur={onBlur}
-            placeholder={placeholder}
-            disabled={disabled}
-            autoFocus={autoFocus}
-            required={required}
-            min={min}
-            max={max}
-            step={step}
-            aria-invalid={!!errorMessage}
-            className={`${inputStyles.baseInput} ${
-              icon ? inputStyles.inputWithIcon : inputStyles.inputNoIcon
-            } ${errorMessage ? inputStyles.ringError : inputStyles.ringDefault}`}
-          />
-        </div>
       ) : // DATE
       type === "date" ? (
         <div className="grid grid-cols-3 gap-2">
@@ -712,6 +629,25 @@ const InputField: React.FC<InputFieldProps> = ({
           {uploadError && (
             <p className="text-red-600 text-sm mt-3">{uploadError}</p>
           )}
+        </div>
+      ) : // TIME
+      type === "time" ? (
+        <div className="relative">
+          <input
+            id={id}
+            name={name || id}
+            type="time"
+            value={value || ""}
+            onChange={handleChange}
+            placeholder={placeholder}
+            disabled={disabled}
+            autoFocus={autoFocus}
+            required={required}
+            aria-invalid={!!errorMessage}
+            className={`${inputStyles.baseInput} ${
+              errorMessage ? inputStyles.ringError : inputStyles.ringDefault
+            }`}
+          />
         </div>
       ) : (
         <div className="relative flex gap-0.5">
