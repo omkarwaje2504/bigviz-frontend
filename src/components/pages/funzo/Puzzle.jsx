@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import Confetti from "react-confetti";
+import { useRouter } from "next/navigation";
 
 const images = [
   "/puzzle/part1.jpg",
@@ -29,6 +30,7 @@ export default function Puzzle() {
   const [filpCard,setFilpCard] = useState(false)
   const [showCongrats,setShowCongrats] = useState(false)
   const [showConfetti, setShowConfetti] = useState(false);
+  const router = useRouter()
 
   const swapItems = (arr, aIndex, bIndex) => {
     const copy = [...arr];
@@ -125,13 +127,10 @@ export default function Puzzle() {
             <h2 className="text-3xl font-bold text-[#58247b] mb-4">
               🎉 Congratulations
             </h2>
-            <p className="text-gray-700 text-lg md:text-xl mb-6">
-              {/* {congratsConfig?.[projectId]?.message} */}
-            </p>
             <div>
               <button
                 className="w-fit px-3 py-2 font-bold mx-auto text-white bg-[#00acdf] text-lg border rounded-lg cursor-pointer"
-                onClick={()=>{setShowPuzzle(true)}}
+                onClick={router.push('homepage')}
               >
                 Go Back
               </button>
