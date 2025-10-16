@@ -13,8 +13,8 @@ import { BsFillPersonLinesFill } from "react-icons/bs";
 
 const validations = {
   code: {
-    regex: /^[A-Za-z0-9]{4,10}$/,
-    message: "Enter a valid access code (4–10 uppercase letters/numbers).",
+    regex: /^[A-Za-z0-9-]{4,10}$/,
+    message: "Enter a valid access code (4–10 uppercase letters, numbers, or hyphens).",
   },
   password: {
     regex: /^.{6,}$/,
