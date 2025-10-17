@@ -371,6 +371,7 @@ const Puzzle = ({ projectData, projectId, ui }) => {
   const cardTexts = {
     "puzzle-nigeria": {
       congratsText: "Congratulations",
+      congratsSentence:"We are honoring your role in safeguarding patients from GERD",
       goBackText: "Go Back",
       message: "All-round protection. Proven relief. One trusted choice.",
       packshot: `/game/puzzle/${projectId}/packet.webp`,
@@ -473,6 +474,9 @@ const Puzzle = ({ projectData, projectId, ui }) => {
           <div className="bg-white p-8 rounded-2xl shadow-2xl text-center max-w-lg animate-fadeIn">
             <h2 className="text-3xl font-bold text-[#58247b] mb-4">
               🎉 {cardTexts[projectId]?.congratsText}
+            </h2>
+            <h2 className="text-2xl font-bold text-[#58247b] mb-4">
+              {cardTexts[projectId]?.congratsSentence}
             </h2>
             <div>
               <button
