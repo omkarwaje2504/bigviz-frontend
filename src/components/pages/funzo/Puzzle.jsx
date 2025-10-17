@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import React, { useEffect, useRef, useState } from "react";
 import Confetti from "react-confetti";
+import { motion } from "framer-motion"; 
 
 const Puzzle = ({ projectData, projectId, ui }) => {
   const canvasRef = useRef(null);
@@ -394,7 +395,6 @@ const Puzzle = ({ projectData, projectId, ui }) => {
     >
       <img src={tagline} className="w-60 mx-auto mb-1" />
       
-      {/* Card flip container */}
       <div 
         ref={containerRef}
         className="relative"
@@ -441,7 +441,6 @@ const Puzzle = ({ projectData, projectId, ui }) => {
             />
           </div>
           
-          {/* Back side - Complete content */}
           <div 
             className="absolute w-full h-full backface-hidden rotate-y-180 flex items-center justify-center"
             style={{
@@ -470,23 +469,54 @@ const Puzzle = ({ projectData, projectId, ui }) => {
       <img src={logo} className="w-60 mx-auto mt-1" />
      
       {showCongrats && (
-        <div className="absolute px-4 inset-0 flex items-center justify-center z-50 bg-black/60">
-          <div className="bg-white p-8 rounded-2xl shadow-2xl text-center max-w-lg animate-fadeIn">
-            <h2 className="text-3xl font-bold text-[#58247b] mb-4">
-              🎉 {cardTexts[projectId]?.congratsText}
-            </h2>
-            <h2 className="text-2xl font-bold text-[#58247b] mb-4">
+        <div className="fixed inset-0 flex items-center justify-center z-50 bg-black/80 bg-opacity-60 backdrop-blur-sm">
+          <motion.div 
+            className="bg-white p-8 rounded-2xl shadow-2xl text-center max-w-lg"
+            initial={{ opacity: 0, scale: 0.7 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ type: "spring", damping: 12 }}
+          >
+            <motion.div
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: [0.8, 1.2, 1], opacity: 1 }}
+              transition={{ duration: 0.6, times: [0, 0.7, 1] }}
+            >
+              <div className="w-20 h-20 mx-auto mb-4 rounded-full flex items-center justify-center bg-gradient-to-r from-[#58247b] to-[#46166a]">
+                <span className="text-4xl">🎉</span>
+              </div>
+            </motion.div>
+            
+            <motion.h2 
+              className="text-3xl font-bold bg-gradient-to-r from-[#58247b] to-[#f39500] text-transparent bg-clip-text mb-4"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+            >
+              {cardTexts[projectId]?.congratsText}
+            </motion.h2>
+            
+            <motion.p 
+              className="text-xl font-medium text-[#58247b] mb-6"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5 }}
+            >
               {cardTexts[projectId]?.congratsSentence}
-            </h2>
-            <div>
+            </motion.p>
+           
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.9 }}
+            >
               <button
-                className="w-fit px-3 py-2 font-bold mx-auto text-white bg-[#00acdf] text-lg border rounded-lg cursor-pointer"
+                className="px-6 py-3 font-bold text-white bg-gradient-to-r from-[#00acdf] to-[#0096c2] text-lg rounded-lg cursor-pointer shadow-md hover:shadow-lg transform transition-transform hover:scale-105"
                 onClick={() => router.push("homepage")}
               >
                 {cardTexts[projectId]?.goBackText}
               </button>
-            </div>
-          </div>
+            </motion.div>
+          </motion.div>
         </div>
       )}
 
