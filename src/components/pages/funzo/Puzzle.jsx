@@ -371,10 +371,24 @@ const Puzzle = ({ projectData, projectId, ui }) => {
 
   const cardTexts = {
     "puzzle-nigeria": {
-      congratsText: "Congratulations",
+      congratsText: "Congratulations!!",
       congratsSentence:"We are honoring your role in safeguarding patients from GERD",
       goBackText: "Go Back",
       message: "All-round protection. Proven relief. One trusted choice.",
+      packshot: `/game/puzzle/${projectId}/packet.webp`,
+    },
+    "puzzle-french": {
+      congratsText: "Félicitations!!",
+      congratsSentence:"Honorer votre rôle dans la protection des patients contre le RGO",
+      goBackText: "Retour",
+      message: "Protection complète. Soulagement prouvé. Un choix de confiance.",
+      packshot: `/game/puzzle/${projectId}/packet.webp`,
+    },
+    "puzzle-portuguese": {
+      congratsText: "Parabéns!!",
+      congratsSentence:"Estamos honrando seu papel na proteção de pacientes contra DRGE",
+      goBackText: "Voltar",
+      message: "Proteção completa. Alívio comprovado. Uma escolha de confiança.",
       packshot: `/game/puzzle/${projectId}/packet.webp`,
     },
   };
@@ -383,6 +397,7 @@ const Puzzle = ({ projectData, projectId, ui }) => {
 
   return (
     <div
+    className="bg-[#b8a5c5]"
       style={{
         textAlign: "center",
         padding: "0px",
@@ -424,13 +439,15 @@ const Puzzle = ({ projectData, projectId, ui }) => {
             <canvas
               ref={canvasRef}
               style={{
-                border: "3px solid #333",
+                border: "5px solid",
+                borderImage: "linear-gradient(90deg, #58247b, #f39500) 1",
                 cursor: dragging ? "grabbing" : "grab",
                 display: "block",
                 backgroundColor: "#0e0e0eff",
                 maxWidth: "100%",
                 height: "auto",
               }}
+
               onMouseDown={handleStart}
               onMouseMove={handleMove}
               onMouseUp={handleEnd}
