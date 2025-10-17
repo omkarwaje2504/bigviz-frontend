@@ -62,12 +62,10 @@ export default async function Home({ params }) {
         />
       );
     } else if (projectInfo?.config?.game?.scratch_card) {
-      console.log("done")
       return (
         <ScratchCard projectData={projectInfo} projectId={pathname} ui={ui} />
       );
-    } else if(pathname==="xzpg9o2d"){
-       console.log("done")
+    } else if(pathname==="puzzle-nigeria"){
       return <Puzzle projectData={projectInfo} projectId={pathname} ui={ui}/>
     } else return <VideoArtworkFlow projectData={projectInfo} projectId={pathname} ui={ui} />;
   } else {

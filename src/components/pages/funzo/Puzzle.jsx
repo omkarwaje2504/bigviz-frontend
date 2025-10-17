@@ -369,7 +369,7 @@ const Puzzle = ({ projectData, projectId, ui }) => {
   const logo = `/game/puzzle/${projectId}/logo.webp`;
 
   const cardTexts = {
-    xzpg9o2d: {
+    "puzzle-nigeria": {
       congratsText: "Congratulations",
       goBackText: "Go Back",
       message: "All-round protection. Proven relief. One trusted choice.",
@@ -383,7 +383,7 @@ const Puzzle = ({ projectData, projectId, ui }) => {
     <div
       style={{
         textAlign: "center",
-        padding: "20px",
+        padding: "0px",
         minHeight: "100vh",
         display: "flex",
         flexDirection: "column",
@@ -391,7 +391,7 @@ const Puzzle = ({ projectData, projectId, ui }) => {
         justifyContent: "center",
       }}
     >
-      <img src={tagline} className="w-60 mx-auto mb-4" />
+      <img src={tagline} className="w-60 mx-auto mb-1" />
       
       {/* Card flip container */}
       <div 
@@ -466,7 +466,7 @@ const Puzzle = ({ projectData, projectId, ui }) => {
         </div>
       </div>
       
-      <img src={logo} className="w-60 mx-auto mt-4" />
+      <img src={logo} className="w-60 mx-auto mt-1" />
      
       {showCongrats && (
         <div className="absolute px-4 inset-0 flex items-center justify-center z-50 bg-black/60">
