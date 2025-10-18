@@ -36,18 +36,18 @@ const Puzzle = ({ projectData, projectId, ui }) => {
 
   // Updated for 6 pieces (3x2 grid) - all pieces same size
   const imagesData = [
-    { src: `/e-1.png`, seq: 1, width: pieceWidth + 113, height: pieceHeight },
-    { src: `/e-2.png`, seq: 2, width: pieceWidth + 115, height: pieceHeight },
-    { src: `/e-3.png`, seq: 3, width: pieceWidth, height: pieceHeight + 125 },
-    { src: `/e-4.png`, seq: 4, width: pieceWidth, height: pieceHeight + 127 },
+    { src: `/game/puzzle/${projectId}/part1.png`, seq: 1, width: pieceWidth + 113, height: pieceHeight },
+    { src: `/game/puzzle/${projectId}/part2.png`, seq: 2, width: pieceWidth + 115, height: pieceHeight },
+    { src: `/game/puzzle/${projectId}/part3.png`, seq: 3, width: pieceWidth, height: pieceHeight + 125 },
+    { src: `/game/puzzle/${projectId}/part4.png`, seq: 4, width: pieceWidth, height: pieceHeight + 127 },
     {
-      src: `/e-5.png`,
+      src: `/game/puzzle/${projectId}/part5.png`,
       seq: 5,
       width: pieceWidth + 115,
       height: pieceHeight + 127,
     },
     {
-      src: `/e-6.png`,
+      src: `/game/puzzle/${projectId}/part6.png`,
       seq: 6,
       width: pieceWidth + 115,
       height: pieceHeight + 2,
