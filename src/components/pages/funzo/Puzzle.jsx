@@ -3,7 +3,6 @@
 import { useRouter } from "next/navigation";
 import React, { useEffect, useRef, useState } from "react";
 import Confetti from "react-confetti";
-import { motion } from "framer-motion"; 
 
 const Puzzle = ({ projectData, projectId, ui }) => {
   const canvasRef = useRef(null);
@@ -28,73 +27,88 @@ const Puzzle = ({ projectData, projectId, ui }) => {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
+  // Canvas and piece dimensions based on the grid
+  const virtualWidth = 1107;
+  const virtualHeight = 820;
+  const pieceWidth = 369;
+  const pieceHeight = 410;
+  const overlap = 20; // No overlap for clean grid
+
+  // Updated for 6 pieces (3x2 grid) - all pieces same size
   const imagesData = [
+    { src: `/e-1.png`, seq: 1, width: pieceWidth + 113, height: pieceHeight },
+    { src: `/e-2.png`, seq: 2, width: pieceWidth + 115, height: pieceHeight },
+    { src: `/e-3.png`, seq: 3, width: pieceWidth, height: pieceHeight + 125 },
+    { src: `/e-4.png`, seq: 4, width: pieceWidth, height: pieceHeight + 127 },
     {
-      src: `/game/puzzle/${projectId}/part1.png`,
-      seq: 1,
-      width: 548,
-      height: 662,
+      src: `/e-5.png`,
+      seq: 5,
+      width: pieceWidth + 115,
+      height: pieceHeight + 127,
     },
     {
-      src: `/game/puzzle/${projectId}/part2.png`,
-      seq: 2,
-      width: 662,
-      height: 662,
-    },
-    {
-      src: `/game/puzzle/${projectId}/part3.png`,
-      seq: 3,
-      width: 548,
-      height: 548,
-    },
-    {
-      src: `/game/puzzle/${projectId}/part4.png`,
-      seq: 4,
-      width: 662,
-      height: 548,
+      src: `/e-6.png`,
+      seq: 6,
+      width: pieceWidth + 115,
+      height: pieceHeight + 2,
     },
   ];
 
-  const virtualWidth = 1210;
-  const virtualHeight = 1210;
-  const overlap = 76.5;
-
+  // Define grid positions for 3x2 layout (uniform grid)
   const parts = [
     {
       seq: 1,
       x: 0,
       y: 0,
-      w: 548 + overlap,
-      h: 662 + overlap,
-      imgWidth: 548,
-      imgHeight: 662,
+      w: pieceWidth,
+      h: pieceHeight,
+      imgWidth: pieceWidth,
+      imgHeight: pieceHeight,
     },
     {
       seq: 2,
-      x: 548 - overlap,
+      x: 369,
       y: 0,
-      w: 662 + overlap,
-      h: 662 + overlap,
-      imgWidth: 662,
-      imgHeight: 662,
+      w: pieceWidth,
+      h: pieceHeight,
+      imgWidth: pieceWidth,
+      imgHeight: pieceHeight,
     },
     {
       seq: 3,
-      x: 0,
-      y: 662 - overlap,
-      w: 548 + overlap,
-      h: 548 + overlap,
-      imgWidth: 548,
-      imgHeight: 548,
+      x: 738,
+      y: 0,
+      w: pieceWidth,
+      h: pieceHeight,
+      imgWidth: pieceWidth,
+      imgHeight: pieceHeight,
     },
     {
       seq: 4,
-      x: 548 - overlap,
-      y: 662 - overlap,
-      w: 662 + overlap,
-      h: 548 + overlap,
-      imgWidth: 662,
-      imgHeight: 548,
+      x: 0,
+      y: 410 - 127,
+      w: pieceWidth,
+      h: pieceHeight,
+      imgWidth: pieceWidth,
+      imgHeight: pieceHeight,
+    },
+    {
+      seq: 5,
+      x: 369 - 115,
+      y: 410 - 127,
+      w: pieceWidth,
+      h: pieceHeight,
+      imgWidth: pieceWidth,
+      imgHeight: pieceHeight,
+    },
+    {
+      seq: 6,
+      x: 738 - 115,
+      y: 410 - 3,
+      w: pieceWidth,
+      h: pieceHeight,
+      imgWidth: pieceWidth,
+      imgHeight: pieceHeight,
     },
   ];
 
@@ -108,7 +122,7 @@ const Puzzle = ({ projectData, projectId, ui }) => {
     const handleResize = () => {
       const canvas = canvasRef.current;
       const container = containerRef.current;
-      if (!canvas || !container) return; // safety check
+      if (!canvas || !container) return;
 
       const maxWidth = window.innerWidth - 40;
       const maxHeight = window.innerHeight - 250;
@@ -169,11 +183,12 @@ const Puzzle = ({ projectData, projectId, ui }) => {
   useEffect(() => {
     if (loadedImages.length === 0) return;
 
-    const shuffledIndexes = [0, 1, 2, 3].sort(() => Math.random() - 0.5);
+    // Shuffle all 6 pieces
+    const shuffledIndexes = [0, 1, 2, 3, 4, 5].sort(() => Math.random() - 0.5);
     const pos = shuffledIndexes.map((imgIndex) => {
       const imgData = imagesData[imgIndex];
-      const x = Math.random() * (virtualWidth - imgData.width - overlap);
-      const y = Math.random() * (virtualHeight - imgData.height - overlap);
+      const x = Math.random() * (virtualWidth - imgData.width);
+      const y = Math.random() * (virtualHeight - imgData.height);
       return { imgIndex, x, y, locked: false };
     });
     setPositions(pos);
@@ -192,18 +207,23 @@ const Puzzle = ({ projectData, projectId, ui }) => {
     const ctx = canvasRef.current.getContext("2d");
     ctx.clearRect(0, 0, virtualWidth, virtualHeight);
 
-    ctx.fillStyle = "#ffffffff";
+    ctx.fillStyle = "#7c5498";
     ctx.fillRect(0, 0, virtualWidth, virtualHeight);
 
+    // Draw grid lines for 3x2 layout
     if (!complete) {
       ctx.strokeStyle = "rgba(63, 63, 63, 0.2)";
       ctx.lineWidth = 2;
       ctx.setLineDash([10, 5]);
       ctx.beginPath();
-      ctx.moveTo(548, 0);
-      ctx.lineTo(548, virtualHeight);
-      ctx.moveTo(0, 662);
-      ctx.lineTo(virtualWidth, 662);
+      // Vertical lines (2 lines for 3 columns)
+      ctx.moveTo(369, 0);
+      ctx.lineTo(369, virtualHeight);
+      ctx.moveTo(738, 0);
+      ctx.lineTo(738, virtualHeight);
+      // Horizontal line (1 line for 2 rows)
+      ctx.moveTo(0, 410);
+      ctx.lineTo(virtualWidth, 410);
       ctx.stroke();
       ctx.setLineDash([]);
     }
@@ -213,10 +233,8 @@ const Puzzle = ({ projectData, projectId, ui }) => {
       if (!img) return;
 
       const imgData = imagesData[imgIndex];
-      const drawWidth = imgData.width + overlap;
-      const drawHeight = imgData.height + overlap;
 
-      ctx.drawImage(img, x, y, drawWidth, drawHeight);
+      ctx.drawImage(img, x, y, imgData.width, imgData.height);
 
       if (!locked) {
         ctx.fillStyle = "rgba(29, 29, 29, 0.85)";
@@ -241,8 +259,8 @@ const Puzzle = ({ projectData, projectId, ui }) => {
         const imgData = imagesData[p.imgIndex];
         return {
           ...p,
-          x: Math.random() * (virtualWidth - imgData.width - overlap),
-          y: Math.random() * (virtualHeight - imgData.height - overlap),
+          x: Math.random() * (virtualWidth - imgData.width),
+          y: Math.random() * (virtualHeight - imgData.height),
         };
       }),
     );
@@ -260,7 +278,7 @@ const Puzzle = ({ projectData, projectId, ui }) => {
           setTimeout(() => {
             setShowCongrats(true);
           }, 5000);
-        }, 5000); 
+        }, 5000);
       }, 2000);
     }
   }, [positions]);
@@ -283,14 +301,12 @@ const Puzzle = ({ projectData, projectId, ui }) => {
       if (p.locked) continue;
 
       const imgData = imagesData[p.imgIndex];
-      const drawWidth = imgData.width + overlap;
-      const drawHeight = imgData.height + overlap;
 
       if (
         mouseX >= p.x &&
-        mouseX <= p.x + drawWidth &&
+        mouseX <= p.x + imgData.width &&
         mouseY >= p.y &&
-        mouseY <= p.y + drawHeight
+        mouseY <= p.y + imgData.height
       ) {
         setPositions((prev) => {
           const newPos = [...prev];
@@ -323,11 +339,8 @@ const Puzzle = ({ projectData, projectId, ui }) => {
         let newX = mouseX - dragging.offsetX;
         let newY = mouseY - dragging.offsetY;
 
-        newX = Math.max(-overlap, Math.min(newX, virtualWidth - imgData.width));
-        newY = Math.max(
-          -overlap,
-          Math.min(newY, virtualHeight - imgData.height),
-        );
+        newX = Math.max(0, Math.min(newX, virtualWidth - imgData.width));
+        newY = Math.max(0, Math.min(newY, virtualHeight - imgData.height));
 
         return { ...p, x: newX, y: newY };
       }),
@@ -343,8 +356,8 @@ const Puzzle = ({ projectData, projectId, ui }) => {
         if (idx !== dragging.index) return p;
 
         const imgData = imagesData[p.imgIndex];
-        const centerX = p.x + (imgData.width + overlap) / 2;
-        const centerY = p.y + (imgData.height + overlap) / 2;
+        const centerX = p.x + imgData.width / 2;
+        const centerY = p.y + imgData.height / 2;
 
         const part = parts.find(
           (part) =>
@@ -371,24 +384,9 @@ const Puzzle = ({ projectData, projectId, ui }) => {
 
   const cardTexts = {
     "puzzle-nigeria": {
-      congratsText: "Congratulations!!",
-      congratsSentence:"We are honoring your role in safeguarding patients from GERD",
+      congratsText: "Congratulations",
       goBackText: "Go Back",
       message: "All-round protection. Proven relief. One trusted choice.",
-      packshot: `/game/puzzle/${projectId}/packet.webp`,
-    },
-    "puzzle-french": {
-      congratsText: "Félicitations!!",
-      congratsSentence:"Honorer votre rôle dans la protection des patients contre le RGO",
-      goBackText: "Retour",
-      message: "Protection complète. Soulagement prouvé. Un choix de confiance.",
-      packshot: `/game/puzzle/${projectId}/packet.webp`,
-    },
-    "puzzle-portuguese": {
-      congratsText: "Parabéns!!",
-      congratsSentence:"Estamos honrando seu papel na proteção de pacientes contra DRGE",
-      goBackText: "Voltar",
-      message: "Proteção completa. Alívio comprovado. Uma escolha de confiança.",
       packshot: `/game/puzzle/${projectId}/packet.webp`,
     },
   };
@@ -397,7 +395,6 @@ const Puzzle = ({ projectData, projectId, ui }) => {
 
   return (
     <div
-    className="bg-[#b8a5c5]"
       style={{
         textAlign: "center",
         padding: "0px",
@@ -408,9 +405,10 @@ const Puzzle = ({ projectData, projectId, ui }) => {
         justifyContent: "center",
       }}
     >
-      <img src={tagline} className="w-60 mx-auto mb-1" />
-      
-      <div 
+      <img src={tagline} className="w-60 mx-auto mb-1" alt="Tagline" />
+
+      {/* Card flip container */}
+      <div
         ref={containerRef}
         className="relative"
         style={{
@@ -419,10 +417,8 @@ const Puzzle = ({ projectData, projectId, ui }) => {
           height: `${virtualHeight * scale}px`,
         }}
       >
-        <div 
-          className={`relative w-full h-full transition-all duration-2000 ${
-            isFlipping ? "rotate-y-180" : ""
-          }`}
+        <div
+          className={`relative w-full h-full transition-all duration-2000`}
           style={{
             transformStyle: "preserve-3d",
             transform: isFlipping ? "rotateY(180deg)" : "rotateY(0deg)",
@@ -430,7 +426,7 @@ const Puzzle = ({ projectData, projectId, ui }) => {
           }}
         >
           {/* Front side - Puzzle */}
-          <div 
+          <div
             className="absolute w-full h-full backface-hidden"
             style={{
               backfaceVisibility: "hidden",
@@ -439,15 +435,13 @@ const Puzzle = ({ projectData, projectId, ui }) => {
             <canvas
               ref={canvasRef}
               style={{
-                border: "5px solid",
-                borderImage: "linear-gradient(90deg, #58247b, #f39500) 1",
+                border: "3px solid #333",
                 cursor: dragging ? "grabbing" : "grab",
                 display: "block",
                 backgroundColor: "#0e0e0eff",
                 maxWidth: "100%",
                 height: "auto",
               }}
-
               onMouseDown={handleStart}
               onMouseMove={handleMove}
               onMouseUp={handleEnd}
@@ -457,8 +451,9 @@ const Puzzle = ({ projectData, projectId, ui }) => {
               onTouchEnd={handleEnd}
             />
           </div>
-          
-          <div 
+
+          {/* Back side - Complete content */}
+          <div
             className="absolute w-full h-full backface-hidden rotate-y-180 flex items-center justify-center"
             style={{
               backfaceVisibility: "hidden",
@@ -482,58 +477,24 @@ const Puzzle = ({ projectData, projectId, ui }) => {
           </div>
         </div>
       </div>
-      
-      <img src={logo} className="w-60 mx-auto mt-1" />
-     
+
+      <img src={logo} className="w-60 mx-auto mt-1" alt="Logo" />
+
       {showCongrats && (
-        <div className="fixed inset-0 flex items-center justify-center z-50 bg-black/80 bg-opacity-60 backdrop-blur-sm">
-          <motion.div 
-            className="bg-white p-8 rounded-2xl shadow-2xl text-center max-w-lg"
-            initial={{ opacity: 0, scale: 0.7 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ type: "spring", damping: 12 }}
-          >
-            <motion.div
-              initial={{ scale: 0.8, opacity: 0 }}
-              animate={{ scale: [0.8, 1.2, 1], opacity: 1 }}
-              transition={{ duration: 0.6, times: [0, 0.7, 1] }}
-            >
-              <div className="w-20 h-20 mx-auto mb-4 rounded-full flex items-center justify-center bg-gradient-to-r from-[#58247b] to-[#46166a]">
-                <span className="text-4xl">🎉</span>
-              </div>
-            </motion.div>
-            
-            <motion.h2 
-              className="text-3xl font-bold bg-gradient-to-r from-[#58247b] to-[#f39500] text-transparent bg-clip-text mb-4"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
-            >
-              {cardTexts[projectId]?.congratsText}
-            </motion.h2>
-            
-            <motion.p 
-              className="text-xl font-medium text-[#58247b] mb-6"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.5 }}
-            >
-              {cardTexts[projectId]?.congratsSentence}
-            </motion.p>
-           
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.9 }}
-            >
+        <div className="absolute px-4 inset-0 flex items-center justify-center z-50 bg-black/60">
+          <div className="bg-white p-8 rounded-2xl shadow-2xl text-center max-w-lg animate-fadeIn">
+            <h2 className="text-3xl font-bold text-[#58247b] mb-4">
+              🎉 {cardTexts[projectId]?.congratsText}
+            </h2>
+            <div>
               <button
-                className="px-6 py-3 font-bold text-white bg-gradient-to-r from-[#00acdf] to-[#0096c2] text-lg rounded-lg cursor-pointer shadow-md hover:shadow-lg transform transition-transform hover:scale-105"
+                className="w-fit px-3 py-2 font-bold mx-auto text-white bg-[#00acdf] text-lg border rounded-lg cursor-pointer"
                 onClick={() => router.push("homepage")}
               >
                 {cardTexts[projectId]?.goBackText}
               </button>
-            </motion.div>
-          </motion.div>
+            </div>
+          </div>
         </div>
       )}
 
