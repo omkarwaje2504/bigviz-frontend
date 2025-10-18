@@ -19,6 +19,19 @@ const nextConfig = {
           },
         ],
       },
+      {
+        source: "/:path*",
+        headers: [
+          {
+            key: "Cross-Origin-Embedder-Policy",
+            value: "require-corp",
+          },
+          {
+            key: "Cross-Origin-Opener-Policy",
+            value: "same-origin",
+          },
+        ],
+      },
     ];
   },
   productionBrowserSourceMaps: true,
@@ -30,8 +43,8 @@ const nextConfig = {
     return config;
   },
   reactStrictMode: false,
-  output: "export",
-  distDir: "dist",
+  // output: "export",
+  // distDir: "dist",
   images: {
     unoptimized: true,
     remotePatterns: [
