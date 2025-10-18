@@ -16,6 +16,7 @@ const FormNavigationButtons = ({
 }) => {
   const projectType = projectData?.product_type;
   const disablePhotoUpload = projectData?.config?.doctor?.disable_photo_upload;
+  const optionalPhotoUpload = projectData?.config?.doctor?.optional_first_photo;
 
   const disableMobileNumber =
     projectData?.config?.doctor?.disable_mobile_number;
@@ -42,7 +43,12 @@ const FormNavigationButtons = ({
   const isPage3Valid = currentStep !== 3 || !!formData?.calendar_consent;
 
   const isLastStepForProject =
-    (projectType === "EVideo" && currentStep === 2 && formData.photo) ||
+    (projectData?.config?.doctor?.data_collection === true &&
+      currentStep === 2 &&
+      (optionalPhotoUpload ? true : formData.photo)) ||
+    (projectType === "EVideo" &&
+      currentStep === 2 &&
+      (optionalPhotoUpload ? true : formData.photo)) ||
     (projectType === "RxPad" && currentStep === 2 && formData.photo) ||
     (disablePhotoUpload && currentStep === 1 && isPage1Valid) ||
     (projectType === "DeskCalendar" && currentStep === 3 && isPage3Valid) ||

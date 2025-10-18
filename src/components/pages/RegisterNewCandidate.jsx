@@ -199,7 +199,7 @@ export default function RegisterNewCandidate({ projectData, projectId, ui }) {
       if (!save.success) {
         toast.error(save.message || "Submission failed");
       } else {
-        if(projectData?.config?.game?.scratch_card){
+        if (projectData?.config?.game?.scratch_card) {
           localStorage.setItem("doctorHash", save.doctorHash);
         }
         toast.success("Doctor Added Successfully!");
@@ -211,15 +211,14 @@ export default function RegisterNewCandidate({ projectData, projectId, ui }) {
               localStorage.removeItem("doctorHash");
               router.push("homepage");
             } else {
-              
               const urlParams = new URLSearchParams(window.location.search);
               const dhValue = urlParams.get("dh");
-              if(projectData?.config?.game?.scratch_card){
-                localStorage.setItem("formDataValue",dhValue)
+              if (projectData?.config?.game?.scratch_card) {
+                localStorage.setItem("formDataValue", dhValue);
               }
               router.push("game");
             }
-          } else if (projectData?.product_type === "RxPad") {
+          } else if (projectData?.product_type === "RxPad" || projectData?.config?.doctor?.data_collection === true ) {
             localStorage.removeItem("isEdit");
             localStorage.removeItem("doctorHash");
             router.push("homepage");
@@ -250,7 +249,7 @@ export default function RegisterNewCandidate({ projectData, projectId, ui }) {
         projectHash={projectId}
       />
 
-      <div className="container mx-auto px-4 py-3">
+      <div className="container mx-auto px-1 py-3">
         <div className="max-w-3xl mx-auto">
           <RenderStepIndicator
             projectData={projectData}
@@ -258,7 +257,7 @@ export default function RegisterNewCandidate({ projectData, projectId, ui }) {
           />
           <form
             onSubmit={(e) => handleFormRedirection(e)}
-            className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4 border border-gray-300 dark:border-gray-800"
+            className="rounded-lg p-4"
           >
             <RenderStepContent
               ui={ui}

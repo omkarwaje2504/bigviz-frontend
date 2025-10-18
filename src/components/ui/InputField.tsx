@@ -36,7 +36,8 @@ type InputFieldProps = {
     | "tel"
     | "dropdown"
     | "date"
-    | "file";
+    | "file"
+    | "time";
   value: string;
   countryCode?: string;
   onChange: (
@@ -56,12 +57,16 @@ type InputFieldProps = {
   onValidationChange?: (isValid: boolean) => void;
   prefix?: string;
   prefixOptions?: string[];
-  onBlur?: (e: React.FocusEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => void;
+  onBlur?: (
+    e: React.FocusEvent<
+      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+    >,
+  ) => void;
   onPrefixChange?: (
     e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>,
   ) => void;
   projectData?: any;
-  doctorHash:string | null
+  doctorHash: string | null;
 };
 
 const parseDateString = (dateStr: string): DateValue => {
@@ -109,7 +114,7 @@ const InputField: React.FC<InputFieldProps> = ({
   onBlur,
   onValidationChange,
   projectData,
-  doctorHash
+  doctorHash,
 }) => {
   const [error, setError] = useState<string>("");
   const [isOpen, setIsOpen] = useState(false);
@@ -212,7 +217,13 @@ const InputField: React.FC<InputFieldProps> = ({
       else if (mimeType.startsWith("audio/")) type = "audio";
       else if (mimeType === "application/pdf") type = "pdf";
 
-      const uploadedUrl = await UploadFile(doctorHash,projectData, file, file.name, type);
+      const uploadedUrl = await UploadFile(
+        doctorHash,
+        projectData,
+        file,
+        file.name,
+        type,
+      );
 
       setUploadedUrl(uploadedUrl);
 
@@ -619,6 +630,25 @@ const InputField: React.FC<InputFieldProps> = ({
             <p className="text-red-600 text-sm mt-3">{uploadError}</p>
           )}
         </div>
+      ) : // TIME
+      type === "time" ? (
+        <div className="relative">
+          <input
+            id={id}
+            name={name || id}
+            type="time"
+            value={value || ""}
+            onChange={handleChange}
+            placeholder={placeholder}
+            disabled={disabled}
+            autoFocus={autoFocus}
+            required={required}
+            aria-invalid={!!errorMessage}
+            className={`${inputStyles.baseInput} ${
+              errorMessage ? inputStyles.ringError : inputStyles.ringDefault
+            }`}
+          />
+        </div>
       ) : (
         <div className="relative flex gap-0.5">
           {icon && (
@@ -660,7 +690,7 @@ const InputField: React.FC<InputFieldProps> = ({
             autoFocus={autoFocus}
             required={required}
             maxLength={maxLength}
-            onBlur={onBlur} 
+            onBlur={onBlur}
             aria-invalid={!!errorMessage}
             className={`${inputStyles.baseInput} ${
               icon ? inputStyles.inputWithIcon : inputStyles.inputNoIcon
