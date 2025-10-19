@@ -48,6 +48,7 @@ const Puzzle = ({ projectData, projectId, ui }) => {
       document.body.style.overflow = "hidden";
       document.body.style.position = "fixed";
       document.body.style.width = "100%";
+      document.body.style.top = "0";
       document.addEventListener("touchmove", preventDefault, {
         passive: false,
       });
@@ -58,12 +59,14 @@ const Puzzle = ({ projectData, projectId, ui }) => {
       document.body.style.overflow = "";
       document.body.style.position = "";
       document.body.style.width = "";
+      document.body.style.top = "";
     }
 
     return () => {
       document.body.style.overflow = "";
       document.body.style.position = "";
       document.body.style.width = "";
+      document.body.style.top = "";
       document.removeEventListener("touchmove", preventDefault);
       document.removeEventListener("gesturestart", preventDefaultPassive);
       document.removeEventListener("gesturechange", preventDefaultPassive);
@@ -185,8 +188,31 @@ const Puzzle = ({ projectData, projectId, ui }) => {
       const container = containerRef.current;
       if (!canvas || !container) return;
 
-      const maxWidth = window.innerWidth - 40;
-      const maxHeight = window.innerHeight - 250;
+      // Responsive calculations based on device size
+      const isSmallMobile = window.innerWidth < 480;
+      const isMobile = window.innerWidth < 768;
+      const isTablet = window.innerWidth >= 768 && window.innerWidth < 1024;
+      const isLaptop = window.innerWidth >= 1024 && window.innerWidth < 1440;
+      const isLargeScreen = window.innerWidth >= 1440;
+
+      let maxWidth, maxHeight;
+
+      if (isSmallMobile) {
+        maxWidth = window.innerWidth - 20;
+        maxHeight = window.innerHeight - 200;
+      } else if (isMobile) {
+        maxWidth = window.innerWidth - 30;
+        maxHeight = window.innerHeight - 220;
+      } else if (isTablet) {
+        maxWidth = window.innerWidth - 60;
+        maxHeight = window.innerHeight - 240;
+      } else if (isLaptop) {
+        maxWidth = window.innerWidth - 80;
+        maxHeight = window.innerHeight - 250;
+      } else {
+        maxWidth = window.innerWidth - 100;
+        maxHeight = window.innerHeight - 280;
+      }
 
       const scaleX = maxWidth / virtualWidth;
       const scaleY = maxHeight / virtualHeight;
@@ -221,7 +247,7 @@ const Puzzle = ({ projectData, projectId, ui }) => {
 
     const loadImages = async () => {
       setIsLoading(true);
-      const totalImages = imagesData.length + 3; // puzzle pieces + tagline + logo + packshot
+      const totalImages = imagesData.length + 3;
       let loaded = 0;
 
       const updateProgress = () => {
@@ -249,7 +275,6 @@ const Puzzle = ({ projectData, projectId, ui }) => {
         ),
       );
 
-      // Preload additional images
       const additionalImages = [
         `/game/puzzle/${projectId}/tagline.webp`,
         `/game/puzzle/${projectId}/logo.webp`,
@@ -331,7 +356,6 @@ const Puzzle = ({ projectData, projectId, ui }) => {
 
       const imgData = imagesData[imgIndex];
 
-      // Add shadow for depth
       if (!locked) {
         ctx.shadowColor = "rgba(0, 0, 0, 0.5)";
         ctx.shadowBlur = 15;
@@ -341,14 +365,12 @@ const Puzzle = ({ projectData, projectId, ui }) => {
 
       ctx.drawImage(img, x, y, imgData.width, imgData.height);
 
-      // Reset shadow
       ctx.shadowColor = "transparent";
       ctx.shadowBlur = 0;
       ctx.shadowOffsetX = 0;
       ctx.shadowOffsetY = 0;
 
       if (!locked) {
-        // Enhanced number badge
         const gradient = ctx.createLinearGradient(x + 8, y + 8, x + 48, y + 48);
         gradient.addColorStop(0, "#58247b");
         gradient.addColorStop(1, "#3d1858");
@@ -371,7 +393,6 @@ const Puzzle = ({ projectData, projectId, ui }) => {
         ctx.textBaseline = "middle";
         ctx.fillText(imagesData[imgIndex].seq, x + 28, y + 28);
       } else {
-        // Enhanced checkmark
         const gradient = ctx.createLinearGradient(x, y, x + 45, y + 45);
         gradient.addColorStop(0, "rgba(34, 197, 94, 0.25)");
         gradient.addColorStop(1, "rgba(22, 163, 74, 0.25)");
@@ -389,21 +410,6 @@ const Puzzle = ({ projectData, projectId, ui }) => {
       }
     });
   }, [positions, loadedImages, complete, scale]);
-
-  const shufflePositions = () => {
-    setPositions((pos) =>
-      pos.map((p) => {
-        if (p.locked) return p;
-        const imgData = imagesData[p.imgIndex];
-        return {
-          ...p,
-          x: Math.random() * (virtualWidth - imgData.width),
-          y: Math.random() * (virtualHeight - imgData.height),
-        };
-      }),
-    );
-    setComplete(false);
-  };
 
   useEffect(() => {
     if (positions.length === 0) return;
@@ -552,19 +558,15 @@ const Puzzle = ({ projectData, projectId, ui }) => {
   if (!mounted) return null;
 
   return (
-    <div className="bg-purple-200"
-    >
+    <div className="bg-purple-200 min-h-screen">
       <div
+        className="flex flex-col items-center justify-center px-2 sm:px-4 md:px-6 lg:px-8 xl:px-10"
         style={{
           textAlign: "center",
-          padding: "0px",
           minHeight: "100vh",
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          justifyContent: "center",
           touchAction: "none",
           overscrollBehavior: "none",
+          overflow: "hidden",
         }}
       >
         {/* Loading Screen */}
@@ -580,9 +582,9 @@ const Puzzle = ({ projectData, projectId, ui }) => {
                 initial={{ scale: 0.8, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 transition={{ duration: 0.5 }}
-                className="text-center px-4"
+                className="text-center px-4 sm:px-6"
               >
-                <div className="mb-8">
+                <div className="mb-6 sm:mb-8">
                   <motion.div
                     animate={{ rotate: 360 }}
                     transition={{
@@ -590,15 +592,15 @@ const Puzzle = ({ projectData, projectId, ui }) => {
                       repeat: Infinity,
                       ease: "linear",
                     }}
-                    className="w-20 h-20 mx-auto border-4 border-white/30 border-t-white rounded-full"
+                    className="w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 mx-auto border-4 border-white/30 border-t-white rounded-full"
                   />
                 </div>
 
-                <h2 className="text-3xl font-bold text-white mb-4">
+                <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-white mb-3 sm:mb-4">
                   Loading Puzzle...
                 </h2>
 
-                <div className="w-64 h-3 bg-white/20 rounded-full overflow-hidden mx-auto">
+                <div className="w-48 sm:w-56 md:w-64 lg:w-80 h-2.5 sm:h-3 md:h-4 bg-white/20 rounded-full overflow-hidden mx-auto">
                   <motion.div
                     className="h-full bg-gradient-to-r from-[#f39500] to-[#00acdf] rounded-full"
                     initial={{ width: "0%" }}
@@ -607,7 +609,7 @@ const Puzzle = ({ projectData, projectId, ui }) => {
                   />
                 </div>
 
-                <p className="text-white/80 mt-3 text-lg font-medium">
+                <p className="text-white/80 mt-2 sm:mt-3 text-base sm:text-lg md:text-xl font-medium">
                   {loadProgress}%
                 </p>
               </motion.div>
@@ -620,7 +622,7 @@ const Puzzle = ({ projectData, projectId, ui }) => {
           animate={{ opacity: isLoading ? 0 : 1, y: isLoading ? -20 : 0 }}
           transition={{ duration: 0.6 }}
           src={tagline}
-          className="w-60 mx-auto mb-1"
+          className="w-32 sm:w-40 md:w-48 lg:w-56 xl:w-64 mx-auto mb-1 sm:mb-2 md:mb-3"
           alt="Tagline"
           style={{ visibility: isLoading ? "hidden" : "visible" }}
         />
@@ -630,7 +632,7 @@ const Puzzle = ({ projectData, projectId, ui }) => {
           animate={{ opacity: isLoading ? 0 : 1, scale: isLoading ? 0.95 : 1 }}
           transition={{ duration: 0.6, delay: 0.2 }}
           ref={containerRef}
-          className="relative"
+          className="relative my-1 sm:my-2 md:my-3"
           style={{
             perspective: "1000px",
             width: `${virtualWidth * scale}px`,
@@ -639,7 +641,7 @@ const Puzzle = ({ projectData, projectId, ui }) => {
           }}
         >
           <div
-            className="relative w-full h-full transition-all duration-2000"
+            className="relative w-full h-full"
             style={{
               transformStyle: "preserve-3d",
               transform: isFlipping ? "rotateY(180deg)" : "rotateY(0deg)",
@@ -647,22 +649,21 @@ const Puzzle = ({ projectData, projectId, ui }) => {
             }}
           >
             <div
-              className="absolute w-full h-full backface-hidden"
+              className="absolute w-full h-full"
               style={{
                 backfaceVisibility: "hidden",
               }}
             >
               <canvas
                 ref={canvasRef}
+                className="rounded-lg sm:rounded-xl shadow-2xl"
                 style={{
-                  border: "3px solid #333",
+                  border: "2px solid #333",
                   cursor: dragging ? "grabbing" : "grab",
                   display: "block",
                   backgroundColor: "#ffffff",
                   maxWidth: "100%",
                   height: "auto",
-                  borderRadius: "12px",
-                  boxShadow: "0 10px 40px rgba(0,0,0,0.3)",
                   touchAction: "none",
                 }}
                 onMouseDown={handleStart}
@@ -676,24 +677,22 @@ const Puzzle = ({ projectData, projectId, ui }) => {
             </div>
 
             <div
-              className="absolute w-full h-full backface-hidden rotate-y-180 flex items-center justify-center"
+              className="absolute w-full h-full flex items-center justify-center rounded-lg sm:rounded-xl shadow-2xl"
               style={{
                 backfaceVisibility: "hidden",
                 transform: "rotateY(180deg)",
                 background: "linear-gradient(135deg, #58237b 0%, #7c5498 100%)",
-                borderRadius: "12px",
-                boxShadow: "0 10px 40px rgba(0,0,0,0.3)",
-                padding: "10px",
+                padding: "12px",
               }}
             >
-              <div className="flex flex-col items-center justify-center">
-                <h1 className="text-[#f39500] text-xl text-center mb-2 font-bold drop-shadow-lg">
+              <div className="flex flex-col items-center justify-center px-2">
+                <h1 className="text-[#f39500] text-sm sm:text-base md:text-lg lg:text-xl xl:text-2xl 2xl:text-3xl text-center mb-2 sm:mb-3 md:mb-4 font-bold drop-shadow-lg leading-tight">
                   {cardTexts[projectId]?.message}
                 </h1>
                 <img
                   src={cardTexts[projectId]?.packshot}
                   alt="Prize Card"
-                  className="max-w-full max-h-[60vh] drop-shadow-2xl"
+                  className="max-w-full max-h-[40vh] sm:max-h-[45vh] md:max-h-[50vh] lg:max-h-[55vh] xl:max-h-[60vh] drop-shadow-2xl object-contain"
                 />
               </div>
             </div>
@@ -702,18 +701,19 @@ const Puzzle = ({ projectData, projectId, ui }) => {
 
         <motion.img
           initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
+          animate={{ opacity: isLoading ? 0 : 1, y: isLoading ? 20 : 0 }}
           transition={{ duration: 0.6, delay: 0.3 }}
           src={logo}
-          className="w-60 mx-auto mt-1"
+          className="w-32 sm:w-40 md:w-48 lg:w-56 xl:w-64 mx-auto mt-1 sm:mt-2 md:mt-3"
           alt="Logo"
+          style={{ visibility: isLoading ? "hidden" : "visible" }}
         />
       </div>
 
       {showCongrats && (
-        <div className="fixed inset-0 flex items-center justify-center z-50 bg-black/80 bg-opacity-60 backdrop-blur-sm">
+        <div className="fixed inset-0 flex items-center justify-center z-50 bg-black/80 backdrop-blur-sm p-3 sm:p-4 md:p-6">
           <motion.div
-            className="bg-white p-8 rounded-2xl shadow-2xl text-center max-w-lg mx-4"
+            className="bg-white p-4 sm:p-6 md:p-8 lg:p-10 rounded-xl sm:rounded-2xl shadow-2xl text-center max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg xl:max-w-xl w-full mx-3 sm:mx-4"
             initial={{ opacity: 0, scale: 0.7, rotateY: -180 }}
             animate={{ opacity: 1, scale: 1, rotateY: 0 }}
             transition={{ type: "spring", damping: 12 }}
@@ -723,13 +723,15 @@ const Puzzle = ({ projectData, projectId, ui }) => {
               animate={{ scale: [0.8, 1.2, 1], opacity: 1 }}
               transition={{ duration: 0.6, times: [0, 0.7, 1] }}
             >
-              <div className="w-20 h-20 mx-auto mb-4 rounded-full flex items-center justify-center bg-gradient-to-r from-[#58247b] to-[#46166a] shadow-lg">
-                <span className="text-4xl">🎉</span>
+              <div className="w-14 h-14 sm:w-16 sm:h-16 md:w-20 md:h-20 lg:w-24 lg:h-24 mx-auto mb-3 sm:mb-4 rounded-full flex items-center justify-center bg-gradient-to-r from-[#58247b] to-[#46166a] shadow-lg">
+                <span className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl">
+                  🎉
+                </span>
               </div>
             </motion.div>
 
             <motion.h2
-              className="text-3xl font-bold bg-gradient-to-r from-[#58247b] to-[#f39500] text-transparent bg-clip-text mb-4"
+              className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-[#58247b] to-[#f39500] text-transparent bg-clip-text mb-2 sm:mb-3 md:mb-4"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
@@ -738,7 +740,7 @@ const Puzzle = ({ projectData, projectId, ui }) => {
             </motion.h2>
 
             <motion.p
-              className="text-xl font-medium text-[#58247b] mb-6"
+              className="text-sm sm:text-base md:text-lg lg:text-xl font-medium text-[#58247b] mb-4 sm:mb-5 md:mb-6 px-1 sm:px-2 leading-snug"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.5 }}
@@ -752,7 +754,7 @@ const Puzzle = ({ projectData, projectId, ui }) => {
               transition={{ delay: 0.7 }}
             >
               <button
-                className="px-8 py-3 font-bold text-white bg-gradient-to-r from-[#00acdf] to-[#0096c2] text-lg rounded-lg cursor-pointer shadow-lg hover:shadow-xl transform transition-all hover:scale-105 active:scale-95"
+                className="px-4 sm:px-6 md:px-8 lg:px-10 py-2 sm:py-2.5 md:py-3 font-bold text-white bg-gradient-to-r from-[#00acdf] to-[#0096c2] text-sm sm:text-base md:text-lg lg:text-xl rounded-lg cursor-pointer shadow-lg hover:shadow-xl transform transition-all hover:scale-105 active:scale-95"
                 onClick={() => router.push("homepage")}
               >
                 {cardTexts[projectId]?.goBackText}
@@ -768,7 +770,7 @@ const Puzzle = ({ projectData, projectId, ui }) => {
             width={windowSize.width}
             height={windowSize.height}
             recycle={false}
-            numberOfPieces={300}
+            numberOfPieces={window.innerWidth < 768 ? 200 : 300}
             gravity={0.3}
             colors={["#58247b", "#f39500", "#00acdf", "#22c55e", "#FFD700"]}
           />
