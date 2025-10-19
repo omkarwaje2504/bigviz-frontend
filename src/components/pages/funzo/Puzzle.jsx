@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import React, { useEffect, useRef, useState } from "react";
 import Confetti from "react-confetti";
+import { motion, AnimatePresence } from "framer-motion";
 
 const Puzzle = ({ projectData, projectId, ui }) => {
   const canvasRef = useRef(null);
@@ -15,6 +16,8 @@ const Puzzle = ({ projectData, projectId, ui }) => {
   const [scale, setScale] = useState(1);
   const [showCongrats, setShowCongrats] = useState(false);
   const [isFlipping, setIsFlipping] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadProgress, setLoadProgress] = useState(0);
   const router = useRouter();
 
   const [windowSize, setWindowSize] = useState({ width: 0, height: 0 });
@@ -27,19 +30,78 @@ const Puzzle = ({ projectData, projectId, ui }) => {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  // Canvas and piece dimensions based on the grid
+  // Prevent scroll on touch devices during drag
+  useEffect(() => {
+    const preventDefault = (e) => {
+      if (dragging) {
+        e.preventDefault();
+      }
+    };
+
+    const preventDefaultPassive = (e) => {
+      if (dragging) {
+        e.preventDefault();
+      }
+    };
+
+    if (dragging) {
+      document.body.style.overflow = "hidden";
+      document.body.style.position = "fixed";
+      document.body.style.width = "100%";
+      document.addEventListener("touchmove", preventDefault, {
+        passive: false,
+      });
+      document.addEventListener("gesturestart", preventDefaultPassive);
+      document.addEventListener("gesturechange", preventDefaultPassive);
+      document.addEventListener("gestureend", preventDefaultPassive);
+    } else {
+      document.body.style.overflow = "";
+      document.body.style.position = "";
+      document.body.style.width = "";
+    }
+
+    return () => {
+      document.body.style.overflow = "";
+      document.body.style.position = "";
+      document.body.style.width = "";
+      document.removeEventListener("touchmove", preventDefault);
+      document.removeEventListener("gesturestart", preventDefaultPassive);
+      document.removeEventListener("gesturechange", preventDefaultPassive);
+      document.removeEventListener("gestureend", preventDefaultPassive);
+    };
+  }, [dragging]);
+
   const virtualWidth = 1107;
   const virtualHeight = 820;
   const pieceWidth = 369;
   const pieceHeight = 410;
-  const overlap = 20; // No overlap for clean grid
+  const overlap = 20;
 
-  // Updated for 6 pieces (3x2 grid) - all pieces same size
   const imagesData = [
-    { src: `/game/puzzle/${projectId}/part1.png`, seq: 1, width: pieceWidth + 113, height: pieceHeight },
-    { src: `/game/puzzle/${projectId}/part2.png`, seq: 2, width: pieceWidth + 115, height: pieceHeight },
-    { src: `/game/puzzle/${projectId}/part3.png`, seq: 3, width: pieceWidth, height: pieceHeight + 125 },
-    { src: `/game/puzzle/${projectId}/part4.png`, seq: 4, width: pieceWidth, height: pieceHeight + 127 },
+    {
+      src: `/game/puzzle/${projectId}/part1.png`,
+      seq: 1,
+      width: pieceWidth + 113,
+      height: pieceHeight,
+    },
+    {
+      src: `/game/puzzle/${projectId}/part2.png`,
+      seq: 2,
+      width: pieceWidth + 115,
+      height: pieceHeight,
+    },
+    {
+      src: `/game/puzzle/${projectId}/part3.png`,
+      seq: 3,
+      width: pieceWidth,
+      height: pieceHeight + 125,
+    },
+    {
+      src: `/game/puzzle/${projectId}/part4.png`,
+      seq: 4,
+      width: pieceWidth,
+      height: pieceHeight + 127,
+    },
     {
       src: `/game/puzzle/${projectId}/part5.png`,
       seq: 5,
@@ -54,7 +116,6 @@ const Puzzle = ({ projectData, projectId, ui }) => {
     },
   ];
 
-  // Define grid positions for 3x2 layout (uniform grid)
   const parts = [
     {
       seq: 1,
@@ -159,31 +220,70 @@ const Puzzle = ({ projectData, projectId, ui }) => {
     if (!mounted) return;
 
     const loadImages = async () => {
+      setIsLoading(true);
+      const totalImages = imagesData.length + 3; // puzzle pieces + tagline + logo + packshot
+      let loaded = 0;
+
+      const updateProgress = () => {
+        loaded++;
+        setLoadProgress(Math.round((loaded / totalImages) * 100));
+      };
+
       const imgs = await Promise.all(
         imagesData.map(
           (img) =>
             new Promise((resolve) => {
               const image = new Image();
               image.crossOrigin = "anonymous";
-              image.onload = () => resolve(image);
+              image.onload = () => {
+                updateProgress();
+                resolve(image);
+              };
               image.onerror = (err) => {
                 console.error(`Failed to load image: ${img.src}`, err);
+                updateProgress();
                 resolve(null);
               };
               image.src = img.src;
             }),
         ),
       );
+
+      // Preload additional images
+      const additionalImages = [
+        `/game/puzzle/${projectId}/tagline.webp`,
+        `/game/puzzle/${projectId}/logo.webp`,
+        `/game/puzzle/${projectId}/packet.webp`,
+      ];
+
+      await Promise.all(
+        additionalImages.map(
+          (src) =>
+            new Promise((resolve) => {
+              const img = new Image();
+              img.onload = () => {
+                updateProgress();
+                resolve();
+              };
+              img.onerror = () => {
+                updateProgress();
+                resolve();
+              };
+              img.src = src;
+            }),
+        ),
+      );
+
       setLoadedImages(imgs.filter(Boolean));
+      setTimeout(() => setIsLoading(false), 500);
     };
 
     loadImages();
-  }, [mounted]);
+  }, [mounted, projectId]);
 
   useEffect(() => {
     if (loadedImages.length === 0) return;
 
-    // Shuffle all 6 pieces
     const shuffledIndexes = [0, 1, 2, 3, 4, 5].sort(() => Math.random() - 0.5);
     const pos = shuffledIndexes.map((imgIndex) => {
       const imgData = imagesData[imgIndex];
@@ -210,18 +310,15 @@ const Puzzle = ({ projectData, projectId, ui }) => {
     ctx.fillStyle = "#7c5498";
     ctx.fillRect(0, 0, virtualWidth, virtualHeight);
 
-    // Draw grid lines for 3x2 layout
     if (!complete) {
-      ctx.strokeStyle = "rgba(63, 63, 63, 0.2)";
+      ctx.strokeStyle = "rgba(255, 255, 255, 0.15)";
       ctx.lineWidth = 2;
       ctx.setLineDash([10, 5]);
       ctx.beginPath();
-      // Vertical lines (2 lines for 3 columns)
       ctx.moveTo(369, 0);
       ctx.lineTo(369, virtualHeight);
       ctx.moveTo(738, 0);
       ctx.lineTo(738, virtualHeight);
-      // Horizontal line (1 line for 2 rows)
       ctx.moveTo(0, 410);
       ctx.lineTo(virtualWidth, 410);
       ctx.stroke();
@@ -234,20 +331,61 @@ const Puzzle = ({ projectData, projectId, ui }) => {
 
       const imgData = imagesData[imgIndex];
 
+      // Add shadow for depth
+      if (!locked) {
+        ctx.shadowColor = "rgba(0, 0, 0, 0.5)";
+        ctx.shadowBlur = 15;
+        ctx.shadowOffsetX = 5;
+        ctx.shadowOffsetY = 5;
+      }
+
       ctx.drawImage(img, x, y, imgData.width, imgData.height);
 
+      // Reset shadow
+      ctx.shadowColor = "transparent";
+      ctx.shadowBlur = 0;
+      ctx.shadowOffsetX = 0;
+      ctx.shadowOffsetY = 0;
+
       if (!locked) {
-        ctx.fillStyle = "rgba(29, 29, 29, 0.85)";
-        ctx.fillRect(x + 8, y + 8, 40, 40);
+        // Enhanced number badge
+        const gradient = ctx.createLinearGradient(x + 8, y + 8, x + 48, y + 48);
+        gradient.addColorStop(0, "#58247b");
+        gradient.addColorStop(1, "#3d1858");
+
+        ctx.fillStyle = gradient;
+        ctx.shadowColor = "rgba(0, 0, 0, 0.3)";
+        ctx.shadowBlur = 8;
+        ctx.shadowOffsetX = 2;
+        ctx.shadowOffsetY = 2;
+        ctx.beginPath();
+        ctx.roundRect(x + 8, y + 8, 40, 40, 8);
+        ctx.fill();
+
+        ctx.shadowColor = "transparent";
+        ctx.shadowBlur = 0;
+
         ctx.fillStyle = "#ffffff";
-        ctx.font = "bold 26px Arial";
-        ctx.fillText(imagesData[imgIndex].seq, x + 20, y + 38);
-      } else {
-        ctx.fillStyle = "rgba(0, 255, 0, 0.15)";
-        ctx.fillRect(x, y, 45, 45);
-        ctx.fillStyle = "#00cc00";
         ctx.font = "bold 24px Arial";
-        ctx.fillText("✓", x + 14, y + 32);
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(imagesData[imgIndex].seq, x + 28, y + 28);
+      } else {
+        // Enhanced checkmark
+        const gradient = ctx.createLinearGradient(x, y, x + 45, y + 45);
+        gradient.addColorStop(0, "rgba(34, 197, 94, 0.25)");
+        gradient.addColorStop(1, "rgba(22, 163, 74, 0.25)");
+
+        ctx.fillStyle = gradient;
+        ctx.beginPath();
+        ctx.roundRect(x, y, 50, 50, 8);
+        ctx.fill();
+
+        ctx.fillStyle = "#22c55e";
+        ctx.font = "bold 28px Arial";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText("✓", x + 25, y + 25);
       }
     });
   }, [positions, loadedImages, complete, scale]);
@@ -384,9 +522,29 @@ const Puzzle = ({ projectData, projectId, ui }) => {
 
   const cardTexts = {
     "puzzle-nigeria": {
-      congratsText: "Congratulations",
+      congratsText: "Congratulations!!",
+      congratsSentence:
+        "We are honoring your role in safeguarding patients from GERD",
       goBackText: "Go Back",
       message: "All-round protection. Proven relief. One trusted choice.",
+      packshot: `/game/puzzle/${projectId}/packet.webp`,
+    },
+    "puzzle-french": {
+      congratsText: "Félicitations!!",
+      congratsSentence:
+        "Honorer votre rôle dans la protection des patients contre le RGO",
+      goBackText: "Retour",
+      message:
+        "Protection complète. Soulagement prouvé. Un choix de confiance.",
+      packshot: `/game/puzzle/${projectId}/packet.webp`,
+    },
+    "puzzle-portuguese": {
+      congratsText: "Parabéns!!",
+      congratsSentence:
+        "Estamos honrando seu papel na proteção de pacientes contra DRGE",
+      goBackText: "Voltar",
+      message:
+        "Proteção completa. Alívio comprovado. Uma escolha de confiança.",
       packshot: `/game/puzzle/${projectId}/packet.webp`,
     },
   };
@@ -394,107 +552,213 @@ const Puzzle = ({ projectData, projectId, ui }) => {
   if (!mounted) return null;
 
   return (
-    <div
-      style={{
-        textAlign: "center",
-        padding: "0px",
-        minHeight: "100vh",
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-      }}
+    <div className="bg-purple-200"
     >
-      <img src={tagline} className="w-60 mx-auto mb-1" alt="Tagline" />
-
-      {/* Card flip container */}
       <div
-        ref={containerRef}
-        className="relative"
         style={{
-          perspective: "1000px",
-          width: `${virtualWidth * scale}px`,
-          height: `${virtualHeight * scale}px`,
+          textAlign: "center",
+          padding: "0px",
+          minHeight: "100vh",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          touchAction: "none",
+          overscrollBehavior: "none",
         }}
       >
-        <div
-          className={`relative w-full h-full transition-all duration-2000`}
+        {/* Loading Screen */}
+        <AnimatePresence>
+          {isLoading && (
+            <motion.div
+              initial={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.5 }}
+              className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-gradient-to-br from-[#58247b] via-[#7c5498] to-[#58247b]"
+            >
+              <motion.div
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ duration: 0.5 }}
+                className="text-center px-4"
+              >
+                <div className="mb-8">
+                  <motion.div
+                    animate={{ rotate: 360 }}
+                    transition={{
+                      duration: 2,
+                      repeat: Infinity,
+                      ease: "linear",
+                    }}
+                    className="w-20 h-20 mx-auto border-4 border-white/30 border-t-white rounded-full"
+                  />
+                </div>
+
+                <h2 className="text-3xl font-bold text-white mb-4">
+                  Loading Puzzle...
+                </h2>
+
+                <div className="w-64 h-3 bg-white/20 rounded-full overflow-hidden mx-auto">
+                  <motion.div
+                    className="h-full bg-gradient-to-r from-[#f39500] to-[#00acdf] rounded-full"
+                    initial={{ width: "0%" }}
+                    animate={{ width: `${loadProgress}%` }}
+                    transition={{ duration: 0.3 }}
+                  />
+                </div>
+
+                <p className="text-white/80 mt-3 text-lg font-medium">
+                  {loadProgress}%
+                </p>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <motion.img
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: isLoading ? 0 : 1, y: isLoading ? -20 : 0 }}
+          transition={{ duration: 0.6 }}
+          src={tagline}
+          className="w-60 mx-auto mb-1"
+          alt="Tagline"
+          style={{ visibility: isLoading ? "hidden" : "visible" }}
+        />
+
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: isLoading ? 0 : 1, scale: isLoading ? 0.95 : 1 }}
+          transition={{ duration: 0.6, delay: 0.2 }}
+          ref={containerRef}
+          className="relative"
           style={{
-            transformStyle: "preserve-3d",
-            transform: isFlipping ? "rotateY(180deg)" : "rotateY(0deg)",
-            transition: "transform 2s",
+            perspective: "1000px",
+            width: `${virtualWidth * scale}px`,
+            height: `${virtualHeight * scale}px`,
+            visibility: isLoading ? "hidden" : "visible",
           }}
         >
-          {/* Front side - Puzzle */}
           <div
-            className="absolute w-full h-full backface-hidden"
+            className="relative w-full h-full transition-all duration-2000"
             style={{
-              backfaceVisibility: "hidden",
+              transformStyle: "preserve-3d",
+              transform: isFlipping ? "rotateY(180deg)" : "rotateY(0deg)",
+              transition: "transform 2s",
             }}
           >
-            <canvas
-              ref={canvasRef}
+            <div
+              className="absolute w-full h-full backface-hidden"
               style={{
-                border: "3px solid #333",
-                cursor: dragging ? "grabbing" : "grab",
-                display: "block",
-                backgroundColor: "#0e0e0eff",
-                maxWidth: "100%",
-                height: "auto",
+                backfaceVisibility: "hidden",
               }}
-              onMouseDown={handleStart}
-              onMouseMove={handleMove}
-              onMouseUp={handleEnd}
-              onMouseLeave={handleEnd}
-              onTouchStart={handleStart}
-              onTouchMove={handleMove}
-              onTouchEnd={handleEnd}
-            />
-          </div>
-
-          {/* Back side - Complete content */}
-          <div
-            className="absolute w-full h-full backface-hidden rotate-y-180 flex items-center justify-center"
-            style={{
-              backfaceVisibility: "hidden",
-              transform: "rotateY(180deg)",
-              backgroundColor: "#58237b",
-              borderRadius: "12px",
-              boxShadow: "0 10px 30px rgba(0,0,0,0.2)",
-              padding: "24px",
-            }}
-          >
-            <div className="flex flex-col items-center justify-center">
-              <h1 className="text-[#f39500] text-3xl text-center mb-5 font-bold">
-                {cardTexts[projectId]?.message}
-              </h1>
-              <img
-                src={cardTexts[projectId]?.packshot}
-                alt="Prize Card"
-                className="max-w-full max-h-[60vh]"
+            >
+              <canvas
+                ref={canvasRef}
+                style={{
+                  border: "3px solid #333",
+                  cursor: dragging ? "grabbing" : "grab",
+                  display: "block",
+                  backgroundColor: "#ffffff",
+                  maxWidth: "100%",
+                  height: "auto",
+                  borderRadius: "12px",
+                  boxShadow: "0 10px 40px rgba(0,0,0,0.3)",
+                  touchAction: "none",
+                }}
+                onMouseDown={handleStart}
+                onMouseMove={handleMove}
+                onMouseUp={handleEnd}
+                onMouseLeave={handleEnd}
+                onTouchStart={handleStart}
+                onTouchMove={handleMove}
+                onTouchEnd={handleEnd}
               />
             </div>
+
+            <div
+              className="absolute w-full h-full backface-hidden rotate-y-180 flex items-center justify-center"
+              style={{
+                backfaceVisibility: "hidden",
+                transform: "rotateY(180deg)",
+                background: "linear-gradient(135deg, #58237b 0%, #7c5498 100%)",
+                borderRadius: "12px",
+                boxShadow: "0 10px 40px rgba(0,0,0,0.3)",
+                padding: "10px",
+              }}
+            >
+              <div className="flex flex-col items-center justify-center">
+                <h1 className="text-[#f39500] text-xl text-center mb-2 font-bold drop-shadow-lg">
+                  {cardTexts[projectId]?.message}
+                </h1>
+                <img
+                  src={cardTexts[projectId]?.packshot}
+                  alt="Prize Card"
+                  className="max-w-full max-h-[60vh] drop-shadow-2xl"
+                />
+              </div>
+            </div>
           </div>
-        </div>
+        </motion.div>
+
+        <motion.img
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.3 }}
+          src={logo}
+          className="w-60 mx-auto mt-1"
+          alt="Logo"
+        />
       </div>
 
-      <img src={logo} className="w-60 mx-auto mt-1" alt="Logo" />
-
       {showCongrats && (
-        <div className="absolute px-4 inset-0 flex items-center justify-center z-50 bg-black/60">
-          <div className="bg-white p-8 rounded-2xl shadow-2xl text-center max-w-lg animate-fadeIn">
-            <h2 className="text-3xl font-bold text-[#58247b] mb-4">
-              🎉 {cardTexts[projectId]?.congratsText}
-            </h2>
-            <div>
+        <div className="fixed inset-0 flex items-center justify-center z-50 bg-black/80 bg-opacity-60 backdrop-blur-sm">
+          <motion.div
+            className="bg-white p-8 rounded-2xl shadow-2xl text-center max-w-lg mx-4"
+            initial={{ opacity: 0, scale: 0.7, rotateY: -180 }}
+            animate={{ opacity: 1, scale: 1, rotateY: 0 }}
+            transition={{ type: "spring", damping: 12 }}
+          >
+            <motion.div
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: [0.8, 1.2, 1], opacity: 1 }}
+              transition={{ duration: 0.6, times: [0, 0.7, 1] }}
+            >
+              <div className="w-20 h-20 mx-auto mb-4 rounded-full flex items-center justify-center bg-gradient-to-r from-[#58247b] to-[#46166a] shadow-lg">
+                <span className="text-4xl">🎉</span>
+              </div>
+            </motion.div>
+
+            <motion.h2
+              className="text-3xl font-bold bg-gradient-to-r from-[#58247b] to-[#f39500] text-transparent bg-clip-text mb-4"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+            >
+              {cardTexts[projectId]?.congratsText}
+            </motion.h2>
+
+            <motion.p
+              className="text-xl font-medium text-[#58247b] mb-6"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5 }}
+            >
+              {cardTexts[projectId]?.congratsSentence}
+            </motion.p>
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.7 }}
+            >
               <button
-                className="w-fit px-3 py-2 font-bold mx-auto text-white bg-[#00acdf] text-lg border rounded-lg cursor-pointer"
+                className="px-8 py-3 font-bold text-white bg-gradient-to-r from-[#00acdf] to-[#0096c2] text-lg rounded-lg cursor-pointer shadow-lg hover:shadow-xl transform transition-all hover:scale-105 active:scale-95"
                 onClick={() => router.push("homepage")}
               >
                 {cardTexts[projectId]?.goBackText}
               </button>
-            </div>
-          </div>
+            </motion.div>
+          </motion.div>
         </div>
       )}
 
@@ -506,6 +770,7 @@ const Puzzle = ({ projectData, projectId, ui }) => {
             recycle={false}
             numberOfPieces={300}
             gravity={0.3}
+            colors={["#58247b", "#f39500", "#00acdf", "#22c55e", "#FFD700"]}
           />
         </div>
       )}
