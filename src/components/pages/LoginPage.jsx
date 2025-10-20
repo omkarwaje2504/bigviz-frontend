@@ -3,12 +3,11 @@
 import { useState, useEffect } from "react";
 import Banner from "@components/ui/Banner";
 import LoadingPage from "@components/ui/LoadingPage";
-import LoginForm from "./LoginForm";
+import LoginForm from "../ui/LoginForm";
 import config from "@utils/Config";
 import MyError from "@services/MyError";
 import { DecryptData, EncryptData } from "@utils/cryptoUtils";
 import { useRouter } from "next/navigation";
-import { GenerateCardImage } from "@services/GenerateGreeting";
 
 function generateRandomString(length) {
   const characters =

@@ -2,7 +2,7 @@ import LoginPage from "@components/pages/LoginPage";
 import { getAllProjectsCached } from "../../../utils/projectCache";
 import Config from "../../../utils/Config";
 import NotFoundPage from "./NotFoundPage";
-import RegisterEmployeePage from "@components/pages/RegisterEmployeePage";
+import RegisterPage from "@components/pages/RegisterPage";
 import RegisterNewCandidate from "@components/pages/RegisterNewCandidate";
 
 export async function generateStaticParams() {
@@ -51,16 +51,13 @@ export default async function Home({ params }) {
     );
 
     const ui = await Config(projectInfo);
+
     if (
       projectInfo &&
       projectInfo?.config?.employee?.enable_employee_registration
     ) {
       return (
-        <RegisterEmployeePage
-          projectData={projectInfo}
-          projectId={pathname}
-          ui={ui}
-        />
+        <RegisterPage projectData={projectInfo} projectId={pathname} ui={ui} />
       );
     } else if (
       projectInfo &&
@@ -72,7 +69,11 @@ export default async function Home({ params }) {
         );
       } else {
         return (
-          <RegisterNewCandidate projectData={projectInfo} projectId={pathname} ui={ui} />
+          <RegisterNewCandidate
+            projectData={projectInfo}
+            projectId={pathname}
+            ui={ui}
+          />
         );
       }
     } else {

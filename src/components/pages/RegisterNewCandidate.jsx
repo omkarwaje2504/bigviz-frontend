@@ -176,7 +176,7 @@ export default function RegisterNewCandidate({ projectData, projectId, ui }) {
         toast.success("Doctor Added Successfully!");
 
         router.push(
-          `https://platform.informatia.ai/${projectId}/game?dh=${dh}&h=${userInfo?.hash}`,
+          `${process.env.NEXT_PUBLIC_PROJECT_URL}/${projectId}/game?dh=${dh}&h=${userInfo?.hash}`,
         );
       }
     } catch (error) {
@@ -218,7 +218,10 @@ export default function RegisterNewCandidate({ projectData, projectId, ui }) {
               }
               router.push("game");
             }
-          } else if (projectData?.product_type === "RxPad" || projectData?.config?.doctor?.data_collection === true ) {
+          } else if (
+            projectData?.product_type === "RxPad" ||
+            projectData?.config?.doctor?.data_collection === true
+          ) {
             localStorage.removeItem("isEdit");
             localStorage.removeItem("doctorHash");
             router.push("homepage");

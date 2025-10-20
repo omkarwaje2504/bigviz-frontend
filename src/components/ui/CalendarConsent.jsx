@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import generateCalendarPreviewBlob from "./CalendarPreviewKonva";
 import InputField from "./InputField";
+import { generateCalendarPreviewBlob } from "@services/GenerateImage";
 
 const MONTH_NAMES = [
   "January",

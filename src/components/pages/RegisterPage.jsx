@@ -2,7 +2,7 @@
 
 import Banner from "@components/ui/Banner";
 import React, { useEffect, useState } from "react";
-import EmployeeRegisterForm from "./EmployeeRegisterForm";
+import RegisterForm from "../ui/RegisterForm";
 import { useRouter } from "next/navigation";
 import { DecryptData, EncryptData } from "@utils/cryptoUtils";
 
@@ -65,7 +65,7 @@ function RegisterEmployeePage({ projectData, projectId, ui }) {
               {ui.loginPage.subHeading}
             </p>
           </div>
-          <EmployeeRegisterForm
+          <RegisterForm
             projectData={projectData}
             projectId={projectId}
             ui={ui}

@@ -43,7 +43,7 @@ const validations = {
   },
 };
 
-function EmployeeRegisterForm({ ui, projectData, projectId }) {
+function RegisterForm({ ui, projectData, projectId }) {
   const router = useRouter();
 
   const [formData, setFormData] = useState({
@@ -206,4 +206,4 @@ function EmployeeRegisterForm({ ui, projectData, projectId }) {
   );
 }
 
-export default EmployeeRegisterForm;
+export default RegisterForm;

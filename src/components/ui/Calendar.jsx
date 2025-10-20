@@ -16,13 +16,13 @@ import {
   FaCamera,
 } from "react-icons/fa";
 import UploadFile from "@services/uploadFile";
-import generateCalendarPreviewBlob from "./CalendarPreviewKonva";
 import { ImageCropper } from "./ImageCropper";
 import PreviewModal from "./PreviewModal";
 import { CALENDAR_PREVIEW_CONFIG } from "./CalendarConsent";
 import { getPhotoDims } from "@utils/imageHelpers";
 import { FaBahai } from "react-icons/fa6";
 import { useSearchParams } from "next/navigation";
+import { generateCalendarPreviewBlob } from "@services/GenerateImage";
 
 const CONFIG = {
   maxImages: 12,
@@ -45,6 +45,95 @@ const MONTH_NAMES = [
   "December",
 ];
 
+// Predefined templates for AI-generated themes
+const THEME_TEMPLATES = {
+  nature: {
+    name: "Nature",
+    images: [
+      { month: "january", prompt: "Serene winter forest landscape" },
+      { month: "february", prompt: "Cherry blossoms in spring bloom" },
+      { month: "march", prompt: "Mountain meadow with wildflowers" },
+      { month: "april", prompt: "Tropical rainforest waterfall" },
+      { month: "may", prompt: "Sunset over ocean waves" },
+      { month: "june", prompt: "Lavender fields in summer" },
+      { month: "july", prompt: "Desert sand dunes at golden hour" },
+      { month: "august", prompt: "Northern lights over pine forest" },
+      { month: "september", prompt: "Autumn leaves in woodland" },
+      { month: "october", prompt: "Misty mountain peaks" },
+      { month: "november", prompt: "Coastal cliffs and seascape" },
+      { month: "december", prompt: "Snow-covered alpine landscape" },
+    ],
+  },
+  abstract: {
+    name: "Abstract",
+    images: [
+      { month: "january", prompt: "Blue geometric patterns" },
+      { month: "february", prompt: "Pink and purple gradient waves" },
+      { month: "march", prompt: "Green organic flowing shapes" },
+      { month: "april", prompt: "Yellow and orange abstract art" },
+      { month: "may", prompt: "Teal and cyan digital art" },
+      { month: "june", prompt: "Red and gold abstract composition" },
+      { month: "july", prompt: "Multicolor kaleidoscope pattern" },
+      { month: "august", prompt: "Black and white minimalist design" },
+      { month: "september", prompt: "Earth tones abstract landscape" },
+      { month: "october", prompt: "Neon colors digital artwork" },
+      { month: "november", prompt: "Pastel abstract watercolor" },
+      { month: "december", prompt: "Silver and blue metallic pattern" },
+    ],
+  },
+  animal: {
+    name: "Animal",
+    images: [
+      { month: "january", prompt: "Ancient Egyptian pyramids" },
+      { month: "february", prompt: "Roman Colosseum architecture" },
+      { month: "march", prompt: "Greek Parthenon temple" },
+      { month: "april", prompt: "Medieval European castle" },
+      { month: "may", prompt: "Renaissance Italian plaza" },
+      { month: "june", prompt: "Taj Mahal monument" },
+      { month: "july", prompt: "Great Wall of China" },
+      { month: "august", prompt: "Ancient Mayan ruins" },
+      { month: "september", prompt: "Victorian era architecture" },
+      { month: "october", prompt: "Japanese historic temple" },
+      { month: "november", prompt: "Indian historical palace" },
+      { month: "december", prompt: "Byzantine cathedral interior" },
+    ],
+  },
+  medical: {
+    name: "Medical",
+    images: [
+      { month: "january", prompt: "Modern hospital facility" },
+      { month: "february", prompt: "Medical research laboratory" },
+      { month: "march", prompt: "Healthcare technology equipment" },
+      { month: "april", prompt: "Pharmacy and medication" },
+      { month: "may", prompt: "Surgical operating room" },
+      { month: "june", prompt: "Medical diagnostic imaging" },
+      { month: "july", prompt: "Healthcare professionals teamwork" },
+      { month: "august", prompt: "Wellness and preventive care" },
+      { month: "september", prompt: "Emergency medical services" },
+      { month: "october", prompt: "Medical education classroom" },
+      { month: "november", prompt: "Healthcare innovation" },
+      { month: "december", prompt: "Patient care excellence" },
+    ],
+  },
+  motivational: {
+    name: "Motivational",
+    images: [
+      { month: "january", prompt: "New beginnings sunrise" },
+      { month: "february", prompt: "Heart-shaped motivation" },
+      { month: "march", prompt: "Growth and progress concept" },
+      { month: "april", prompt: "Success and achievement" },
+      { month: "may", prompt: "Teamwork and collaboration" },
+      { month: "june", prompt: "Excellence and quality" },
+      { month: "july", prompt: "Innovation and creativity" },
+      { month: "august", prompt: "Strength and perseverance" },
+      { month: "september", prompt: "Focus and determination" },
+      { month: "october", prompt: "Leadership and guidance" },
+      { month: "november", prompt: "Gratitude and appreciation" },
+      { month: "december", prompt: "Reflection and wisdom" },
+    ],
+  },
+};
+
 const CalendarPage = ({
   projectData,
   formData,
@@ -64,33 +153,42 @@ const CalendarPage = ({
   const cameraInputRef = useRef(null);
   const [photoCollectionType, setPhotoCollectionType] = useState(null);
   const [themeType, setThemeType] = useState(null);
+  const [selectedPrompt, setSelectedPrompt] = useState(null);
+  const [isGeneratingAI, setIsGeneratingAI] = useState(false);
+
   const AI_ENABLED = projectData?.config?.calendar?.enable_ai;
   const searchParams = useSearchParams();
+
   const getParams = () => {
     const url = new URL(window.location.href);
     const params = url.searchParams;
-
     return { params, url };
   };
 
   useEffect(() => {
     const getPhotoCollectionType = searchParams.get("photo-collection-type");
     const getThemeType = searchParams.get("theme-type");
+    const getSelectedPrompt = searchParams.get("selected-prompt");
 
     setPhotoCollectionType(getPhotoCollectionType);
     setThemeType(getThemeType);
+    setSelectedPrompt(getSelectedPrompt);
   }, [searchParams]);
 
   useEffect(() => {
     const { params, url } = getParams();
     const getPhotoCollectionType = params.get("photo-collection-type");
     const getThemeType = params.get("theme-type");
+    const getSelectedPrompt = params.get("selected-prompt");
 
     if (getPhotoCollectionType) {
       setPhotoCollectionType(getPhotoCollectionType);
     }
     if (getThemeType) {
       setThemeType(getThemeType);
+    }
+    if (getSelectedPrompt) {
+      setSelectedPrompt(getSelectedPrompt);
     }
   }, []);
 
@@ -104,7 +202,11 @@ const CalendarPage = ({
       params.set("theme-type", themeType);
       window.history.replaceState({}, "", url.toString());
     }
-  }, [photoCollectionType, themeType]);
+    if (selectedPrompt) {
+      params.set("selected-prompt", selectedPrompt);
+      window.history.replaceState({}, "", url.toString());
+    }
+  }, [photoCollectionType, themeType, selectedPrompt]);
 
   // Load saved images from localStorage on component mount
   useEffect(() => {
@@ -145,6 +247,108 @@ const CalendarPage = ({
   }, [selectedImages]);
 
   const cropDimensions = getPhotoDims(projectData);
+
+  // Function to handle AI theme generation
+  const handleAIThemeGeneration = useCallback(
+    async (theme) => {
+      setIsGeneratingAI(true);
+      setError("");
+
+      try {
+        const template = THEME_TEMPLATES[theme];
+        if (!template) {
+          throw new Error("Invalid theme selected");
+        }
+
+        // Pre-populate formData with template data
+        const themeData = {};
+        template.images.forEach((img) => {
+          themeData[`${img.month}_prompt`] = img.prompt;
+          themeData[`${img.month}_theme`] = theme;
+        });
+
+        setFormData((prev) => ({
+          ...prev,
+          calendar_theme: theme,
+          calendar_theme_data: themeData,
+          calendar_ai_generated: true,
+        }));
+
+        // Optionally: Auto-generate preview or mark as ready
+        setError(
+          `${template.name} theme selected! Images will be generated automatically.`,
+        );
+      } catch (err) {
+        setError(`Failed to apply theme: ${err.message}`);
+      } finally {
+        setIsGeneratingAI(false);
+      }
+    },
+    [setFormData],
+  );
+
+  // Function to handle Mix mode (Doctor photo + AI)
+  const handleMixModeGeneration = useCallback(
+    async (promptId) => {
+      setIsGeneratingAI(true);
+      setError("");
+
+      try {
+        const prompts = projectData?.config?.calendar?.prompts;
+        if (!prompts || !prompts[promptId]) {
+          throw new Error("Invalid prompt selected");
+        }
+
+        const selectedPromptData = prompts[promptId];
+
+        // Call your API to generate AI images based on the prompt
+        const response = await fetch("/api/generate-calendar-images", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            prompt: selectedPromptData,
+            doctorHash: doctorHash,
+            projectId: projectData?.id,
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to generate AI images");
+        }
+
+        const data = await response.json();
+
+        // Process the generated images and add them to selectedImages
+        const generatedImages = data.images.map((imgUrl, index) => {
+          const monthKey = MONTH_NAMES[index].toLowerCase();
+          return {
+            id: `ai-${monthKey}-${Date.now()}`,
+            month: monthKey,
+            name: `AI ${MONTH_NAMES[index]} Image`,
+            needsCropping: false,
+            [`${monthKey}`]: imgUrl,
+            [`${monthKey}_cropped`]: imgUrl,
+          };
+        });
+
+        setSelectedImages(generatedImages);
+        setFormData((prev) => ({
+          ...prev,
+          calendar_images: generatedImages,
+          calendar_ai_prompt: promptId,
+        }));
+
+        setError("AI images generated successfully!");
+      } catch (err) {
+        setError(`Failed to generate AI images: ${err.message}`);
+      } finally {
+        setIsGeneratingAI(false);
+      }
+    },
+    [projectData, doctorHash, setFormData],
+  );
 
   const handleImageSelection = useCallback(
     (event, source = "gallery", replaceId = null) => {
@@ -201,7 +405,6 @@ const CalendarPage = ({
       }
 
       const processFiles = async () => {
-        // Create all FileReader promises at once
         const imagePromises = validFiles.map((file) => {
           return new Promise((resolve) => {
             const reader = new FileReader();
@@ -220,16 +423,13 @@ const CalendarPage = ({
           });
         });
 
-        // Wait for ALL images to be read
         const newImages = await Promise.all(imagePromises);
 
         if (replaceId) {
-          // For replacement, add to pending and start cropping immediately
           setPendingImages([newImages[0]]);
           setCurrentCropIndex(0);
           setIsProcessing(true);
         } else {
-          // For new images, add ALL to pending and start cropping
           setPendingImages(newImages);
           setCurrentCropIndex(0);
           setIsProcessing(true);
@@ -255,13 +455,11 @@ const CalendarPage = ({
     (croppedData) => {
       const currentPendingImage = pendingImages[currentCropIndex];
 
-      // Determine the month name based on the current selectedImages length
       const currentMonthIndex = selectedImages.length;
       const monthName = MONTH_NAMES[currentMonthIndex]
         ? MONTH_NAMES[currentMonthIndex].toLowerCase()
         : `month_${currentMonthIndex + 1}`;
 
-      // Create formatted image data
       const formattedData = {
         id: currentPendingImage.replaceId || currentPendingImage.id,
         name: currentPendingImage.name,
@@ -272,23 +470,19 @@ const CalendarPage = ({
       };
 
       if (currentPendingImage.replaceId) {
-        // Replace existing image
         setSelectedImages((prev) =>
           prev.map((img) =>
             img.id === currentPendingImage.replaceId ? formattedData : img,
           ),
         );
       } else {
-        // Add new image
         setSelectedImages((prev) => [...prev, formattedData]);
       }
 
-      // Move to next image or finish
       const nextIndex = currentCropIndex + 1;
       if (nextIndex < pendingImages.length) {
         setCurrentCropIndex(nextIndex);
       } else {
-        // All images processed
         setPendingImages([]);
         setCurrentCropIndex(null);
         setIsProcessing(false);
@@ -364,16 +558,13 @@ const CalendarPage = ({
     [handleReplaceImage],
   );
 
-  // Drag and drop handlers
   const handleDragStart = useCallback((e, index) => {
     setDraggedItem(index);
     e.dataTransfer.effectAllowed = "move";
 
-    // Only set the current element as the drag image
-    const dragElement = e.currentTarget; // this div represents one image card
+    const dragElement = e.currentTarget;
     const rect = dragElement.getBoundingClientRect();
 
-    // Use a small offset to make it feel natural
     e.dataTransfer.setDragImage(dragElement, rect.width / 2, rect.height / 2);
   }, []);
 
@@ -399,7 +590,6 @@ const CalendarPage = ({
 
       const updatedImages = [...selectedImages];
 
-      // 🔄 Swap the two images instead of shifting
       const temp = updatedImages[draggedItem];
       updatedImages[draggedItem] = updatedImages[dropIndex];
       updatedImages[dropIndex] = temp;
@@ -430,114 +620,161 @@ const CalendarPage = ({
     return MONTH_NAMES[index] || `Month ${index + 1}`;
   };
 
+  // Render Step 1: Photo Collection Type Selection
   if (AI_ENABLED && !photoCollectionType) {
     return (
       <div>
-        <h2 className="text-2xl font-bold text-white">
+        <h2 className="text-xl font-semibold text-gray-800 dark:text-white">
           Start Calendar Journey
         </h2>
-        <p className="text-gray-800 dark:text-gray-400">
-          Select your theme to start with the image selections
+        <p className="text-gray-600 text-sm dark:text-gray-400 mb-6">
+          Select how you'd like to create your calendar images
         </p>
-        <div className="flex flex-wrap gap-2 mt-6">
+        <div className="flex flex-col gap-3">
           <button
             type="button"
             onClick={() => setPhotoCollectionType("with-doctor")}
-            className="bg-blue-600 hover:bg-blue-700 text-white text-md font-bold py-3 px-2 rounded w-fit col-span-2"
+            className="bg-blue-600 hover:bg-blue-700 text-white text-md font-bold py-4 px-6 rounded-lg shadow-md transition-all duration-200 hover:shadow-lg"
           >
-            Do you have Doctor Photos
+            📸 Upload Doctor Photos
           </button>
           <button
             type="button"
             onClick={() => setPhotoCollectionType("ai-generate-for-you")}
-            className="bg-green-600 hover:bg-green-700 text-white text-md font-bold py-3 px-2 rounded w-fit"
+            className="bg-green-600 hover:bg-green-700 text-white text-md font-bold py-4 px-6 rounded-lg shadow-md transition-all duration-200 hover:shadow-lg"
           >
-            Let's AI generate theme for you
+            🤖 AI Generate Theme for You
           </button>
           <button
             type="button"
             onClick={() => setPhotoCollectionType("mix")}
-            className="bg-gray-600 hover:bg-gray-700 text-white text-md font-bold py-3 px-2 rounded w-fit"
+            className="bg-purple-600 hover:bg-purple-700 text-white text-md font-bold py-4 px-6 rounded-lg shadow-md transition-all duration-200 hover:shadow-lg"
           >
-            Doctor photo + AI
+            🎨 Doctor Photos + AI Generated
           </button>
         </div>
       </div>
     );
-  } else if (AI_ENABLED && photoCollectionType && !themeType) {
-    switch (photoCollectionType) {
-      case "with-doctor":
-        return null;
-      case "ai-generate-for-you":
-        return (
-          <div>
-            <h2 className="text-2xl font-bold text-white">
-              Start Calendar Journey
-            </h2>
-            <p className="text-gray-800 dark:text-gray-400">
-              Select your theme to start with the image selections
-            </p>
-            <div className="flex flex-wrap gap-2 mt-6">
-              <button
-                type="button"
-                onClick={() => setThemeType("nature")}
-                className="bg-blue-600 hover:bg-blue-700 text-white text-md font-bold py-3 px-2 rounded w-fit col-span-2"
-              >
-                Nature
-              </button>
-              <button
-                type="button"
-                onClick={() => setThemeType("abstract")}
-                className="bg-green-600 hover:bg-green-700 text-white text-md font-bold py-3 px-2 rounded w-fit"
-              >
-                Abstract
-              </button>
-              <button
-                type="button"
-                onClick={() => setThemeType("historic")}
-                className="bg-green-600 hover:bg-green-700 text-white text-md font-bold py-3 px-2 rounded w-fit"
-              >
-                Historic
-              </button>
-              <button
-                type="button"
-                onClick={() => setThemeType("medical")}
-                className="bg-green-600 hover:bg-green-700 text-white text-md font-bold py-3 px-2 rounded w-fit"
-              >
-                Medical
-              </button>
-              <button
-                type="button"
-                onClick={() => setThemeType("motvational")}
-                className="bg-green-600 hover:bg-green-700 text-white text-md font-bold py-3 px-2 rounded w-fit"
-              >
-                Motivation
-              </button>
-            </div>
-          </div>
-        );
-    }
-  } else {
+  }
+
+  // Render Step 2: Theme Selection (for AI-only mode)
+  if (
+    AI_ENABLED &&
+    photoCollectionType === "ai-generate-for-you" &&
+    !themeType
+  ) {
     return (
-      <div className="dark:bg-gray-900">
-        {previewData && (
-          <PreviewModal
-            previewType="IMAGE"
-            previewUrl={previewData}
-            setPreviewMode={setPreviewData}
-          />
-        )}
-        <h2 className="text-xl font-semibold text-gray-800 dark:text-white mb-6">
-          Calendar Images
+      <div>
+        <h2 className="text-xl font-semibold text-gray-800 dark:text-white">
+          Choose Your Theme
         </h2>
-
-        {error && (
-          <div className="text-red-400 mb-4 text-sm bg-red-900 bg-opacity-30 p-3 rounded-lg border border-red-800">
-            {error}
+        <p className="text-gray-600 text-sm dark:text-gray-400 mb-6">
+          Select a theme for AI-generated calendar images
+        </p>
+        <div className="grid grid-cols-2 gap-3">
+          {Object.keys(THEME_TEMPLATES).map((theme) => (
+            <button
+              key={theme}
+              type="button"
+              onClick={() => {
+                setThemeType(theme);
+                handleAIThemeGeneration(theme);
+              }}
+              disabled={isGeneratingAI}
+              className="bg-gradient-to-br from-blue-500 to-blue-700 hover:from-blue-600 hover:to-blue-800 text-white text-md font-bold py-6 px-4 rounded-lg shadow-md transition-all duration-200 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed capitalize"
+            >
+              {THEME_TEMPLATES[theme].name}
+            </button>
+          ))}
+        </div>
+        {isGeneratingAI && (
+          <div className="mt-4 text-center text-gray-600 dark:text-gray-400">
+            Setting up your theme...
           </div>
         )}
+      </div>
+    );
+  }
 
-        {/* Upload Controls */}
+  // Render Step 2: Prompt Selection (for Mix mode)
+  if (AI_ENABLED && photoCollectionType === "mix" && !selectedPrompt) {
+    const prompts = projectData?.config?.calendar?.prompts || {};
+
+    return (
+      <div className="p-6">
+        <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-2">
+          Select AI Style
+        </h2>
+        <p className="text-gray-600 dark:text-gray-400 mb-6">
+          Choose how AI should complement your doctor photos
+        </p>
+        <div className="grid grid-cols-1 gap-3">
+          {Object.keys(prompts).map((promptKey) => (
+            <button
+              key={promptKey}
+              type="button"
+              onClick={() => {
+                setSelectedPrompt(promptKey);
+                handleMixModeGeneration(promptKey);
+              }}
+              disabled={isGeneratingAI}
+              className="bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white text-md font-bold py-4 px-6 rounded-lg shadow-md transition-all duration-200 hover:shadow-lg text-left disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <div className="font-bold mb-1">{promptKey}</div>
+            </button>
+          ))}
+        </div>
+        {isGeneratingAI && (
+          <div className="mt-4 flex items-center justify-center gap-3">
+            <div className="animate-spin rounded-full h-6 w-6 border-2 border-purple-500 border-t-transparent"></div>
+            <p className="text-gray-600 dark:text-gray-400">
+              Generating AI images...
+            </p>
+          </div>
+        )}
+      </div>
+    );
+  }
+  return (
+    <div className="dark:bg-gray-900">
+      {previewData && (
+        <PreviewModal
+          previewType="IMAGE"
+          previewUrl={previewData}
+          setPreviewMode={setPreviewData}
+        />
+      )}
+
+      <h2 className="text-xl font-semibold text-gray-800 dark:text-white mb-6">
+        Calendar Images
+        {photoCollectionType && (
+          <span className="ml-2 text-sm font-normal text-gray-500">
+            (
+            {photoCollectionType === "with-doctor"
+              ? "Doctor Photos"
+              : photoCollectionType === "ai-generate-for-you"
+                ? `AI Theme: ${themeType}`
+                : "Mixed Mode"}
+            )
+          </span>
+        )}
+      </h2>
+
+      {error && (
+        <div
+          className={`mb-4 text-sm p-3 rounded-lg border ${
+            error.includes("successfully")
+              ? "text-green-400 bg-green-900 bg-opacity-30 border-green-800"
+              : "text-red-400 bg-red-900 bg-opacity-30 border-red-800"
+          }`}
+        >
+          {error}
+        </div>
+      )}
+
+      {/* Upload Controls - Only show for with-doctor and mix modes */}
+      {(!photoCollectionType ||
+        photoCollectionType !== "ai-generate-for-you") && (
         <div className="mb-2 flex gap-1">
           <label
             className={`
@@ -598,211 +835,204 @@ const CalendarPage = ({
             />
           </label>
         </div>
+      )}
 
-        {/* Processing Status */}
-        {isProcessing && (
-          <div className="mb-1 bg-blue-900 bg-opacity-30 border border-blue-700 rounded-lg">
-            <div className="flex items-center gap-3">
-              <div className="animate-spin rounded-full h-5 w-5 border-2 border-blue-500 border-t-transparent"></div>
-              <p className="text-blue-300 font-medium">
-                Processing images... {currentCropIndex + 1} of{" "}
-                {pendingImages.length}
-              </p>
-            </div>
+      {/* Processing Status */}
+      {isProcessing && (
+        <div className="mb-1 bg-blue-900 bg-opacity-30 border border-blue-700 rounded-lg p-3">
+          <div className="flex items-center gap-3">
+            <div className="animate-spin rounded-full h-5 w-5 border-2 border-blue-500 border-t-transparent"></div>
+            <p className="text-blue-300 font-medium">
+              Processing images... {currentCropIndex + 1} of{" "}
+              {pendingImages.length}
+            </p>
           </div>
-        )}
+        </div>
+      )}
 
-        {/* Selected Images Grid */}
-        {selectedImages.length > 0 && (
-          <div>
-            <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-6">
-              Selected Images ({selectedImages.length}/{CONFIG.maxImages})
-            </h3>
-            <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
-              {selectedImages.map((image, index) => {
-                const monthKey =
-                  image.month || MONTH_NAMES[index]?.toLowerCase();
-                const displayMonthName =
-                  monthKey.charAt(0).toUpperCase() + monthKey.slice(1);
+      {/* Selected Images Grid */}
+      {selectedImages.length > 0 && (
+        <div>
+          <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-6">
+            Selected Images ({selectedImages.length}/{CONFIG.maxImages})
+          </h3>
+          <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+            {selectedImages.map((image, index) => {
+              const monthKey = image.month || MONTH_NAMES[index]?.toLowerCase();
+              const displayMonthName =
+                monthKey.charAt(0).toUpperCase() + monthKey.slice(1);
 
-                const previewSrc =
-                  image[`${monthKey}_cropped`] ||
-                  image[`${monthKey}`] ||
-                  image.croppedImage ||
-                  image.src;
+              const previewSrc =
+                image[`${monthKey}_cropped`] ||
+                image[`${monthKey}`] ||
+                image.croppedImage ||
+                image.src;
 
-                return (
-                  <div
-                    key={image.id}
-                    className={`
+              return (
+                <div
+                  key={image.id}
+                  className={`
                     flex flex-col bg-gray-200 dark:bg-gray-800 border-gray-400 border-2 rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-all duration-200 cursor-move
                     ${draggedItem === index ? "opacity-50 transform rotate-3 scale-105" : ""}
                     ${dragOverIndex === index ? "border-blue-500 bg-blue-900 bg-opacity-30" : "border-gray-200"}
                   `}
-                    draggable="true"
-                    onDragStart={(e) => handleDragStart(e, index)}
-                    onDragOver={(e) => handleDragOver(e, index)}
-                    onDragLeave={handleDragLeave}
-                    onDrop={(e) => handleDrop(e, index)}
-                    onDragEnd={handleDragEnd}
+                  draggable="true"
+                  onDragStart={(e) => handleDragStart(e, index)}
+                  onDragOver={(e) => handleDragOver(e, index)}
+                  onDragLeave={handleDragLeave}
+                  onDrop={(e) => handleDrop(e, index)}
+                  onDragEnd={handleDragEnd}
+                >
+                  <div className="bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-white text-center py-0.5 text-sm font-semibold flex items-center justify-center gap-2">
+                    <MdDragIndicator className="h-4 w-4 text-gray-400" />
+                    {displayMonthName}
+                  </div>
+
+                  <div
+                    className="relative w-full h-20 overflow-hidden"
+                    onClick={() => handlePreviewOpen(previewSrc, index)}
                   >
-                    {/* Month Header */}
-                    <div className="bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-white text-center py-0.5 text-sm font-semibold flex items-center justify-center gap-2">
-                      <MdDragIndicator className="h-4 w-4 text-gray-400" />
-                      {displayMonthName}
-                    </div>
-
-                    {/* Image Preview */}
-                    <div
-                      className="relative w-full h-20 overflow-hidden"
-                      onClick={() => handlePreviewOpen(previewSrc, index)}
-                    >
-                      <img
-                        src={previewSrc}
-                        alt={`${displayMonthName} - ${image.name}`}
-                        className="w-full h-full object-cover"
-                      />
-                      {image.needsCropping && (
-                        <div className="absolute inset-0 bg-yellow-500 bg-opacity-30 flex items-center justify-center">
-                          <span className="text-yellow-800 text-xs font-bold bg-yellow-400 px-2 rounded">
-                            Needs Crop
-                          </span>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Action Buttons */}
-                    <div className="flex gap-1 justify-center bg-gray-200 dark:bg-gray-700 p-1">
-                      <div className="relative flex-1">
-                        <button
-                          type="button"
-                          className="w-full bg-blue-600 hover:bg-blue-700 active:scale-105 py-1 border-none rounded flex items-center justify-center shadow-sm transition-all duration-200 text-white"
-                          onClick={(e) => toggleMenu(image.id, e)}
-                          title={`Replace ${displayMonthName} image`}
-                        >
-                          ↻
-                        </button>
-
-                        <div
-                          id={`menu-${image.id}`}
-                          className="hidden absolute bottom-full left-0 mb-1 bg-gray-100 dark:bg-gray-800 border border-gray-600 rounded-md shadow-lg z-50 min-w-32 overflow-hidden"
-                        >
-                          <button
-                            type="button"
-                            onClick={(e) =>
-                              handleReplaceClick(image.id, "camera", e)
-                            }
-                            className="block w-full px-3 py-2 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-700 bg-gray-200 dark:bg-gray-600 border-none transition-colors duration-200"
-                          >
-                            Camera
-                          </button>
-                          <button
-                            type="button"
-                            onClick={(e) =>
-                              handleReplaceClick(image.id, "gallery", e)
-                            }
-                            className="block w-full px-3 py-2 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-700 border-none border-t border-gray-600 transition-colors duration-200"
-                          >
-                            Gallery
-                          </button>
-                        </div>
+                    <img
+                      src={previewSrc}
+                      alt={`${displayMonthName} - ${image.name}`}
+                      className="w-full h-full object-cover"
+                    />
+                    {image.needsCropping && (
+                      <div className="absolute inset-0 bg-yellow-500 bg-opacity-30 flex items-center justify-center">
+                        <span className="text-yellow-800 text-xs font-bold bg-yellow-400 px-2 rounded">
+                          Needs Crop
+                        </span>
                       </div>
+                    )}
+                  </div>
 
+                  <div className="flex gap-1 justify-center bg-gray-200 dark:bg-gray-700 p-1">
+                    <div className="relative flex-1">
                       <button
                         type="button"
-                        onClick={(e) => removeImage(image.id, e)}
-                        className="flex-1 py-1 bg-red-600 hover:bg-red-700 active:scale-105 border-none rounded flex items-center justify-center shadow-sm transition-all duration-200 text-white"
-                        title={`Delete ${displayMonthName} image`}
+                        className="w-full bg-blue-600 hover:bg-blue-700 active:scale-105 py-1 border-none rounded flex items-center justify-center shadow-sm transition-all duration-200 text-white"
+                        onClick={(e) => toggleMenu(image.id, e)}
+                        title={`Replace ${displayMonthName} image`}
                       >
-                        <MdDelete className="h-4 w-4" />
+                        ↻
                       </button>
+
+                      <div
+                        id={`menu-${image.id}`}
+                        className="hidden absolute bottom-full left-0 mb-1 bg-gray-100 dark:bg-gray-800 border border-gray-600 rounded-md shadow-lg z-50 min-w-32 overflow-hidden"
+                      >
+                        <button
+                          type="button"
+                          onClick={(e) =>
+                            handleReplaceClick(image.id, "camera", e)
+                          }
+                          className="block w-full px-3 py-2 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-700 bg-gray-200 dark:bg-gray-600 border-none transition-colors duration-200"
+                        >
+                          Camera
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) =>
+                            handleReplaceClick(image.id, "gallery", e)
+                          }
+                          className="block w-full px-3 py-2 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-700 border-none border-t border-gray-600 transition-colors duration-200"
+                        >
+                          Gallery
+                        </button>
+                      </div>
                     </div>
+
+                    <button
+                      type="button"
+                      onClick={(e) => removeImage(image.id, e)}
+                      className="flex-1 py-1 bg-red-600 hover:bg-red-700 active:scale-105 border-none rounded flex items-center justify-center shadow-sm transition-all duration-200 text-white"
+                      title={`Delete ${displayMonthName} image`}
+                    >
+                      <MdDelete className="h-4 w-4" />
+                    </button>
                   </div>
-                );
-              })}
-            </div>
+                </div>
+              );
+            })}
           </div>
-        )}
+        </div>
+      )}
 
-        {/* Empty State */}
-        {selectedImages.length === 0 && !isProcessing && (
-          <div className="border-2 border-dashed border-gray-700 rounded-lg p-8 text-center h-40 flex flex-col items-center justify-center">
-            <div className="text-gray-500 mb-4 bg-gray-200 dar:bg-gray-800 p-4 rounded-full">
-              <FaRegImage size={32} />
-            </div>
-            <p className="text-gray-400 mb-2">No images selected yet</p>
-            <p className="text-gray-500 text-sm">
-              Upload up to {CONFIG.maxImages} images for your calendar
-            </p>
+      {/* Empty State */}
+      {selectedImages.length === 0 && !isProcessing && (
+        <div className="border-2 border-dashed border-gray-700 rounded-lg p-8 text-center h-40 flex flex-col items-center justify-center">
+          <div className="text-gray-500 mb-4 bg-gray-200 dark:bg-gray-800 p-4 rounded-full">
+            <FaRegImage size={32} />
           </div>
-        )}
+          <p className="text-gray-400 mb-2">No images selected yet</p>
+          <p className="text-gray-500 text-sm">
+            Upload up to {CONFIG.maxImages} images for your calendar
+          </p>
+        </div>
+      )}
 
-        {/* Crop Modal */}
-        {currentCropIndex !== null && pendingImages[currentCropIndex] && (
-          <ImageCropper
-            image={{
-              src: pendingImages[currentCropIndex].src,
-              type: pendingImages[currentCropIndex].file?.type || "image/jpeg",
-            }}
-            setImage={(newImage) => {
-              setPendingImages((prev) => {
-                const updated = [...prev];
-                updated[currentCropIndex] = {
-                  ...updated[currentCropIndex],
-                  src: newImage.src,
-                };
-                return updated;
+      {/* Crop Modal */}
+      {currentCropIndex !== null && pendingImages[currentCropIndex] && (
+        <ImageCropper
+          image={{
+            src: pendingImages[currentCropIndex].src,
+            type: pendingImages[currentCropIndex].file?.type || "image/jpeg",
+          }}
+          setImage={(newImage) => {
+            setPendingImages((prev) => {
+              const updated = [...prev];
+              updated[currentCropIndex] = {
+                ...updated[currentCropIndex],
+                src: newImage.src,
+              };
+              return updated;
+            });
+          }}
+          originalFile={pendingImages[currentCropIndex].file}
+          filename={pendingImages[currentCropIndex].name}
+          unsavedChanges={true}
+          setUnsavedChanges={() => {}}
+          isRxPadImage={false}
+          formData={formData}
+          setFormData={(updater) => {
+            const result =
+              typeof updater === "function" ? updater(formData) : updater;
+
+            if (result.photo) {
+              handleCropSave({
+                croppedImage: result.photo.croppedImage,
+                originalImage: result.photo.originalImage,
+                name: pendingImages[currentCropIndex].name,
+                id:
+                  pendingImages[currentCropIndex].replaceId ||
+                  pendingImages[currentCropIndex].id,
               });
-            }}
-            originalFile={pendingImages[currentCropIndex].file}
-            filename={pendingImages[currentCropIndex].name}
-            unsavedChanges={true}
-            setUnsavedChanges={() => {}}
-            isRxPadImage={false}
-            formData={formData}
-            setFormData={(updater) => {
-              const result =
-                typeof updater === "function" ? updater(formData) : updater;
-
-              // Extract the saved photo data and trigger handleCropSave
-              if (result.photo) {
-                handleCropSave({
-                  croppedImage: result.photo.croppedImage,
-                  originalImage: result.photo.originalImage,
-                  name: pendingImages[currentCropIndex].name,
-                  id:
-                    pendingImages[currentCropIndex].replaceId ||
-                    pendingImages[currentCropIndex].id,
-                });
-              }
-            }}
-            onClose={handleCropCancel}
-            ui={ui}
-            doctorHash={doctorHash}
-            projectData={projectData}
-            cropWidth={cropDimensions.w}
-            cropHeight={cropDimensions.h}
-            ratio={cropDimensions.w / cropDimensions.h}
-            onRemove={() => {
-              const currentPending = pendingImages[currentCropIndex];
-              if (currentPending.replaceId) {
-                // If replacing, cancel the replacement
-                handleCropCancel();
+            }
+          }}
+          onClose={handleCropCancel}
+          ui={ui}
+          doctorHash={doctorHash}
+          projectData={projectData}
+          cropWidth={cropDimensions.w}
+          cropHeight={cropDimensions.h}
+          ratio={cropDimensions.w / cropDimensions.h}
+          onRemove={() => {
+            const currentPending = pendingImages[currentCropIndex];
+            if (currentPending.replaceId) {
+              handleCropCancel();
+            } else {
+              const nextIndex = currentCropIndex + 1;
+              if (nextIndex < pendingImages.length) {
+                setCurrentCropIndex(nextIndex);
               } else {
-                // If new image, skip this one
-                const nextIndex = currentCropIndex + 1;
-                if (nextIndex < pendingImages.length) {
-                  setCurrentCropIndex(nextIndex);
-                } else {
-                  handleCropCancel();
-                }
+                handleCropCancel();
               }
-            }}
-          />
-        )}
-      </div>
-    );
-  }
+            }
+          }}
+        />
+      )}
+    </div>
+  );
 };
 
 export default CalendarPage;

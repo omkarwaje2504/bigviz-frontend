@@ -789,7 +789,7 @@ const MemberTable: React.FC<MemberTableProps> = ({
       {/* Grid or List */}
       {viewMode === "grid" ? (
         <div
-          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2"
           key={currentPage}
         >
           {paginatedMembers?.map((member) => (

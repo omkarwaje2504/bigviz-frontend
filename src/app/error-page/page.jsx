@@ -30,7 +30,6 @@ import {
 import { IoRefresh, IoClose } from "react-icons/io5";
 
 const API = "https://error-tracking-api.vercel.app/api/error";
-const ALLOWED_STATUSES = ["pending", "resolved", "rejected"];
 
 /* ============== Theme hook ============== */
 const useTheme = () => {
@@ -98,23 +97,6 @@ const Button = ({
 };
 
 const StatusChip = ({ status }) => {
-  const configs = {
-    pending: {
-      bg: "bg-amber-100 dark:bg-amber-900/30",
-      text: "text-amber-700 dark:text-amber-300",
-      icon: "⏳",
-    },
-    resolved: {
-      bg: "bg-green-100 dark:bg-green-900/30",
-      text: "text-green-700 dark:text-green-300",
-      icon: "✅",
-    },
-    rejected: {
-      bg: "bg-red-100 dark:bg-red-900/30",
-      text: "text-red-700 dark:text-red-300",
-      icon: "❌",
-    },
-  };
   const cfg = configs[status] || configs.pending;
   return (
     <span
@@ -208,24 +190,6 @@ const FilterPanel = ({
         <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Status
-            </label>
-            <select
-              value={filters.status}
-              onChange={(e) =>
-                setFilters({ ...filters, status: e.target.value })
-              }
-              className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-white"
-            >
-              <option value="">All Status</option>
-              <option value="pending">Pending</option>
-              <option value="resolved">Resolved</option>
-              <option value="rejected">Rejected</option>
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Date Range
             </label>
             <select
@@ -255,14 +219,7 @@ const FilterPanel = ({
 };
 
 /* ============== Individual Error Card ============== */
-const ErrorCard = ({
-  error,
-  onView,
-  onResolve,
-  onDelete,
-  isSelected,
-  onToggleSelect,
-}) => {
+const ErrorCard = ({ error, onView, onDelete, isSelected, onToggleSelect }) => {
   const checked = isSelected?.(error._id) || false;
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg p-3 shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow">
@@ -315,14 +272,7 @@ const ErrorCard = ({
           >
             <FaEye />
           </Button>
-          <Button
-            variant="success"
-            size="xs"
-            onClick={() => onResolve(error._id)}
-            className="p-1"
-          >
-            <FaCheck />
-          </Button>
+
           <Button
             variant="danger"
             size="xs"
@@ -342,7 +292,6 @@ const ErrorTypeGroup = ({
   errorType,
   errors,
   onView,
-  onResolve,
   onDelete,
   isSelected,
   toggleSelect,
@@ -410,7 +359,6 @@ const ErrorTypeGroup = ({
               key={error._id}
               error={error}
               onView={onView}
-              onResolve={onResolve}
               onDelete={onDelete}
               isSelected={isSelected}
               onToggleSelect={toggleSelect}
@@ -1139,23 +1087,6 @@ export default function ErrorTrackingDashboard() {
     clearSelection();
   };
 
-  // Bulk on selected
-  const resolveSelected = async () => {
-    const ids = processedErrors
-      .filter((e) => selectedIds.has(e._id))
-      .map((e) => e._id);
-    await bulkUpdateStatus(ids, "resolved");
-    clearSelection();
-  };
-
-  const rejectSelected = async () => {
-    const ids = processedErrors
-      .filter((e) => selectedIds.has(e._id))
-      .map((e) => e._id);
-    await bulkUpdateStatus(ids, "rejected");
-    clearSelection();
-  };
-
   const deleteSelected = async () => {
     const ids = processedErrors
       .filter((e) => selectedIds.has(e._id))
@@ -1201,8 +1132,6 @@ export default function ErrorTrackingDashboard() {
       <ErrorDetail
         error={selectedError}
         onBack={() => setSelectedError(null)}
-        onResolve={(id) => updateErrorStatus(id, "resolved")}
-        onReject={(id) => updateErrorStatus(id, "rejected")}
       />
     );
   }
@@ -1327,24 +1256,6 @@ export default function ErrorTrackingDashboard() {
 
           <div className="flex gap-2 flex-wrap">
             <Button
-              variant="success"
-              size="sm"
-              onClick={resolveSelected}
-              disabled={!someVisibleSelected}
-            >
-              <FaCheck />
-              Resolve Selected
-            </Button>
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={rejectSelected}
-              disabled={!someVisibleSelected}
-            >
-              <FaTimes />
-              Reject Selected
-            </Button>
-            <Button
               variant="danger"
               size="sm"
               onClick={deleteSelected}
@@ -1354,24 +1265,6 @@ export default function ErrorTrackingDashboard() {
               Delete Selected
             </Button>
 
-            <Button
-              variant="success"
-              size="sm"
-              onClick={resolveAll}
-              disabled={processedErrors.length === 0}
-            >
-              <FaCheck />
-              Resolve All
-            </Button>
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={rejectAll}
-              disabled={processedErrors.length === 0}
-            >
-              <FaTimes />
-              Reject All
-            </Button>
             <Button
               variant="danger"
               size="sm"
@@ -1408,11 +1301,7 @@ export default function ErrorTrackingDashboard() {
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
                 No errors found
               </h3>
-              <p className="text-gray-600 dark:text-gray-400 mb-4">
-                {Object.values(filters).some((v) => v) || searchTerm
-                  ? "Try adjusting your filters or search terms."
-                  : "All errors are resolved! 🎉"}
-              </p>
+
               <Button variant="primary" onClick={resetFilters}>
                 Clear Filters
               </Button>
@@ -1440,7 +1329,6 @@ export default function ErrorTrackingDashboard() {
                     projectId={projectId}
                     employeeGroups={employeeGroups}
                     onView={setSelectedError}
-                    onResolve={(id) => updateErrorStatus(id, "resolved")}
                     onDelete={deleteError}
                     isSelected={isSelected}
                     toggleSelect={toggleSelect}
@@ -1454,7 +1342,6 @@ export default function ErrorTrackingDashboard() {
                   key={error._id}
                   error={error}
                   onView={setSelectedError}
-                  onResolve={(id) => updateErrorStatus(id, "resolved")}
                   onDelete={deleteError}
                   isSelected={isSelected}
                   onToggleSelect={toggleSelect}
