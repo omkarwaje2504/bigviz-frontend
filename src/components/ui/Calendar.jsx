@@ -24,6 +24,11 @@ import { FaBahai } from "react-icons/fa6";
 import { useSearchParams } from "next/navigation";
 import { generateCalendarPreviewBlob } from "@services/GenerateImage";
 
+// Import the new enhanced components
+import NameArtSelector from './NameArtSelector';
+import InitialSelector from './InitialSelector';
+import SuperheroSelector from './SuperheroSelector';
+
 const CONFIG = {
   maxImages: 12,
   acceptedFormats: "image/*",
@@ -79,23 +84,6 @@ const THEME_TEMPLATES = {
       { month: "october", prompt: "Neon colors digital artwork" },
       { month: "november", prompt: "Pastel abstract watercolor" },
       { month: "december", prompt: "Silver and blue metallic pattern" },
-    ],
-  },
-  animal: {
-    name: "Animal",
-    images: [
-      { month: "january", prompt: "Ancient Egyptian pyramids" },
-      { month: "february", prompt: "Roman Colosseum architecture" },
-      { month: "march", prompt: "Greek Parthenon temple" },
-      { month: "april", prompt: "Medieval European castle" },
-      { month: "may", prompt: "Renaissance Italian plaza" },
-      { month: "june", prompt: "Taj Mahal monument" },
-      { month: "july", prompt: "Great Wall of China" },
-      { month: "august", prompt: "Ancient Mayan ruins" },
-      { month: "september", prompt: "Victorian era architecture" },
-      { month: "october", prompt: "Japanese historic temple" },
-      { month: "november", prompt: "Indian historical palace" },
-      { month: "december", prompt: "Byzantine cathedral interior" },
     ],
   },
   medical: {
@@ -248,6 +236,14 @@ const CalendarPage = ({
 
   const cropDimensions = getPhotoDims(projectData);
 
+  // Function to handle prefilled images from AI selections
+  const handlePrefilledImages = useCallback((selectedImgs) => {
+    setSelectedImages(selectedImgs);
+    setFormData((prev) => ({ ...prev, calendar_images: selectedImgs }));
+    // After setting prefilled images, continue to photo upload interface
+    setSelectedPrompt("completed"); // Mark as completed to show upload interface
+  }, [setFormData]);
+
   // Function to handle AI theme generation
   const handleAIThemeGeneration = useCallback(
     async (theme) => {
@@ -285,69 +281,6 @@ const CalendarPage = ({
       }
     },
     [setFormData],
-  );
-
-  // Function to handle Mix mode (Doctor photo + AI)
-  const handleMixModeGeneration = useCallback(
-    async (promptId) => {
-      setIsGeneratingAI(true);
-      setError("");
-
-      try {
-        const prompts = projectData?.config?.calendar?.prompts;
-        if (!prompts || !prompts[promptId]) {
-          throw new Error("Invalid prompt selected");
-        }
-
-        const selectedPromptData = prompts[promptId];
-
-        // Call your API to generate AI images based on the prompt
-        const response = await fetch("/api/generate-calendar-images", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            prompt: selectedPromptData,
-            doctorHash: doctorHash,
-            projectId: projectData?.id,
-          }),
-        });
-
-        if (!response.ok) {
-          throw new Error("Failed to generate AI images");
-        }
-
-        const data = await response.json();
-
-        // Process the generated images and add them to selectedImages
-        const generatedImages = data.images.map((imgUrl, index) => {
-          const monthKey = MONTH_NAMES[index].toLowerCase();
-          return {
-            id: `ai-${monthKey}-${Date.now()}`,
-            month: monthKey,
-            name: `AI ${MONTH_NAMES[index]} Image`,
-            needsCropping: false,
-            [`${monthKey}`]: imgUrl,
-            [`${monthKey}_cropped`]: imgUrl,
-          };
-        });
-
-        setSelectedImages(generatedImages);
-        setFormData((prev) => ({
-          ...prev,
-          calendar_images: generatedImages,
-          calendar_ai_prompt: promptId,
-        }));
-
-        setError("AI images generated successfully!");
-      } catch (err) {
-        setError(`Failed to generate AI images: ${err.message}`);
-      } finally {
-        setIsGeneratingAI(false);
-      }
-    },
-    [projectData, doctorHash, setFormData],
   );
 
   const handleImageSelection = useCallback(
@@ -616,11 +549,9 @@ const CalendarPage = ({
 
   const remainingSlots = CONFIG.maxImages - selectedImages.length;
 
-  const getMonthName = (index) => {
-    return MONTH_NAMES[index] || `Month ${index + 1}`;
-  };
+  // ENHANCED FLOW RENDERING
 
-  // Render Step 1: Photo Collection Type Selection
+  // Step 1: Photo Collection Type Selection
   if (AI_ENABLED && !photoCollectionType) {
     return (
       <div>
@@ -657,7 +588,7 @@ const CalendarPage = ({
     );
   }
 
-  // Render Step 2: Theme Selection (for AI-only mode)
+  // Step 2: Theme Selection (for AI-only mode)
   if (
     AI_ENABLED &&
     photoCollectionType === "ai-generate-for-you" &&
@@ -696,45 +627,77 @@ const CalendarPage = ({
     );
   }
 
-  // Render Step 2: Prompt Selection (for Mix mode)
+  // Step 2: Enhanced Mix Mode Selection
   if (AI_ENABLED && photoCollectionType === "mix" && !selectedPrompt) {
-    const prompts = projectData?.config?.calendar?.prompts || {};
-
     return (
       <div className="p-6">
         <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-2">
-          Select AI Style
+          Select AI Enhancement Style
         </h2>
         <p className="text-gray-600 dark:text-gray-400 mb-6">
-          Choose how AI should complement your doctor photos
+          Choose how to enhance your calendar with AI
         </p>
-        <div className="grid grid-cols-1 gap-3">
-          {Object.keys(prompts).map((promptKey) => (
-            <button
-              key={promptKey}
-              type="button"
-              onClick={() => {
-                setSelectedPrompt(promptKey);
-                handleMixModeGeneration(promptKey);
-              }}
-              disabled={isGeneratingAI}
-              className="bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white text-md font-bold py-4 px-6 rounded-lg shadow-md transition-all duration-200 hover:shadow-lg text-left disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <div className="font-bold mb-1">{promptKey}</div>
-            </button>
-          ))}
+        
+        <div className="grid grid-cols-1 gap-4">
+          <button
+            onClick={() => setSelectedPrompt("name-art")}
+            className="bg-gradient-to-r from-blue-500 to-blue-700 text-white font-bold py-6 px-6 rounded-lg text-left hover:from-blue-600 hover:to-blue-800 transition-all duration-200"
+          >
+            <div className="font-bold text-lg mb-2">🎨 Name Art</div>
+            <div className="text-sm opacity-90">Generate artistic images based on doctor's name</div>
+          </button>
+          
+          <button
+            onClick={() => setSelectedPrompt("name-initial")}
+            className="bg-gradient-to-r from-green-500 to-green-700 text-white font-bold py-6 px-6 rounded-lg text-left hover:from-green-600 hover:to-green-800 transition-all duration-200"
+          >
+            <div className="font-bold text-lg mb-2">🔤 Name Initial Patterns</div>
+            <div className="text-sm opacity-90">Choose from 24 initial design patterns</div>
+          </button>
+          
+          <button
+            onClick={() => setSelectedPrompt("superhero")}
+            className="bg-gradient-to-r from-purple-500 to-purple-700 text-white font-bold py-6 px-6 rounded-lg text-left hover:from-purple-600 hover:to-purple-800 transition-all duration-200"
+          >
+            <div className="font-bold text-lg mb-2">🦸‍♀️ Superhero Transformation</div>
+            <div className="text-sm opacity-90">Transform doctor into different superhero styles</div>
+          </button>
         </div>
-        {isGeneratingAI && (
-          <div className="mt-4 flex items-center justify-center gap-3">
-            <div className="animate-spin rounded-full h-6 w-6 border-2 border-purple-500 border-t-transparent"></div>
-            <p className="text-gray-600 dark:text-gray-400">
-              Generating AI images...
-            </p>
-          </div>
-        )}
       </div>
     );
   }
+
+  // Render appropriate enhanced component based on selection
+  if (selectedPrompt === "name-art") {
+    return (
+      <NameArtSelector 
+        doctorName={formData?.name || formData?.doctor_name || 'Doctor'} 
+        onSelection={handlePrefilledImages}
+        projectData={projectData}
+      />
+    );
+  }
+  
+  if (selectedPrompt === "name-initial") {
+    return (
+      <InitialSelector 
+        doctorName={formData?.name || formData?.doctor_name || 'Doctor'} 
+        onSelection={handlePrefilledImages}
+        projectData={projectData}
+      />
+    );
+  }
+  
+  if (selectedPrompt === "superhero") {
+    return (
+      <SuperheroSelector 
+        onSelection={handlePrefilledImages}
+        projectData={projectData}
+      />
+    );
+  }
+
+  // ORIGINAL PHOTO UPLOAD INTERFACE (Enhanced)
   return (
     <div className="dark:bg-gray-900">
       {previewData && (
@@ -754,7 +717,9 @@ const CalendarPage = ({
               ? "Doctor Photos"
               : photoCollectionType === "ai-generate-for-you"
                 ? `AI Theme: ${themeType}`
-                : "Mixed Mode"}
+                : photoCollectionType === "mix" && selectedPrompt === "completed"
+                  ? "AI Enhanced - Ready for Upload"
+                  : "Mixed Mode"}
             )
           </span>
         )}
@@ -772,9 +737,10 @@ const CalendarPage = ({
         </div>
       )}
 
-      {/* Upload Controls - Only show for with-doctor and mix modes */}
-      {(!photoCollectionType ||
-        photoCollectionType !== "ai-generate-for-you") && (
+      {/* Upload Controls - Show for with-doctor mode and mix mode after selection */}
+      {(photoCollectionType === "with-doctor" || 
+        (photoCollectionType === "mix" && selectedPrompt === "completed") ||
+        !photoCollectionType) && (
         <div className="mb-2 flex gap-1">
           <label
             className={`
@@ -966,7 +932,11 @@ const CalendarPage = ({
           </div>
           <p className="text-gray-400 mb-2">No images selected yet</p>
           <p className="text-gray-500 text-sm">
-            Upload up to {CONFIG.maxImages} images for your calendar
+            {photoCollectionType === "with-doctor" 
+              ? "Upload up to 12 doctor photos for your calendar"
+              : photoCollectionType === "mix" && selectedPrompt === "completed"
+                ? "Your AI-enhanced images are ready! Add more photos if needed"
+                : `Upload up to ${CONFIG.maxImages} images for your calendar`}
           </p>
         </div>
       )}
