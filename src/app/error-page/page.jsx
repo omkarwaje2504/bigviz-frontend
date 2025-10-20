@@ -1352,7 +1352,7 @@ export default function ErrorTrackingDashboard() {
         </div>
       </main>
 
-      {/* Footer */}
+
       <footer className="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 p-4 mt-8">
         <div className="max-w-7xl mx-auto text-center text-sm text-gray-500 dark:text-gray-400">
           <p>Error Tracking Dashboard • Built with React & Next.js</p>
