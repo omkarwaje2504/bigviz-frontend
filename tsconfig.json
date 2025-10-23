@@ -1,7 +1,11 @@
 {
   "compilerOptions": {
     "target": "es5",
-    "lib": ["dom", "dom.iterable", "esnext"],
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "esnext"
+    ],
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,
@@ -12,7 +16,7 @@
     "moduleResolution": "node",
     "resolveJsonModule": true,
     "isolatedModules": true,
-    "jsx": "preserve",
+    "jsx": "react-jsx",
     "noUnusedLocals": true,
     "plugins": [
       {
@@ -22,11 +26,21 @@
     "incremental": true,
     "baseUrl": ".",
     "paths": {
-      "@components/*": ["src/components/*"],
-      "@utils/*": ["utils/*"],
-      "@actions/*": ["actions/*"],
-      "@services/*": ["services/*"],
-      "@compositions/*": ["src/remotion/compositions/*"]
+      "@components/*": [
+        "src/components/*"
+      ],
+      "@utils/*": [
+        "utils/*"
+      ],
+      "@actions/*": [
+        "actions/*"
+      ],
+      "@services/*": [
+        "services/*"
+      ],
+      "@compositions/*": [
+        "src/remotion/compositions/*"
+      ]
     }
   },
   "include": [
@@ -42,7 +56,18 @@
     "src/components/*/*.tsx",
     "src/components/*/*.jsx",
     "src/remotion/index.ts",
-    "src/remotion/compositions/*.jsx"
-, "src/components/ui/PhotoUpload.jsx", "src/components/ui/ImageCropper.jsx", "src/components/ui/ImageUploadButton.jsx"  ],
-  "exclude": ["node_modules", "remotion.config.ts"]
+    "src/remotion/compositions/*.jsx",
+    "src/components/ui/PhotoUpload.jsx",
+    "src/components/ui/ImageCropper.jsx",
+    "src/components/ui/ImageUploadButton.jsx",
+    ".next/dev/types/**/*.ts",
+    "dist\\dev/types/**/*.ts",
+    "dist\\dev/types/**/*.ts",
+    ".next\\dev/types/**/*.ts",
+    ".next\\dev/types/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "remotion.config.ts"
+  ]
 }

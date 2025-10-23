@@ -13,7 +13,6 @@ import {
   Path,
   Line,
 } from "react-konva";
-import Konva from "konva";
 import QRCode from "qrcode";
 import { graphicsLibrary } from "./graphicsLibrary";
 import "./App.css";

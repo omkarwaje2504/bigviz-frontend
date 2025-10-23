@@ -13,6 +13,7 @@ import MyError from "@services/MyError";
 import { SaveDoctors } from "@actions/user";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { Suspense } from "react";
 
 function generateRandomString(length) {
   const characters =
@@ -273,18 +274,20 @@ export default function RegisterNewCandidate({ projectData, projectId, ui }) {
               setValidationStatus={setValidationStatus}
               doctorHash={doctorHash}
             />
-            <FormNavigationButtons
-              ui={ui}
-              projectData={projectData}
-              currentStep={currentStep}
-              setCurrentStep={setCurrentStep}
-              formData={formData}
-              validationStatus={validationStatus}
-              isSubmitLoading={isSubmitLoading}
-              onSaveDoctor={handleSaveDoctor}
-              isSaveLoading={isSaveLoading}
-              handleExtraGameButton={handleExtraGameButton}
-            />
+            <Suspense fallback={<div>Loading...</div>}>
+              <FormNavigationButtons
+                ui={ui}
+                projectData={projectData}
+                currentStep={currentStep}
+                setCurrentStep={setCurrentStep}
+                formData={formData}
+                validationStatus={validationStatus}
+                isSubmitLoading={isSubmitLoading}
+                onSaveDoctor={handleSaveDoctor}
+                isSaveLoading={isSaveLoading}
+                handleExtraGameButton={handleExtraGameButton}
+              />
+            </Suspense>
           </form>
         </div>
       </div>
