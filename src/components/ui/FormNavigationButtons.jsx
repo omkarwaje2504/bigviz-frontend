@@ -2,6 +2,7 @@
 
 import MyError from "@services/MyError";
 import { FaChevronLeft, FaChevronRight, FaSpinner } from "react-icons/fa";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 const FormNavigationButtons = ({
   ui,
@@ -14,9 +15,18 @@ const FormNavigationButtons = ({
   onSaveDoctor,
   handleExtraGameButton,
 }) => {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
+
   const projectType = projectData?.product_type;
   const disablePhotoUpload = projectData?.config?.doctor?.disable_photo_upload;
   const optionalPhotoUpload = projectData?.config?.doctor?.optional_first_photo;
+
+  const photoCollectionType = searchParams.get("photo-collection-type");
+  const themeType = searchParams.get("theme-type");
+  const selectedPrompt = searchParams.get("selected-prompt");
+  const ShowFinalPreview = searchParams.get("final-preview");
 
   const disableMobileNumber =
     projectData?.config?.doctor?.disable_mobile_number;
@@ -82,25 +92,31 @@ const FormNavigationButtons = ({
   const handleBack = () => {
     setCurrentStep(currentStep - 1);
   };
-
   const handleCalendarBack = () => {
-    const url = new URL(window.location.href);
-    const params = url.searchParams;
+    const newParams = new URLSearchParams(searchParams.toString());
+    const getPhotoCollectionType = newParams.get("photo-collection-type");
 
-    const photoCollectionType = params.get("photo-collection-type");
-    const themeType = params.get("theme-type");
-
-    if (photoCollectionType && themeType) {
-      params.delete("theme-type");
-      window.history.replaceState({}, "", url.toString());
-      window.dispatchEvent(new PopStateEvent("popstate"));
-    } else if (photoCollectionType && !themeType) {
-      params.delete("photo-collection-type");
-      window.history.replaceState({}, "", url.toString());
-      window.dispatchEvent(new PopStateEvent("popstate"));
+    if (
+      newParams.has("final-preview") &&
+      getPhotoCollectionType === "with-doctor"
+    ) {
+      newParams.delete("final-preview");
+      newParams.delete("photo-collection-type");
+    } else if (newParams.has("final-preview")) {
+      newParams.delete("final-preview");
+    } else if (newParams.has("selected-prompt")) {
+      newParams.delete("selected-prompt");
+    } else if (newParams.has("theme-type")) {
+      newParams.delete("theme-type");
+    } else if (newParams.has("photo-collection-type")) {
+      newParams.delete("photo-collection-type");
     } else {
       setCurrentStep(currentStep - 1);
+      return;
     }
+
+    // Update URL reactively (this re-renders automatically)
+    router.replace(`${pathname}?${newParams.toString()}`);
   };
 
   return (
@@ -119,14 +135,24 @@ const FormNavigationButtons = ({
       )}
 
       {!isLastStepForProject && canProceed && currentStep !== 3 && (
-        <button
-          type="button"
-          onClick={handleNext}
-          className="flex items-center ml-auto bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded"
-        >
-          Next
-          <FaChevronRight size={16} className="ml-1" />
-        </button>
+        <>
+          {projectType === "DeskCalendar" &&
+            (currentStep !== 2 ||
+              (currentStep === 2 &&
+                Array.isArray(formData?.calendar_images) &&
+                formData?.calendar_images.length > 0 &&
+                photoCollectionType &&
+                ShowFinalPreview)) && (
+              <button
+                type="button"
+                onClick={handleNext}
+                className="flex items-center ml-auto bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded"
+              >
+                Next
+                <FaChevronRight size={16} className="ml-1" />
+              </button>
+            )}
+        </>
       )}
       <div className="md:flex gap-2">
         {ui?.DoctorRegistrationForm?.HomeRedirection &&

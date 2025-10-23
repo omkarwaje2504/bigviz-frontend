@@ -15,7 +15,7 @@ const nextConfig = {
           },
           {
             key: "Cross-Origin-Embedder-Policy",
-            value: "require-corp",
+            value: "credentialless",
           },
         ],
       },
@@ -24,7 +24,7 @@ const nextConfig = {
         headers: [
           {
             key: "Cross-Origin-Embedder-Policy",
-            value: "require-corp",
+            value: "credentialless",
           },
           {
             key: "Cross-Origin-Opener-Policy",
@@ -43,8 +43,8 @@ const nextConfig = {
     return config;
   },
   reactStrictMode: false,
-  output: "export",
-  distDir: "dist",
+  // output: "export",
+  // distDir: "dist",
   images: {
     unoptimized: true,
     remotePatterns: [

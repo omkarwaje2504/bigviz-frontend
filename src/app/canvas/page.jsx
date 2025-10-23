@@ -18,6 +18,19 @@ import QRCode from "qrcode";
 import { graphicsLibrary } from "./graphicsLibrary";
 import "./App.css";
 import UploadFile, { createS3Url } from "@services/uploadFile";
+import {
+  FaAlignCenter,
+  FaAlignLeft,
+  FaAlignRight,
+  FaArrowAltCircleDown,
+  FaArrowAltCircleUp,
+} from "react-icons/fa";
+import {
+  MdOutlineVerticalAlignBottom,
+  MdOutlineVerticalAlignCenter,
+  MdOutlineVerticalAlignTop,
+} from "react-icons/md";
+import GenerateImage from "@services/GenerateImage";
 
 const DesignStudio = () => {
   const [elements, setElements] = useState([]);
@@ -35,7 +48,8 @@ const DesignStudio = () => {
   const [showCanvasSizeModal, setShowCanvasSizeModal] = useState(false);
   const [graphicsCategory, setGraphicsCategory] = useState("icons");
   const [showAddonsPanel, setShowAddonsPanel] = useState(false);
-
+  const [renamingLayerId, setRenamingLayerId] = useState(null);
+  const renameInputRef = useRef(null);
   // Group editing state
   const [editingGroupId, setEditingGroupId] = useState(null);
   const [showGroupEditModal, setShowGroupEditModal] = useState(false);
@@ -64,6 +78,9 @@ const DesignStudio = () => {
     width: 0,
     height: 0,
   });
+  const [history, setHistory] = useState([[]]);
+  const [historyStep, setHistoryStep] = useState(0);
+  const MAX_HISTORY = 50;
 
   // Refs
   const stageRef = useRef(null);
@@ -94,6 +111,29 @@ const DesignStudio = () => {
 
     loadTemplatesFromS3();
   }, []);
+
+  const addToHistory = useCallback(
+    (newElements) => {
+      setHistory((prev) => {
+        // Remove any future history if we're not at the end
+        const newHistory = prev.slice(0, historyStep + 1);
+
+        // Add new state
+        newHistory.push(JSON.parse(JSON.stringify(newElements))); // Deep clone
+
+        // Limit history size
+        if (newHistory.length > MAX_HISTORY) {
+          newHistory.shift();
+          setHistoryStep((step) => Math.max(0, step - 1));
+          return newHistory;
+        }
+
+        setHistoryStep(newHistory.length - 1);
+        return newHistory;
+      });
+    },
+    [historyStep],
+  );
 
   const loadTemplateFromS3 = async (templateId) => {
     try {
@@ -152,6 +192,40 @@ const DesignStudio = () => {
     return () => resizeObserver.disconnect();
   }, []);
 
+  const currentElement = elements.find((el) => el.id === selectedId);
+
+  useEffect(() => {
+    if (transformerRef.current && selectedId) {
+      const node = stageRef.current?.findOne(`#${selectedId}`);
+      if (node && node !== transformerRef.current.nodes()[0]) {
+        transformerRef.current.nodes([node]);
+        transformerRef.current.getLayer().batchDraw();
+      } else if (transformerRef.current) {
+        transformerRef.current.nodes([]);
+        transformerRef.current.getLayer().batchDraw();
+      }
+
+      // Disable resizing if element is locked
+      if (currentElement && currentElement.locked) {
+        transformerRef.current.enabledAnchors([]);
+        transformerRef.current.rotateEnabled(false);
+      } else {
+        // Enable all anchors for unlocked elements
+        transformerRef.current.enabledAnchors([
+          "top-left",
+          "top-center",
+          "top-right",
+          "middle-right",
+          "middle-left",
+          "bottom-left",
+          "bottom-center",
+          "bottom-right",
+        ]);
+        transformerRef.current.rotateEnabled(true);
+      }
+    }
+  }, [selectedId, currentElement?.locked]);
+
   // Calculate optimal scale
   const calculateOptimalScale = useCallback(
     (canvasWidth, canvasHeight) => {
@@ -193,29 +267,361 @@ const DesignStudio = () => {
       if (event.key === "Delete" && selectedId) {
         deleteElement(selectedId);
       }
+      if (event.key === "F2" && selectedId) {
+        event.preventDefault();
+        setRenamingLayerId(selectedId);
+      }
+      if ((event.ctrlKey || event.metaKey) && selectedId) {
+        if (event.key === "ArrowUp") {
+          event.preventDefault();
+          moveLayerUp(selectedId);
+        } else if (event.key === "ArrowDown") {
+          event.preventDefault();
+          moveLayerDown(selectedId);
+        }
+      }
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [selectedId]);
 
-  const currentElement = elements.find((el) => el.id === selectedId);
+  useEffect(() => {
+    if (renamingLayerId && renameInputRef.current) {
+      try {
+        renameInputRef.current.focus();
+        renameInputRef.current.select();
+      } catch (e) {}
+    }
+  }, [renamingLayerId]);
+
+  useEffect(() => {
+    setElements((prev) => {
+      const normalized = [...prev]
+        .sort((a, b) => (a.layer || 0) - (b.layer || 0))
+        .map((el, i) => ({ ...el, layer: i + 1 }));
+      return normalized;
+    });
+  }, []);
+
+  useEffect(() => {
+    // Debounce to avoid adding to history on every tiny change
+    const timeoutId = setTimeout(() => {
+      const currentState = JSON.stringify(elements);
+      const lastHistoryState = JSON.stringify(history[historyStep] || []);
+
+      // Only add if state actually changed
+      if (currentState !== lastHistoryState) {
+        addToHistory(elements);
+      }
+    }, 300); // 300ms debounce
+
+    return () => clearTimeout(timeoutId);
+  }, [elements]); // Don't include addToHistory or it will cause infinite loop
+
+  /**
+   * Convert layer name to valid variable name
+   * Converts "User Photo" to "USER_PHOTO"
+   */
+  const toVariableName = (name) => {
+    return name
+      .toUpperCase()
+      .replace(/[^A-Z0-9]+/g, "_")
+      .replace(/^_+|_+$/g, ""); // Remove leading/trailing underscores
+  };
+
+  /**
+   * Export DesignStudio configuration to GenerateImage format with layer name variables
+   * Uses actual layer names as variable placeholders
+   */
+  const exportToGenerateImageTemplate = () => {
+    const config = {
+      width: stageSize.width,
+      height: stageSize.height,
+      backgroundImage: undefined,
+      overlayImages: [],
+      textBlocks: [],
+      mimeType: "image/png",
+      quality: 1,
+      pixelRatio: 2,
+    };
+
+    // Sort elements by layer for proper ordering
+    const sortedElements = [...elements].sort(
+      (a, b) => (a.layer || 0) - (b.layer || 0),
+    );
+
+    // Find background image using isBackground flag
+    const bgImage = sortedElements.find(
+      (el) =>
+        (el.type === "image" || el.type === "graphic") &&
+        el.isBackground === true,
+    );
+
+    if (bgImage) {
+      const varName = toVariableName(bgImage.name);
+      config.backgroundImage = {
+        src: `{{${varName}}}`, // Variable based on layer name
+        width: bgImage.width,
+        height: bgImage.height,
+      };
+    }
+
+    // Process all elements
+    sortedElements.forEach((element) => {
+      if (!element.visible) return; // Skip invisible elements
+
+      const varName = toVariableName(element.name);
+
+      // Process images and graphics as overlayImages
+      if (
+        element.type === "image" ||
+        element.type === "graphic" ||
+        element.type === "qr"
+      ) {
+        // Skip if marked as background image
+        if (element.isBackground === true) return;
+
+        config.overlayImages.push({
+          src: `{{${varName}}}`, // Variable based on layer name
+          x: element.x,
+          y: element.y,
+          width: element.width,
+          height: element.height,
+          zIndex: element.layer || 0,
+          behindBackground: bgImage ? element.layer < bgImage.layer : false,
+          cornerRadius: element.cornerRadius || 0,
+          offsetX: element.width / 2,
+          offsetY: element.height / 2,
+          skewX: 0,
+          skewY: 0,
+          scaleX: 1,
+          scaleY: 1,
+          rotation: element.rotation || 0,
+        });
+      }
+
+      // Process text elements as textBlocks
+      if (element.type === "text") {
+        config.textBlocks.push({
+          text: `{{${varName}}}`, // Variable based on layer name
+          x: element.x,
+          y: element.y,
+          width: element.width || stageSize.width - element.x,
+          fontSize: element.fontSize,
+          fontFamily: element.fontFamily || "Arial",
+          fill: element.fill || "#000000",
+          align: element.align || "left",
+          lineHeight: 1.2,
+          maxChars: undefined,
+          verticalAlign: element.verticalAlign || "top",
+          backgroundColor: undefined,
+          padding: 0,
+          zIndex: element.layer || 0,
+        });
+      }
+
+      // Process calendar groups as multiple textBlocks
+      if (element.type === "calendarGroup" && element.children) {
+        element.children.forEach((child, index) => {
+          if (child.type === "calendar-text") {
+            const childVarName = toVariableName(
+              child.name || `${element.name}_${index + 1}`,
+            );
+
+            config.textBlocks.push({
+              text: `{{${childVarName}}}`, // Variable based on child name
+              x: element.x + child.x,
+              y: element.y + child.y,
+              width: child.width || 100,
+              fontSize: child.fontSize,
+              fontFamily: child.fontFamily || "Arial",
+              fill: child.fill || "#000000",
+              align: child.align || "center",
+              lineHeight: 1.2,
+              verticalAlign: "top",
+              zIndex: element.layer || 0,
+            });
+          }
+        });
+      }
+    });
+
+    return config;
+  };
+
+  /**
+   * Generate variable mapping guide based on layer names
+   * This creates a reference showing what data needs to be provided
+   */
+  const generateVariableGuide = () => {
+    const guide = {
+      instructions:
+        "Replace these variables with actual data before using GenerateImage",
+      variables: {},
+      layerMapping: [],
+    };
+
+    // Sort elements by layer for proper ordering
+    const sortedElements = [...elements].sort(
+      (a, b) => (a.layer || 0) - (b.layer || 0),
+    );
+
+    sortedElements.forEach((element) => {
+      if (!element.visible) return;
+
+      const varName = toVariableName(element.name);
+      const layerInfo = {
+        layerName: element.name,
+        variableName: varName,
+        type: element.type,
+        layer: element.layer || 0,
+        isBackground: element.isBackground || false,
+      };
+
+      if (
+        element.type === "image" ||
+        element.type === "graphic" ||
+        element.type === "qr"
+      ) {
+        guide.variables[varName] = {
+          description: `URL or blob URL for layer "${element.name}"${element.isBackground ? " (Background Image)" : ""}`,
+          type: "image",
+          isBackground: element.isBackground || false,
+          example: "https://example.com/image.jpg or blob:http://...",
+        };
+        layerInfo.dataType = element.isBackground
+          ? "Background Image URL (string)"
+          : "Image URL (string)";
+      }
+
+      if (element.type === "text") {
+        guide.variables[varName] = {
+          description: `Text content for layer "${element.name}"`,
+          type: "text",
+          example: "Your text here",
+        };
+        layerInfo.dataType = "Text (string)";
+      }
+
+      if (element.type === "calendarGroup" && element.children) {
+        element.children.forEach((child, index) => {
+          const childVarName = toVariableName(
+            child.name || `${element.name}_${index + 1}`,
+          );
+          guide.variables[childVarName] = {
+            description: `Calendar text for "${child.name || element.name}"`,
+            type: "text",
+            example: child.text || "Calendar text",
+          };
+
+          guide.layerMapping.push({
+            layerName: child.name || `${element.name} child ${index + 1}`,
+            variableName: childVarName,
+            type: "calendar-text",
+            layer: element.layer || 0,
+            dataType: "Text (string)",
+            isBackground: false,
+          });
+        });
+      }
+
+      if (element.type !== "calendarGroup") {
+        guide.layerMapping.push(layerInfo);
+      }
+    });
+
+    return guide;
+  };
+
+  /**
+   * Get template configuration as JSON with layer name variables
+   */
+  const getTemplateConfigJSON = () => {
+    const template = exportToGenerateImageTemplate();
+    return JSON.stringify(template, null, 2);
+  };
+
+  const useTemplateExample = async (dataMapping) => {
+    // Get the template
+    let configString = JSON.stringify(exportToGenerateImageTemplate());
+
+    // Replace all variables with actual data
+    Object.keys(dataMapping).forEach((variable) => {
+      const placeholder = `{{${variable}}}`;
+      configString = configString.replaceAll(
+        placeholder,
+        JSON.stringify(dataMapping[variable]),
+      );
+    });
+
+    // Parse back to object
+    const config = JSON.parse(configString);
+
+    const result = await GenerateImage(config);
+
+    return result;
+  };
+
+  /**
+   * Save template as JSON file with layer name mappings
+   */
+  const downloadTemplateAsJSON = () => {
+    const template = exportToGenerateImageTemplate();
+    const guide = generateVariableGuide();
+
+    const output = {
+      template,
+      variableGuide: guide,
+      metadata: {
+        templateName: currentTemplateName,
+        createdAt: new Date().toISOString(),
+        canvasSize: {
+          width: stageSize.width,
+          height: stageSize.height,
+        },
+        totalLayers: elements.length,
+        visibleLayers: elements.filter((el) => el.visible).length,
+      },
+    };
+
+    const jsonString = JSON.stringify(output, null, 2);
+    const blob = new Blob([jsonString], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+
+    const link = document.createElement("a");
+    link.download = `${currentTemplateName.replace(/\s+/g, "-")}-template.json`;
+    link.href = url;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    alert("Template with layer name mappings downloaded!");
+  };
+
+  /**
+   * Generate TypeScript interface for the data mapping
+   */
+  const generateTypeScriptInterface = () => {
+    const guide = generateVariableGuide();
+    let tsInterface = "interface TemplateData {\n";
+
+    Object.keys(guide.variables).forEach((varName) => {
+      const varInfo = guide.variables[varName];
+      tsInterface += `  ${varName}: string; // ${varInfo.description}\n`;
+    });
+
+    tsInterface += "}";
+
+    console.log(tsInterface);
+    return tsInterface;
+  };
 
   const getNextLayer = useCallback(() => {
     if (elements.length === 0) return 1;
     return Math.max(...elements.map((e) => e.layer || 0)) + 1;
   }, [elements]);
-
-  //   useEffect(() => {
-  //   const autoSyncInterval = setInterval(() => {
-  //     if (elements.length > 0 && currentTemplateId) {
-  //       // Silent auto-save without prompts
-  //       saveTemplateToS3(false).catch(console.error);
-  //     }
-  //   }, 60000); // Auto-sync every 60 seconds
-
-  //   return () => clearInterval(autoSyncInterval);
-  // }, [elements, currentTemplateId]);
 
   // Drag & Drop handlers
   const handleDragOver = (e) => {
@@ -258,6 +664,7 @@ const DesignStudio = () => {
               visible: true,
               locked: false,
               draggable: true,
+              isBackground: false,
             };
             setElements((prev) => [...prev, element]);
             setSelectedId(element.id);
@@ -270,23 +677,51 @@ const DesignStudio = () => {
     }
   };
 
+  const calculateTextHeight = (text, fontSize, width) => {
+    // Estimate number of lines based on text length and width
+    const lines = text.split("\n").length;
+    const lineHeight = fontSize * 1.5; // Standard line height multiplier
+
+    // If width is set, estimate wrapping
+    if (width) {
+      const avgCharWidth = fontSize * 0.6;
+      const charsPerLine = Math.floor(width / avgCharWidth);
+      const totalChars = text.replace(/\n/g, "").length;
+      const wrappedLines = Math.ceil(totalChars / charsPerLine);
+      const totalLines = Math.max(lines, wrappedLines);
+      return totalLines * lineHeight;
+    }
+
+    return lines * lineHeight;
+  };
+
   // Add text element
   const addTextElement = () => {
+    const defaultText = "Type text here";
+    const defaultFontSize = 48;
+    const defaultHeight = calculateTextHeight(
+      defaultText,
+      defaultFontSize,
+      null,
+    );
+
     const element = {
       id: `text-${elementCounter}`,
       type: "text",
       name: `Text ${elementCounter}`,
-      text: "Type text here",
+      text: defaultText,
       x: stageSize.width / 2 - 100,
       y: stageSize.height / 2 - 25,
-      fontSize: 48,
+      fontSize: defaultFontSize,
       fontFamily: "Arial",
       fill: "#000000",
       fontStyle: "normal",
       align: "left",
+      verticalAlign: "top",
       letterSpacing: 0,
       rotation: 0,
       width: null,
+      height: defaultHeight,
       opacity: 1,
       layer: getNextLayer(),
       visible: true,
@@ -714,46 +1149,72 @@ const DesignStudio = () => {
   };
 
   // Layer management
-  const moveLayerUp = (elementId) => {
-    const element = elements.find((el) => el.id === elementId);
-    if (!element) return;
+  // Move layer up
+  // Move layer up
+  const moveLayerUp = (id) => {
+    setElements((prev) => {
+      const target = prev.find((el) => el.id === id);
+      if (!target) return prev;
 
-    const sortedElements = [...elements].sort(
-      (a, b) => (a.layer || 0) - (b.layer || 0),
-    );
-    const currentIndex = sortedElements.findIndex((el) => el.id === elementId);
+      // Sort by layer order
+      const sorted = [...prev].sort((a, b) => (a.layer || 0) - (b.layer || 0));
+      const index = sorted.findIndex((el) => el.id === id);
 
-    if (currentIndex < sortedElements.length - 1) {
-      const nextElement = sortedElements[currentIndex + 1];
-      setElements((prev) =>
-        prev.map((el) => {
-          if (el.id === elementId) return { ...el, layer: nextElement.layer };
-          if (el.id === nextElement.id) return { ...el, layer: element.layer };
-          return el;
-        }),
-      );
-    }
+      if (index === sorted.length - 1) return prev; // already top
+
+      // Get the element above
+      const above = sorted[index + 1];
+
+      // Swap layer values in the original array
+      return prev.map((el) => {
+        if (el.id === id) {
+          return { ...el, layer: above.layer };
+        } else if (el.id === above.id) {
+          return { ...el, layer: target.layer };
+        }
+        return el;
+      });
+    });
   };
 
-  const moveLayerDown = (elementId) => {
-    const element = elements.find((el) => el.id === elementId);
-    if (!element) return;
+  // Move layer down
+  const moveLayerDown = (id) => {
+    setElements((prev) => {
+      const target = prev.find((el) => el.id === id);
+      if (!target) return prev;
 
-    const sortedElements = [...elements].sort(
-      (a, b) => (a.layer || 0) - (b.layer || 0),
-    );
-    const currentIndex = sortedElements.findIndex((el) => el.id === elementId);
+      // Sort by layer order
+      const sorted = [...prev].sort((a, b) => (a.layer || 0) - (b.layer || 0));
+      const index = sorted.findIndex((el) => el.id === id);
 
-    if (currentIndex > 0) {
-      const prevElement = sortedElements[currentIndex - 1];
-      setElements((prev) =>
-        prev.map((el) => {
-          if (el.id === elementId) return { ...el, layer: prevElement.layer };
-          if (el.id === prevElement.id) return { ...el, layer: element.layer };
-          return el;
-        }),
-      );
+      if (index === 0) return prev; // already bottom
+
+      // Get the element below
+      const below = sorted[index - 1];
+
+      // Swap layer values in the original array
+      return prev.map((el) => {
+        if (el.id === id) {
+          return { ...el, layer: below.layer };
+        } else if (el.id === below.id) {
+          return { ...el, layer: target.layer };
+        }
+        return el;
+      });
+    });
+  };
+
+  const commitRename = (id, value) => {
+    if (!id) return;
+    const newName = (value || "").trim();
+    if (newName === "") {
+      setRenamingLayerId(null);
+      return;
     }
+    setElements((prev) =>
+      prev.map((el) => (el.id === id ? { ...el, name: newName } : el)),
+    );
+    setRenamingLayerId(null);
   };
 
   // Template management
@@ -978,7 +1439,7 @@ const DesignStudio = () => {
   };
 
   const exportImage = () => {
-    const uri = stageRef.current.toDataURL({ pixelRatio: 2 });
+    const uri = stageRef.current.toDataURL({ pixelRatio: 1 });
     const link = document.createElement("a");
     link.download = `${currentTemplateName.replace(/\s+/g, "-")}.png`;
     link.href = uri;
@@ -1071,7 +1532,7 @@ const DesignStudio = () => {
         x: element.x,
         y: element.y,
         rotation: element.rotation || 0,
-        draggable: !element.locked,
+        draggable: !element.locked, // Prevent dragging when locked
         onDragEnd: (e) => {
           const updatedElements = elements.map((el) =>
             el.id === element.id
@@ -1098,9 +1559,11 @@ const DesignStudio = () => {
               fill={element.fill}
               fontStyle={element.fontStyle}
               align={element.align}
+              verticalAlign={element.verticalAlign || "top"}
               letterSpacing={element.letterSpacing || 0}
               width={element.width}
               opacity={element.opacity}
+              height={element.height || 100}
               onTransformEnd={(e) => {
                 const node = e.target;
                 const scaleX = node.scaleX();
@@ -1396,18 +1859,18 @@ const DesignStudio = () => {
             <span className="w-2 h-2 bg-yellow-400 rounded-full"></span>{" "}
             Saving...
           </button>
-          <button
-            className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
-            title="Undo"
-          >
-            ↶
-          </button>
-          <button
-            className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
-            title="Redo"
-          >
-            ↷
-          </button>
+
+          {/* In the top header, add these buttons */}
+          {/* In the top header, replace with these buttons */}
+          <div className="flex items-center gap-3">
+            <button
+              onClick={downloadTemplateAsJSON}
+              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded transition-colors flex items-center gap-2"
+            >
+              📥 Download Template
+            </button>
+          </div>
+
           <button
             onClick={exportImage}
             className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded transition-colors flex items-center gap-2"
@@ -2707,24 +3170,53 @@ const DesignStudio = () => {
                             8,
                             currentElement.fontSize - 2,
                           );
-                          updateGroupProperty(
-                            currentElement.id,
-                            "fontSize",
-                            newSize,
+                          const lines = (currentElement.text || "").split(
+                            "\n",
+                          ).length;
+                          const newHeight = Math.max(
+                            newSize * 1.5 * lines,
+                            newSize * 1.5,
+                          );
+
+                          setElements((prev) =>
+                            prev.map((el) =>
+                              el.id === currentElement.id
+                                ? {
+                                    ...el,
+                                    fontSize: newSize,
+                                    height: newHeight,
+                                  }
+                                : el,
+                            ),
                           );
                         }}
                         className="px-2 py-1 hover:bg-gray-200 rounded text-xs"
                       >
-                        −
+                        -
                       </button>
                       <input
                         type="number"
                         value={currentElement.fontSize}
                         onChange={(e) => {
-                          updateGroupProperty(
-                            currentElement.id,
-                            "fontSize",
-                            parseInt(e.target.value) || 28,
+                          const newSize = parseInt(e.target.value) || 48;
+                          const lines = (currentElement.text || "").split(
+                            "\n",
+                          ).length;
+                          const newHeight = Math.max(
+                            newSize * 1.5 * lines,
+                            newSize * 1.5,
+                          );
+
+                          setElements((prev) =>
+                            prev.map((el) =>
+                              el.id === currentElement.id
+                                ? {
+                                    ...el,
+                                    fontSize: newSize,
+                                    height: newHeight,
+                                  }
+                                : el,
+                            ),
                           );
                         }}
                         className="w-12 px-1 py-1 text-center border border-gray-300 rounded text-xs"
@@ -2732,32 +3224,31 @@ const DesignStudio = () => {
                       <button
                         onClick={() => {
                           const newSize = currentElement.fontSize + 2;
-                          updateGroupProperty(
-                            currentElement.id,
-                            "fontSize",
-                            newSize,
+                          const lines = (currentElement.text || "").split(
+                            "\n",
+                          ).length;
+                          const newHeight = Math.max(
+                            newSize * 1.5 * lines,
+                            newSize * 1.5,
+                          );
+
+                          setElements((prev) =>
+                            prev.map((el) =>
+                              el.id === currentElement.id
+                                ? {
+                                    ...el,
+                                    fontSize: newSize,
+                                    height: newHeight,
+                                  }
+                                : el,
+                            ),
                           );
                         }}
                         className="px-2 py-1 hover:bg-gray-200 rounded text-xs"
                       >
                         +
                       </button>
-                      <div className="w-20 relative">
-                        <input
-                          type="color"
-                          value={currentElement.fill}
-                          onChange={(e) => {
-                            updateGroupProperty(
-                              currentElement.id,
-                              "fill",
-                              e.target.value,
-                            );
-                          }}
-                          className="w-32 h-8 rounded border border-gray-300 cursor-pointer"
-                        />
-                      </div>
                     </div>
-
                     <button
                       onClick={() => {
                         const newStyle =
@@ -2904,7 +3395,7 @@ const DesignStudio = () => {
                       B
                     </button>
 
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-3">
                       <button
                         onClick={() => {
                           setElements((prev) =>
@@ -2915,9 +3406,9 @@ const DesignStudio = () => {
                             ),
                           );
                         }}
-                        className={`px-2 py-1 rounded text-xs ${currentElement.align === "left" ? "bg-gray-200" : "hover:bg-gray-200"}`}
+                        className={` rounded text-sm ${currentElement.align === "left" ? "text-blue-700" : "text-gray-600"}`}
                       >
-                        ≡
+                        <FaAlignLeft />
                       </button>
                       <button
                         onClick={() => {
@@ -2929,13 +3420,13 @@ const DesignStudio = () => {
                             ),
                           );
                         }}
-                        className={`px-2 py-1 rounded text-xs ${
+                        className={` rounded text-sm ${
                           currentElement.align === "center"
-                            ? "bg-gray-200"
-                            : "hover:bg-gray-200"
+                            ? "text-blue-700"
+                            : "text-gray-600"
                         }`}
                       >
-                        ≡
+                        <FaAlignCenter />
                       </button>
                       <button
                         onClick={() => {
@@ -2947,10 +3438,64 @@ const DesignStudio = () => {
                             ),
                           );
                         }}
-                        className={`px-2 py-1 rounded text-xs ${currentElement.align === "right" ? "bg-gray-200" : "hover:bg-gray-200"}`}
+                        className={`rounded text-sm ${currentElement.align === "right" ? "text-blue-700" : "text-gray-600"}`}
                       >
-                        ≡
+                        <FaAlignRight />
                       </button>
+                    </div>
+                    {/* NEW: Vertical Alignment */}
+                    <div className="flex items-center gap-2 border-l pl-4">
+                      <MdOutlineVerticalAlignTop
+                        onClick={() =>
+                          setElements((prev) =>
+                            prev.map((el) =>
+                              el.id === currentElement.id
+                                ? { ...el, verticalAlign: "top" }
+                                : el,
+                            ),
+                          )
+                        }
+                        className={`rounded text-lg font-bold ${
+                          currentElement.verticalAlign === "top"
+                            ? "text-blue-600"
+                            : "text-gray-500"
+                        }`}
+                        title="Align Top"
+                      />
+                      <MdOutlineVerticalAlignCenter
+                        onClick={() =>
+                          setElements((prev) =>
+                            prev.map((el) =>
+                              el.id === currentElement.id
+                                ? { ...el, verticalAlign: "middle" }
+                                : el,
+                            ),
+                          )
+                        }
+                        className={`rounded text-lg font-bold ${
+                          currentElement.verticalAlign === "middle"
+                            ? "text-blue-600"
+                            : "text-gray-500"
+                        }`}
+                        title="Align Middle"
+                      />
+                      <MdOutlineVerticalAlignBottom
+                        onClick={() =>
+                          setElements((prev) =>
+                            prev.map((el) =>
+                              el.id === currentElement.id
+                                ? { ...el, verticalAlign: "bottom" }
+                                : el,
+                            ),
+                          )
+                        }
+                        className={`rounded text-lg font-bold ${
+                          currentElement.verticalAlign === "bottom"
+                            ? "text-blue-600"
+                            : "text-gray-500"
+                        }`}
+                        title="Align Bottom"
+                      />
                     </div>
 
                     <div className="flex items-center gap-2 border-l pl-4">
@@ -2986,10 +3531,21 @@ const DesignStudio = () => {
                         cols="50"
                         value={currentElement.text}
                         onChange={(e) => {
+                          // Calculate new height based on text content
+                          const lines = e.target.value.split("\n").length;
+                          const estimatedHeight = Math.max(
+                            currentElement.fontSize * 1.5 * lines,
+                            currentElement.fontSize * 1.5,
+                          );
+
                           setElements((prev) =>
                             prev.map((el) =>
                               el.id === currentElement.id
-                                ? { ...el, text: e.target.value }
+                                ? {
+                                    ...el,
+                                    text: e.target.value,
+                                    height: estimatedHeight,
+                                  }
                                 : el,
                             ),
                           );
@@ -3201,129 +3757,194 @@ const DesignStudio = () => {
 
         {/* Layer Panel */}
         {showLayerPanel && (
-          <div className="w-80 bg-white border-l border-gray-200 overflow-y-auto">
-            <div className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold">Layers</h3>
-                <button
-                  onClick={() => setShowLayerPanel(false)}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  ✕
-                </button>
-              </div>
+          <div className="fixed right-0 top-0 h-full w-80 bg-white border-l border-gray-200 shadow-lg overflow-y-auto z-10">
+            <div className="sticky top-0 bg-white border-b border-gray-200 p-4 flex items-center justify-between">
+              <h3 className="font-semibold text-gray-800">Layers</h3>
+              <button
+                onClick={() => setShowLayerPanel(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                ✕
+              </button>
+            </div>
 
-              <div className="space-y-2">
-                {[...elements]
-                  .sort((a, b) => (b.layer || 0) - (a.layer || 0))
-                  .map((element, index) => (
-                    <div
-                      key={element.id}
-                      draggable
-                      onDragStart={(e) => {
-                        e.dataTransfer.effectAllowed = "move";
-                        e.dataTransfer.setData("text/html", element.id);
-                      }}
-                      onDragOver={(e) => {
-                        e.preventDefault();
-                        e.dataTransfer.dropEffect = "move";
-                      }}
-                      onDrop={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
+            <div className="p-4 space-y-2">
+              {[...elements]
+                .sort((a, b) => (b.layer || 0) - (a.layer || 0))
+                .map((element, index) => (
+                  <div
+                    key={element.id}
+                    draggable
+                    onDragStart={(e) => {
+                      e.dataTransfer.effectAllowed = "move";
+                      e.dataTransfer.setData("text/html", element.id);
+                    }}
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      e.dataTransfer.dropEffect = "move";
+                    }}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      const draggedId = e.dataTransfer.getData("text/html");
+                      const targetId = element.id;
 
-                        const draggedId = e.dataTransfer.getData("text/html");
-                        const targetId = element.id;
+                      if (draggedId === targetId) return;
 
-                        if (draggedId === targetId) return;
+                      const sortedElements = [...elements].sort(
+                        (a, b) => (b.layer || 0) - (a.layer || 0),
+                      );
+                      const draggedIndex = sortedElements.findIndex(
+                        (el) => el.id === draggedId,
+                      );
+                      const targetIndex = sortedElements.findIndex(
+                        (el) => el.id === targetId,
+                      );
 
-                        const sortedElements = [...elements].sort(
-                          (a, b) => (b.layer || 0) - (a.layer || 0),
-                        );
+                      if (draggedIndex === -1 || targetIndex === -1) return;
 
-                        const draggedIndex = sortedElements.findIndex(
-                          (el) => el.id === draggedId,
-                        );
-                        const targetIndex = sortedElements.findIndex(
-                          (el) => el.id === targetId,
-                        );
+                      // Reorder layers
+                      const newElements = [...elements];
+                      const draggedElement = sortedElements[draggedIndex];
+                      const targetElement = sortedElements[targetIndex];
 
-                        if (draggedIndex === -1 || targetIndex === -1) return;
+                      // Swap layer values
+                      newElements.forEach((el) => {
+                        if (el.id === draggedElement.id) {
+                          el.layer = targetElement.layer;
+                        } else if (el.id === targetElement.id) {
+                          el.layer = draggedElement.layer;
+                        }
+                      });
 
-                        // Reorder layers
-                        const newElements = [...elements];
-                        const draggedElement = sortedElements[draggedIndex];
-                        const targetElement = sortedElements[targetIndex];
-
-                        // Swap layer values
-                        newElements.forEach((el) => {
-                          if (el.id === draggedElement.id) {
-                            el.layer = targetElement.layer;
-                          } else if (el.id === targetElement.id) {
-                            el.layer = draggedElement.layer;
-                          }
-                        });
-
-                        setElements(newElements);
-                      }}
-                      className={`p-3 border rounded-lg cursor-move transition-colors ${
-                        selectedId === element.id
-                          ? "border-blue-500 bg-blue-50"
-                          : "border-gray-200 hover:border-gray-300 hover:bg-gray-50"
-                      }`}
-                      onClick={() => setSelectedId(element.id)}
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <span className="text-gray-400 cursor-grab active:cursor-grabbing">
-                            ⋮⋮
-                          </span>
-                          <button
-                            onClick={(e) => {
+                      setElements(newElements);
+                    }}
+                    className={`py-1 border rounded-lg cursor-move transition-colors ${
+                      selectedId === element.id
+                        ? "border-blue-500 bg-blue-50"
+                        : "border-gray-200 hover:border-gray-300 hover:bg-gray-50"
+                    }`}
+                    onClick={() => setSelectedId(element.id)}
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        {renamingLayerId === element.id ? (
+                          <input
+                            ref={renameInputRef}
+                            type="text"
+                            defaultValue={element.name}
+                            onClick={(e) => e.stopPropagation()}
+                            onBlur={(e) =>
+                              commitRename(element.id, e.target.value)
+                            }
+                            onKeyDown={(e) => {
                               e.stopPropagation();
-                              setElements((prev) =>
-                                prev.map((el) =>
-                                  el.id === element.id
-                                    ? { ...el, visible: !el.visible }
-                                    : el,
-                                ),
-                              );
+                              if (e.key === "Enter") {
+                                commitRename(element.id, e.target.value);
+                              } else if (e.key === "Escape") {
+                                setRenamingLayerId(null);
+                              }
                             }}
-                            className="text-gray-500 hover:text-gray-700"
+                            className="px-1 py-1 text-sm border border-blue-500 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          />
+                        ) : (
+                          <div
+                            className="flex-1 text-sm font-medium text-gray-700 cursor-text hover:bg-gray-100 px-2 py-1 rounded"
+                            onDoubleClick={(e) => {
+                              e.stopPropagation();
+                              setRenamingLayerId(element.id);
+                            }}
                           >
-                            {element.visible ? "👁️" : "👁️‍🗨️"}
-                          </button>
-                          <span className="text-sm font-medium">
                             {element.name}
-                          </span>
-                        </div>
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <FaArrowAltCircleUp
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            moveLayerUp(element.id);
+                          }}
+                          title="Move Up"
+                          className="cursor-pointer w-4 h-4"
+                        />
 
-                        <div className="flex items-center gap-1">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setElements((prev) =>
-                                prev.map((el) =>
-                                  el.id === element.id
-                                    ? { ...el, locked: !el.locked }
-                                    : el,
-                                ),
-                              );
-                            }}
-                            className="p-1 px-2 hover:bg-gray-200 rounded bg-gray-300"
-                            title={element.locked ? "Unlock" : "Lock"}
-                          >
-                            {element.locked ? "🔒" : "🔓"}
-                          </button>
-                        </div>
+                        <FaArrowAltCircleDown
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            moveLayerDown(element.id);
+                          }}
+                          title="Move Down"
+                          className="cursor-pointer w-4 h-4"
+                        />
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setElements((prev) =>
+                              prev.map((el) =>
+                                el.id === element.id
+                                  ? { ...el, visible: !el.visible }
+                                  : el,
+                              ),
+                            );
+                          }}
+                          className="text-gray-500 hover:text-gray-700"
+                        >
+                          {element.visible ? "👁️" : "🗨️"}
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setElements((prev) =>
+                              prev.map((el) =>
+                                el.id === element.id
+                                  ? { ...el, locked: !el.locked }
+                                  : el,
+                              ),
+                            );
+                          }}
+                          title={element.locked ? "Unlock" : "Lock"}
+                        >
+                          {element.locked ? "🔒" : "🔓"}
+                        </button>
+                        {(element.type === "image" ||
+                          element.type === "graphic") && (
+                          <div className="mt-2 pt-2 border-t border-gray-200">
+                            <label
+                              className="flex items-center gap-2 cursor-pointer text-xs text-gray-600 hover:text-gray-800"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={element.isBackground || false}
+                                onChange={(e) => {
+                                  e.stopPropagation();
+                                  setElements((prev) =>
+                                    prev.map((el) =>
+                                      el.id === element.id
+                                        ? {
+                                            ...el,
+                                            isBackground: e.target.checked,
+                                          }
+                                        : el,
+                                    ),
+                                  );
+                                }}
+                                className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                              />
+                              <span className="font-medium">Bg</span>
+                            </label>
+                          </div>
+                        )}
                       </div>
                     </div>
-                  ))}
-              </div>
+
+                    {/* Layer Name with Rename Functionality */}
+                  </div>
+                ))}
             </div>
           </div>
         )}
-
         {!showLayerPanel && (
           <button
             onClick={() => setShowLayerPanel(true)}
@@ -3346,5 +3967,4 @@ const DesignStudio = () => {
     </div>
   );
 };
-
 export default DesignStudio;
