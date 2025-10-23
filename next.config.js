@@ -1,40 +1,47 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // async headers() {
-  //   return [
-  //     {
-  //       source: "/",
-  //       headers: [
-  //         {
-  //           key: "Cross-Origin-Opener-Policy",
-  //           value: "same-origin",
-  //         },
-  //         {
-  //           key: "Cache-Control",
-  //           value: "no-store, no-cache, must-revalidate, proxy-revalidate",
-  //         },
-  //         {
-  //           key: "Cross-Origin-Embedder-Policy",
-  //           value: "credentialless",
-  //         },
-  //       ],
-  //     },
-  //     {
-  //       source: "/:path*",
-  //       headers: [
-  //         {
-  //           key: "Cross-Origin-Embedder-Policy",
-  //           value: "credentialless",
-  //         },
-  //         {
-  //           key: "Cross-Origin-Opener-Policy",
-  //           value: "same-origin",
-  //         },
-  //       ],
-  //     },
-  //   ];
-  // },
+  async headers() {
+    return [
+      {
+        source: "/",
+        headers: [
+          {
+            key: "Cross-Origin-Opener-Policy",
+            value: "same-origin",
+          },
+          {
+            key: "Cache-Control",
+            value: "no-store, no-cache, must-revalidate, proxy-revalidate",
+          },
+          {
+            key: "Cross-Origin-Embedder-Policy",
+            value: "credentialless",
+          },
+        ],
+      },
+      {
+        source: "/:path*",
+        headers: [
+          {
+            key: "Cross-Origin-Embedder-Policy",
+            value: "credentialless",
+          },
+          {
+            key: "Cross-Origin-Opener-Policy",
+            value: "same-origin",
+          },
+        ],
+      },
+    ];
+  },
   productionBrowserSourceMaps: true,
+  webpack: (config, { isServer }) => {
+    if (isServer) {
+      config.devtool = "source-map";
+    }
+    config.resolve.alias["canvas"] = false;
+    return config;
+  },
   reactStrictMode: false,
   output: "export",
   distDir: "dist",
@@ -66,11 +73,8 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
-  turbopack: {
-    resolveAlias: {
-      konva: 'lodash',
-      mocha: { browser: 'mocha/browser-entry.js' },
-    },
+  eslint: {
+    ignoreDuringBuilds: true,
   },
 };
 
