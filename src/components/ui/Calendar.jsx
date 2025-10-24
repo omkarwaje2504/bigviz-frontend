@@ -143,6 +143,7 @@ const CalendarPage = ({
   ui,
   doctorHash,
 }) => {
+  console.log("Rendering CalendarPage with formData:", projectData);
   const [selectedImages, setSelectedImages] = useState([]);
   const [error, setError] = useState("");
   const [draggedItem, setDraggedItem] = useState(null);
@@ -160,6 +161,8 @@ const CalendarPage = ({
   const [generatedAIImages, setGeneratedAIImages] = useState([]);
   const [selectedAIImages, setSelectedAIImages] = useState([]); // New state for selections
   const [showFinalPreview, setShowFinalPreview] = useState(false); // New state for final view
+  const [templateConfig, setTemplateConfig] = useState(null);
+  const [monthImageUrls, setMonthImageUrls] = useState({});
 
   const AI_ENABLED = projectData?.config?.calendar?.enable_ai;
   const searchParams = useSearchParams();
@@ -169,6 +172,46 @@ const CalendarPage = ({
     const params = url.searchParams;
     return { params, url };
   };
+
+  const fetchTemplateConfig = async (projectHash) => {
+    try {
+      const configUrl = `https://pub-0b6394cfeda24bf196c98e1746afe09b.r2.dev/production/calendar-data/template/${projectHash}/config.json`;
+      const response = await fetch(configUrl);
+      const config = await response.json();
+      return config;
+    } catch (error) {
+      console.error("Failed to fetch template config:", error);
+      return null;
+    }
+  };
+
+  const getMonthImageUrl = (projectHash, monthName) => {
+    return `https://pub-0b6394cfeda24bf196c98e1746afe09b.r2.dev/production/calendar-data/template/${projectHash}/${monthName.toLowerCase()}.png`;
+  };
+
+  useEffect(() => {
+    const loadTemplateData = async () => {
+      if (!projectData?.project_hash) return;
+
+      // Fetch config
+      const config = await fetchTemplateConfig(projectData.project_hash);
+      if (config) {
+        setTemplateConfig(config);
+      }
+
+      // Build month image URLs
+      const urls = {};
+      MONTH_NAMES.forEach((month) => {
+        urls[month.toLowerCase()] = getMonthImageUrl(
+          projectData.project_hash,
+          month,
+        );
+      });
+      setMonthImageUrls(urls);
+    };
+
+    loadTemplateData();
+  }, [projectData?.project_hash]);
 
   useEffect(() => {
     const getPhotoCollectionType = searchParams.get("photo-collection-type");
@@ -261,7 +304,18 @@ const CalendarPage = ({
     setFormData((prev) => ({ ...prev, calendar_images: selectedImages }));
   }, [selectedImages]);
 
-  const cropDimensions = getPhotoDims(projectData);
+  const cropDimensions = (templateConfig) => {
+    if (!templateConfig?.template?.overlayImages?.[0]) {
+      // Fallback dimensions
+      return { w: 490, h: 490 };
+    }
+
+    const doctorImage = templateConfig.template.overlayImages[0];
+    return {
+      w: Math.round(doctorImage.width),
+      h: Math.round(doctorImage.height),
+    };
+  };
 
   // Function to handle AI theme generation
   const handleAIThemeGeneration = useCallback(
@@ -643,13 +697,25 @@ const CalendarPage = ({
     setDragOverIndex(null);
   }, []);
 
-  const handlePreviewOpen = async (image, index) => {
-    const previewUrl = await generateCalendarPreviewBlob(
-      image,
-      CALENDAR_PREVIEW_CONFIG,
-    );
-    setPreviewData(previewUrl);
-  };
+ const handlePreviewOpen = async (image, index) => {
+  const monthKey = image?.month || MONTH_NAMES[index]?.toLowerCase();
+  const backgroundImageUrl = monthImageUrls[monthKey];
+  
+  if (!backgroundImageUrl || !templateConfig) {
+    setError('Template data not loaded');
+    return;
+  }
+
+  const previewUrl = await generateCalendarPreviewBlob(
+    {
+      ...image,
+      backgroundImage: monthImageUrls[monthKey],
+      templateConfig: templateConfig
+    },
+    CALENDAR_PREVIEW_CONFIG,
+  );
+  setPreviewData(previewUrl);
+};
 
   const remainingSlots = CONFIG.maxImages - selectedImages.length;
 

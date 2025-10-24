@@ -93,6 +93,7 @@ const FormNavigationButtons = ({
     setCurrentStep(currentStep - 1);
   };
   const handleCalendarBack = () => {
+    console.log(currentStep);
     const newParams = new URLSearchParams(searchParams.toString());
     const getPhotoCollectionType = newParams.get("photo-collection-type");
 
@@ -125,7 +126,11 @@ const FormNavigationButtons = ({
         <button
           type="button"
           onClick={
-            projectType !== "DeskCalendar" ? handleBack : handleCalendarBack
+            projectType !== "DeskCalendar"
+              ? handleBack
+              : projectType === "DeskCalendar" && currentStep == 2
+                ? handleCalendarBack
+                : handleBack
           }
           className="flex items-center bg-gray-700 hover:bg-gray-600 text-white py-2 px-4 rounded h-fit"
         >
